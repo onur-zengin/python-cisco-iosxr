@@ -4,11 +4,32 @@ import sys
 import getopt
 import csv
 import socket
+import threading
+import logging
+import time
 
-class Router(object):
-    def __init__(self, name):
-        self.name = name
+logging.basicConfig(level=logging.DEBUG,
+                    format='[%(levelname)s] (%(threadName)-10s) %(message)s',
+                    )
+
+#class Router(object):
+ #   def __init__(self, name):
+  #      self.name = name
         #self.ipaddr = socket.gethostbyname(name)
+
+
+class Router(threading.Thread):
+    def __init__(self, threadID, node, interfaces):
+        threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
+        self.hostname = node
+        self.interfaces = interfaces
+    def run(self):
+        logging.debug("starting")
+        print self.hostname
+        print self.interfaces
+
+
+
 
 def parser(lst):
     dict = {}
@@ -39,11 +60,12 @@ def main(args):
     except IOError:
         print 'Input file (%s) could not be located.' % (inputfile)
         sys.exit(1)
-    print "continue working on inventory "
-    print inventory
-    for node in inventory.keys():
-        a = Router(node)
-        print a.name
+    threads = []
+    for n,node in enumerate(inventory):
+        t = Router(n+1,node,inventory[node])
+        threads.append(t)
+        t.start()
+    print threads
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
