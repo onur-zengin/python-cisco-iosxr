@@ -32,10 +32,10 @@ class Router(threading.Thread):
         except socket.gaierror:
             print "Hostname not found"
         print self.ipaddr
-        self.ping(self,self.node)
+        self.ping(self.ipaddr)
         #self.snmpwalk(self.hostname, self.oid)
-    def ping(self,node):
-        itup = subprocess.Popen(['ping', '-i', '0.2', '-w', '2', '-c', '5', node, '-q'], stdout=subprocess.PIPE,
+    def ping(self,ipaddr):
+        itup = subprocess.Popen(['ping', '-i', '0.2', '-w', '2', '-c', '5', ipaddr, '-q'], stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE).communicate()
         print itup
     def snmpwalk(self,node,oid):
