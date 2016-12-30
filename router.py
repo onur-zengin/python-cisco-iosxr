@@ -20,19 +20,23 @@ class Router(threading.Thread):
     oid = oidw[1]
     def __init__(self, threadID, node, interfaces):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
-        self.hostname = node
+        self.node = node
         self.interfaces = interfaces
     def run(self):
         logging.debug("starting")
         self.ipaddr = ''
-        print self.hostname
+        print self.node
         print self.interfaces
         try:
-            self.ipaddr = socket.gethostbyname(self.hostname)
+            self.ipaddr = socket.gethostbyname(self.node)
         except socket.gaierror:
             print "Hostname not found"
         print self.ipaddr
         #self.snmpwalk(self.hostname, self.oid)
+    def ping(self,node):
+        itup = subprocess.Popen(['ping', '-i', '0.2', '-w', '2', '-c', '5', node, '-q'], stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE).communicate()
+        print itup
     def snmpwalk(self,node,oid):
         stup = subprocess.Popen(['snmpwalk', '-Oqv', '-v2c', '-c', 'kN8qpTxH', node, oid], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE).communicate()
