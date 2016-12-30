@@ -30,6 +30,8 @@ class Router(threading.Thread):
             self.ipaddr = socket.gethostbyname(self.node)
         except socket.gaierror:
             print "Hostname not found"
+            logging.debug("exiting early")
+            sys.exit(3)
         print self.ipaddr
         self.ping(self.ipaddr)
         self.snmpwalk(self.ipaddr, self.oid)
