@@ -2,7 +2,6 @@
 
 import sys
 import getopt
-import csv
 import socket
 import threading
 import logging
@@ -13,7 +12,7 @@ asctime = time.asctime()
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s') # FIXME revisit formatting %-Ns
 
 oidw = [
-	'IfName:','1.3.6.1.2.1.31.1.1.1.1', # :sysDescr
+	'IfName:','1.3.6.1.2.1.31.1.1.1.1', # :IfName
 ]
 
 class Router(threading.Thread):
@@ -33,17 +32,16 @@ class Router(threading.Thread):
             print "Hostname not found"
         print self.ipaddr
         self.ping(self.ipaddr)
-        #self.snmpwalk(self.hostname, self.oid)
+        self.snmpwalk(self.ipaddr, self.oid)
+        logging.debug("exiting")
     def ping(self,ipaddr):
         itup = subprocess.Popen(['ping', '-i', '0.2', '-w', '2', '-c', '5', ipaddr, '-q'], stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE).communicate()
         print itup
-    def snmpwalk(self,node,oid):
-        stup = subprocess.Popen(['snmpwalk', '-Oqv', '-v2c', '-c', 'kN8qpTxH', node, oid], stdout=subprocess.PIPE,
+    def snmpwalk(self,ipaddr,oid):
+        stup = subprocess.Popen(['snmpwalk', '-Oqv', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE).communicate()
         print stup
-    logging.debug("exiting")
-
 
 def parser(lst):
     dict = {}
