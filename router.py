@@ -10,7 +10,7 @@ import time
 import subprocess
 
 asctime = time.asctime()
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s [%(levelname)s] %(threadName)-10s %(message)s') # FIXME revisit formatting %-Ns
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s') # FIXME revisit formatting %-Ns
 
 oidw = [
 	'IfName:','1.3.6.1.2.1.31.1.1.1.1', # :sysDescr
@@ -70,7 +70,7 @@ def main(args):
         print 'Input file (%s) could not be located.' % (inputfile)
         sys.exit(1)
     threads = []
-    logging.debug("Starting sub-threads")
+    logging.debug("Initializing SubThreads")
     for n,node in enumerate(inventory):
         t = Router(n+1,node,inventory[node])
         #threads.append(t)
