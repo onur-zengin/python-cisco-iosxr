@@ -7,28 +7,37 @@ import socket
 import threading
 import logging
 import time
+import subprocess
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='[%(levelname)s] (%(threadName)-10s) %(message)s',
-                    )
+asctime = time.asctime()
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s [%(levelname)s] %(threadName)-10s %(message)s') # FIXME revisit formatting %-Ns
 
-#class Router(object):
- #   def __init__(self, name):
-  #      self.name = name
-        #self.ipaddr = socket.gethostbyname(name)
-
+oidw = [
+	'IfName:','1.3.6.1.2.1.31.1.1.1.1', # :sysDescr
+]
 
 class Router(threading.Thread):
+    oid = oidw[1]
     def __init__(self, threadID, node, interfaces):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.hostname = node
         self.interfaces = interfaces
     def run(self):
         logging.debug("starting")
+        self.ipaddr = ''
         print self.hostname
         print self.interfaces
-
-
+        try:
+            self.ipaddr = socket.gethostbyname(self.hostname)
+        except socket.gaierror:
+            print "Hostname not found"
+        print self.ipaddr
+        #self.snmpwalk(self.hostname, self.oid)
+    def snmpwalk(self,node,oid):
+        stup = subprocess.Popen(['snmpwalk', '-Oqv', '-v2c', '-c', 'kN8qpTxH', node, oid], stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE).communicate()
+        print stup
+        logging.debug("exiting")
 
 
 def parser(lst):
@@ -61,11 +70,13 @@ def main(args):
         print 'Input file (%s) could not be located.' % (inputfile)
         sys.exit(1)
     threads = []
+    logging.debug("Starting sub-threads")
     for n,node in enumerate(inventory):
         t = Router(n+1,node,inventory[node])
-        threads.append(t)
+        #threads.append(t)
         t.start()
-    print threads
+        time.sleep(1)
+    #print threads
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
