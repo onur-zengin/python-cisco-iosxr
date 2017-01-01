@@ -113,14 +113,14 @@ def main(args):
             try:
                 runtime = int(arg)
             except ValueError:
-                print 'The value of repeat (-r) argument must be an integer'
-                sys.exit(1)
+                print 'The value of the repeat (-r) argument must be an integer'
+                sys.exit(2)
         elif opt in ('-f','--frequency'):
             try:
                 frequency = int(arg)
             except ValueError:
-                print 'The value of frequency (-f) argument must be an integer'
-                sys.exit(1)
+                print 'The value of the frequency (-f) argument must be an integer'
+                sys.exit(2)
         else:
             assert False, "unhandled option"
     logging.basicConfig(level=logging.getLevelName(loglevel),
@@ -139,7 +139,7 @@ def main(args):
                 t = Router(n+1,node,inventory[node])
                 #threads.append(t)
                 t.start()
-                time.sleep(1)
+                #time.sleep(1)
             if type(runtime) == int:
                 runtime -= 1
         finally:
