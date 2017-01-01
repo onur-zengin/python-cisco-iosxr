@@ -8,6 +8,7 @@ import logging
 import time
 import subprocess
 import re
+import resource
 
 oidw = [
 	'IfName:','1.3.6.1.2.1.31.1.1.1.1', # :IfName
@@ -28,6 +29,7 @@ class Router(threading.Thread):
             logging.warning("Operation halted: %s" % (str(gaierr)))
             sys.exit(3) #wait for the event
         except:
+            logging.warning("Unexpected error while resolving hostname")
             logging.debug("Unexpected error while resolving hostname: %s" % (str(sys.exc_info()[:2])))
             #raise
             sys.exit(3) #wait for the event
@@ -36,6 +38,7 @@ class Router(threading.Thread):
         if ping[0] == 0:
             self.snmpwalk(self.ipaddr, self.oid)
         else:
+            logging.warning("Unexpected error during ping test")
             logging.debug("Unexpected error during ping test: ### %s ###" % (str(ping[1])))
             sys.exit(3)  # wait for the event
         logging.info("Completed")
@@ -46,6 +49,7 @@ class Router(threading.Thread):
             ptup = subprocess.Popen(['ping', '-i', '0.2', '-w', '2', '-c', '5', ipaddr, '-q'], stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE).communicate()
         except:
+            logging.warning("Unexpected error during ping test")
             logging.debug("Unexpected error - Popen function (ping): %s" % (str(sys.exc_info()[:2])))
         else:
             if ptup[1] == '':
@@ -72,8 +76,9 @@ def parser(lst):
     return dict
 
 def usage(args):
-    print 'USAGE:\n\t%s [-i <filename>] [--input <filename>] [-l <loglevel>] [--logging <loglevel>]' % (args[0])
-    print 'DESCRIPTION:\n\t[-i <filename>], [--input <filename>]' \
+    print 'USAGE:\n\t%s\t[-i <filename>] [--input <filename>] [-l <loglevel>] [--logging <loglevel>]' \
+          '\n\t\t\t[-f <value>] [--frequency <value>] [-r <value>] [--repeat <value>]' % (args[0])
+    print '\nDESCRIPTION:\n\t[-i <filename>], [--input <filename>]' \
           '\n\t\tThe inventory details must be provided in a text file structured in the following format,' \
           'while each node being written on a separate line:' \
           '\n\t\t\t<nodename>:pni,<intname-1>,...,<intname-M>:cdn,<intname-1>,...,<intname-N>' \
@@ -88,13 +93,16 @@ def main(args):
     runtime = 'infinite'
     frequency = 5
     try:
-        options, remainder = getopt.getopt(args, "i:l:r:f:", ["input=", "logging=", "repeat=", "frequency="])
+        options, remainder = getopt.getopt(args, "i:hl:r:f:", ["input=", "help", "logging=", "repeat=", "frequency="])
     except getopt.GetoptError as err:
         print err
         usage(sys.argv)
         sys.exit(2)
     for opt, arg in options:
-        if opt in ('-i','--input'):
+        if opt in ('-h','--help'):
+            usage(sys.argv)
+            sys.exit(2)
+        elif opt in ('-i', '--input'):
             inputfile = arg
         elif opt in ('-l','--logging'):
             if arg in ('INFO','WARNING','DEBUG'):
@@ -102,9 +110,17 @@ def main(args):
             else:
                 loglevel = 'INFO'
         elif opt in ('-r','--repeat'):
-            runtime = int(arg)
+            try:
+                runtime = int(arg)
+            except ValueError:
+                print 'The value of repeat (-r) argument must be an integer'
+                sys.exit(1)
         elif opt in ('-f','--frequency'):
-            frequency = int(arg)
+            try:
+                frequency = int(arg)
+            except ValueError:
+                print 'The value of frequency (-f) argument must be an integer'
+                sys.exit(1)
         else:
             assert False, "unhandled option"
     logging.basicConfig(level=logging.getLevelName(loglevel),
