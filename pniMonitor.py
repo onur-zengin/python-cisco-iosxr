@@ -27,20 +27,19 @@ class Router(threading.Thread):
             self.ipaddr = socket.gethostbyname(self.node)
         except socket.gaierror as gaierr:
             logging.warning("Operation halted: %s" % (str(gaierr)))
-            sys.exit(3) #wait for the event
+            sys.exit(3)
         except:
             logging.warning("Unexpected error while resolving hostname")
             logging.debug("Unexpected error while resolving hostname: %s" % (str(sys.exc_info()[:2])))
-            #raise
-            sys.exit(3) #wait for the event
-        #print "I'm still alive!"
+            sys.exit(3)
         ping = self.ping(self.ipaddr)
         if ping[0] == 0:
+            print 'ping successful'
             self.snmpwalk(self.ipaddr, self.oid)
         else:
             logging.warning("Unexpected error during ping test")
             logging.debug("Unexpected error during ping test: ### %s ###" % (str(ping[1])))
-            sys.exit(3)  # wait for the event
+            sys.exit(3)
         logging.info("Completed")
     def ping(self,ipaddr):
         pingr = 1
