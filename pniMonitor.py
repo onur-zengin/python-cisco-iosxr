@@ -45,8 +45,8 @@ class Router(threading.Thread):
         pingr = 1
         ptup = None
         try:
-            ptup = subprocess.Popen(['ping', '-i', '0.2', '-w', '2', '-c', '5', ipaddr, '-q'], stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE).communicate()
+            ptup = subprocess.Popen(['ping', '-i', '0.2', '-w', '2', '-c', '500', ipaddr, '-q'], stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE).communicate()
         except:
             logging.warning("Unexpected error during ping test")
             logging.debug("Unexpected error - Popen function (ping): %s" % (str(sys.exc_info()[:2])))
@@ -136,9 +136,10 @@ def main(args):
             logging.debug("Initializing subThreads")
             for n,node in enumerate(inventory):
                 t = Router(n+1,node,inventory[node])
-                #threads.append(t)
+                threads.append(t)
                 t.start()
-                #time.sleep(1)
+            for t in threads:
+                t.join()
             if type(runtime) == int:
                 runtime -= 1
         finally:
