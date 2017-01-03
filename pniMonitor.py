@@ -20,7 +20,7 @@ oidd = ['IF-MIB::ifName']
 
 class Router(threading.Thread):
     oid = oidw[1]
-    oidd = oidd[1]
+    oidd = oidd[0]
     def __init__(self, threadID, node, interfaces, dswitch):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
