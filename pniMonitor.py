@@ -9,22 +9,36 @@ import time
 import subprocess
 import re
 import resource
+import os
 
 oidw = [
-	'IfName:','1.3.6.1.2.1.31.1.1.1.1', # :IfName
+    'IF-MIB::ifName', '.1.3.6.1.2.1.31.1.1.1.1',
+    'IP-MIB::ipAddressIfIndex', '.1.3.6.1.2.1.4.34.1.3'
 ]
+
+oidd = ['IF-MIB::ifName']
 
 class Router(threading.Thread):
     oid = oidw[1]
-    def __init__(self, threadID, node, interfaces):
+    oidd = oidd[1]
+    def __init__(self, threadID, node, interfaces, dswitch):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
         self.interfaces = interfaces
+        self.switch = dswitch
     def run(self):
         logging.info("Starting")
-        self.ipaddr = ''
+        self.ipaddr = self.dns(self.node)
+        self.ping(self.ipaddr)
+        if self.switch is True:
+            logging.info("Inventory updates found. Node discovery will be re-run")
+            inv = self.discovery(self.ipaddr, self.oidd)
+            print inv
+        #self.snmpwalk(self.ipaddr, self.oid)
+        logging.info("Completed")
+    def dns(self,node):
         try:
-            self.ipaddr = socket.gethostbyname(self.node)
+            ipaddr = socket.gethostbyname(node)
         except socket.gaierror as gaierr:
             logging.warning("Operation halted: %s" % (str(gaierr)))
             sys.exit(3)
@@ -32,18 +46,8 @@ class Router(threading.Thread):
             logging.warning("Unexpected error while resolving hostname")
             logging.debug("Unexpected error while resolving hostname: %s" % (str(sys.exc_info()[:2])))
             sys.exit(3)
-        ping = self.ping(self.ipaddr)
-        if ping[0] == 0:
-            print 'ping successful'
-            self.snmpwalk(self.ipaddr, self.oid)
-        else:
-            logging.warning("Unexpected error during ping test")
-            logging.debug("Unexpected error during ping test: ### %s ###" % (str(ping[1])))
-            sys.exit(3)
-        logging.info("Completed")
+        return ipaddr
     def ping(self,ipaddr):
-        pingr = 1
-        ptup = None
         try:
             ptup = subprocess.Popen(['ping', '-i', '0.2', '-w', '2', '-c', '500', ipaddr, '-q'], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE).communicate()
@@ -53,18 +57,48 @@ class Router(threading.Thread):
         else:
             if ptup[1] == '':
                 n = re.search(r'(\d+)\%\spacket loss', ptup[0])
-                if n != None:
+                if n is not None:
                     if int(n.group(1)) == 0:
                         pingr = 0
                     elif 0 < int(n.group(1)) < 100:
                         logging.warning("Operation halted. Packet loss detected")
                     elif int(n.group(1)) == 100:
                         logging.warning("Operation halted. Node unreachable")
-        return pingr, ptup
-    def snmpwalk(self,ipaddr,oid):
-        stup = subprocess.Popen(['snmpwalk', '-Oqv', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
+                    else:
+                        logging.warning("Unexpected error during ping test")
+                        logging.debug("Unexpected regex error during ping test: ### %s ###" % (str(n)))
+                        sys.exit(3)
+                else:
+                    logging.warning("Unexpected error during ping test")
+                    logging.debug("Unexpected regex error during ping test: ### %s ###" % (str(ptup[0])))
+                    sys.exit(3)
+            else:
+                logging.warning("Unexpected error during ping test")
+                logging.debug("Unexpected error during ping test: ### %s ###" % (str(ptup)))
+                sys.exit(3)
+        return pingr
+    def discovery(self,ipaddr,oid):
+        try:
+            stup = subprocess.Popen(['snmpwalk', '-Oqv', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE).communicate()
-        print stup
+        except:
+            logging.warning("Unexpected error during snmpwalk")
+            logging.debug("Unexpected error - Popen function (snmpwalk): %s" % (str(sys.exc_info()[:2])))
+            sys.exit(3)
+        return stup
+    def snmpwalk(self,ipaddr,oid):
+        snmpwr = 1
+        stup = None
+        try:
+            stup = subprocess.Popen(['snmpwalk', '-Oqv', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE).communicate()
+        except:
+            logging.warning("Unexpected error during snmpwalk")
+            logging.debug("Unexpected error - Popen function (snmpwalk): %s" % (str(sys.exc_info()[:2])))
+        else:
+            print stup
+        return snmpwr, stup
+
 
 def parser(lst):
     dict = {}
@@ -73,6 +107,7 @@ def parser(lst):
         for i in range(len(node))[1:]:
             dict[node[0]][node[i].split(',')[0]] = [int for int in node[i].split(',')[1:]]
     return dict
+
 
 def usage(args):
     print 'USAGE:\n\t%s\t[-i <filename>] [--input <filename>] [-l <loglevel>] [--logging <loglevel>]' \
@@ -85,6 +120,7 @@ def usage(args):
           '\n\t[-l <loglevel>], [--logging <loglevel>]' \
           '\n\t\tThe loglevel must be specified as one of INFO, WARNING, DEBUG in capital letters. ' \
           'If none specified, the program will run with default level INFO.'
+
 
 def main(args):
     asctime = time.asctime()
@@ -124,22 +160,31 @@ def main(args):
             assert False, "unhandled option"
     logging.basicConfig(level=logging.getLevelName(loglevel),
                         format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')  # FIXME revisit formatting %-Ns
+    lastChanged = ""
     while True:
         try:
             with open(inputfile) as sf:
                 inventory = parser([n.strip('\n') for n in sf.readlines()])
-        except IOError:
-            print 'Input file (%s) could not be located.' % (inputfile)
+            if lastChanged != os.stat(inputfile).st_mtime:
+                dswitch = True
+            else:
+                dswitch = False
+        except IOError as ioerr:
+            print ioerr
+            sys.exit(1)
+        except OSError as oserr:
+            print oserr
             sys.exit(1)
         else:
             threads = []
             logging.debug("Initializing subThreads")
             for n,node in enumerate(inventory):
-                t = Router(n+1,node,inventory[node])
+                t = Router(n+1, node, inventory[node], dswitch)
                 threads.append(t)
                 t.start()
             for t in threads:
                 t.join()
+            lastChanged = os.stat(inputfile).st_mtime
             if type(runtime) == int:
                 runtime -= 1
         finally:
