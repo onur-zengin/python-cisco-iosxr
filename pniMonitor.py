@@ -33,7 +33,7 @@ class Router(threading.Thread):
         logging.info("Starting")
         self.ipaddr = self.dns(self.node)
         self.ping(self.ipaddr)
-        if self.switch is True:
+        if self.switch == True:
             logging.info("New inventory file detected. Initializing node discovery")
             self.discovery(self.ipaddr)
             #for interface in self.interfaces:
@@ -89,10 +89,6 @@ class Router(threading.Thread):
         return pingr
     def discovery(self, ipaddr):
         iflist, iplist = tuple(self.snmpw(self.ipaddr, oid) for oid in self.oids[:2])
-        #for oid in oids:
-            #dtup += (stup[0].split('\n'),)
-        #iflist = self.snmpw(ipaddr, self.oids[0])
-        #iplist = self.snmpw(ipaddr, self.oids[1])
         print iflist
         print iplist
     def snmpw(self, ipaddr, oid):
