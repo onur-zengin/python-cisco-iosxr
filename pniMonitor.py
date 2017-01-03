@@ -16,7 +16,9 @@ oidw = [
     'IP-MIB::ipAddressIfIndex', '.1.3.6.1.2.1.4.34.1.3'
 ]
 
-oidlist = ['IF-MIB::ifName', 'IP-MIB::ipAddressIfIndex']
+oidlist = ['IF-MIB::ifName',
+           'IP-MIB::ipAddressIfIndex'
+           ]
 
 class Router(threading.Thread):
     oids = oidlist
@@ -33,10 +35,10 @@ class Router(threading.Thread):
         self.ping(self.ipaddr)
         if self.switch is True:
             logging.info("New inventory file detected. Initializing node discovery")
-            iflist, iplist = self.discovery(self.ipaddr, self.oids)
-            for interface in self.interfaces:
-                for i in iflist:
-                    print i.split(' ')
+            self.discovery(self.ipaddr)
+            #for interface in self.interfaces:
+             #   for i in iflist:
+              #      print i.split(' ')
                     #if interface in i:
                      #   print i
         #self.snmpwalk(self.ipaddr, self.oid)
@@ -84,19 +86,23 @@ class Router(threading.Thread):
                 logging.debug("Unexpected error during ping test: ### %s ###" % (str(ptup)))
                 sys.exit(3)
         return pingr
-    def discovery(self, ipaddr, oids):
-        dtup = ()
-        for oid in oids:
-            try:
-                stup = subprocess.Popen(['snmpwalk', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
+    def discovery(self, ipaddr):
+        #iflist, iplist = self.snmpw(self.ipaddr, self.oids[:2])
+        #for oid in oids:
+            #dtup += (stup[0].split('\n'),)
+        iflist = self.snmpw(ipaddr, self.oids[0])
+        iplist = self.snmpw(ipaddr, self.oids[1])
+        print iflist
+        print iplist
+    def snmpw(self, ipaddr, oid):
+        try:
+            stup = subprocess.Popen(['snmpwalk', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE).communicate()
-            except:
-                logging.warning("Unexpected error during snmpwalk")
-                logging.debug("Unexpected error - Popen function (snmpwalk): %s" % (str(sys.exc_info()[:2])))
-                sys.exit(3)
-            else:
-                dtup += (stup[0].split('\n'),)
-        return dtup
+        except:
+            logging.warning("Unexpected error during snmpwalk")
+            logging.debug("Unexpected error - Popen function (snmpwalk): %s" % (str(sys.exc_info()[:2])))
+            sys.exit(3)
+        return stup
     def snmpwalk(self,ipaddr,oid):
         snmpwr = 1
         stup = None
