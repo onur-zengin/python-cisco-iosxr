@@ -19,7 +19,7 @@ oidw = [
 oidlist = ['IF-MIB::ifName', 'IP-MIB::ipAddressIfIndex']
 
 class Router(threading.Thread):
-    #oidlist = oidd
+    oids = oidlist
     def __init__(self, threadID, node, interfaces, dswitch):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
@@ -31,7 +31,7 @@ class Router(threading.Thread):
         self.ping(self.ipaddr)
         if self.switch is True:
             logging.info("New inventory file detected. Initializing node discovery")
-            iflist, iplist = self.discovery(self.ipaddr, self.oidlist)
+            iflist, iplist = self.discovery(self.ipaddr, self.oids)
             print iflist
             print iplist
         #self.snmpwalk(self.ipaddr, self.oid)
@@ -79,9 +79,9 @@ class Router(threading.Thread):
                 logging.debug("Unexpected error during ping test: ### %s ###" % (str(ptup)))
                 sys.exit(3)
         return pingr
-    def discovery(self,ipaddr,oidlist):
+    def discovery(self, ipaddr, oids):
         dtup = ()
-        for oid in oidlist:
+        for oid in oids:
             try:
                 stup = subprocess.Popen(['snmpwalk', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE).communicate()
