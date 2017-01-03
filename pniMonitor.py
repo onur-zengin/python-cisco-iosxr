@@ -36,8 +36,9 @@ class Router(threading.Thread):
             iflist, iplist = self.discovery(self.ipaddr, self.oids)
             for interface in self.interfaces:
                 for i in iflist:
-                    if interface in i:
-                        print i
+                    print i.split('')
+                    #if interface in i:
+                     #   print i
         #self.snmpwalk(self.ipaddr, self.oid)
         logging.info("Completed")
     def dns(self,node):
