@@ -33,14 +33,10 @@ class Router(threading.Thread):
         logging.info("Starting")
         self.ipaddr = self.dns(self.node)
         self.ping(self.ipaddr)
-        if self.switch == True:
+        print "ping completed"
+        if self.switch is True:
             logging.info("New inventory file detected. Initializing node discovery")
             self.discovery(self.ipaddr)
-            #for interface in self.interfaces:
-             #   for i in iflist:
-              #      print i.split(' ')
-                    #if interface in i:
-                     #   print i
         #self.snmpwalk(self.ipaddr, self.oid)
         logging.info("Completed")
     def dns(self,node):
@@ -89,8 +85,12 @@ class Router(threading.Thread):
         return pingr
     def discovery(self, ipaddr):
         iflist, iplist = tuple(self.snmpw(self.ipaddr, oid) for oid in self.oids[:2])
-        print iflist
-        print iplist
+        niflist = [i.split(' ') for i in iflist]
+        niplist = [i.split(' ') for i in iplist]
+        for interface in self.interfaces:
+            for i in niflist:
+                if interface == i[3]:
+                    print interface, i[0]
     def snmpw(self, ipaddr, oid):
         try:
             stup = subprocess.Popen(['snmpwalk', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
