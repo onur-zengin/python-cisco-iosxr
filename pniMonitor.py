@@ -92,7 +92,7 @@ class Router(threading.Thread):
                 logging.debug("Unexpected error - Popen function (snmpwalk): %s" % (str(sys.exc_info()[:2])))
                 sys.exit(3)
             else:
-                dtup += stup[0]
+                dtup += (stup[0],)
         return dtup
         #return stup[0].split('\n')
     def snmpwalk(self,ipaddr,oid):
