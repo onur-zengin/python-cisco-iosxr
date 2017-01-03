@@ -31,9 +31,10 @@ class Router(threading.Thread):
         self.ipaddr = self.dns(self.node)
         self.ping(self.ipaddr)
         if self.switch is True:
-            logging.info("Inventory updates found. Node discovery will be re-run")
+            logging.info("New inventory file detected. Initializing node discovery")
             inv = self.discovery(self.ipaddr, self.oidd)
-            print inv
+            for i in inv:
+                print i
         #self.snmpwalk(self.ipaddr, self.oid)
         logging.info("Completed")
     def dns(self,node):
@@ -79,13 +80,13 @@ class Router(threading.Thread):
         return pingr
     def discovery(self,ipaddr,oid):
         try:
-            stup = subprocess.Popen(['snmpwalk', '-Oqv', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
+            stup = subprocess.Popen(['snmpwalk', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE).communicate()
         except:
             logging.warning("Unexpected error during snmpwalk")
             logging.debug("Unexpected error - Popen function (snmpwalk): %s" % (str(sys.exc_info()[:2])))
             sys.exit(3)
-        return stup
+        return stup[0]
     def snmpwalk(self,ipaddr,oid):
         snmpwr = 1
         stup = None
