@@ -32,7 +32,7 @@ class Router(threading.Thread):
         self.ping(self.ipaddr)
         if self.switch is True:
             logging.info("New inventory file detected. Initializing node discovery")
-            inv = self.discovery(self.ipaddr, self.oidd)
+            inv = [n.strip('\n') for n in self.discovery(self.ipaddr, self.oidd)]
             print inv
         #self.snmpwalk(self.ipaddr, self.oid)
         logging.info("Completed")
