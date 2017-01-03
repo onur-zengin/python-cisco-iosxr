@@ -61,6 +61,7 @@ class Router(threading.Thread):
         except:
             logging.warning("Unexpected error during ping test")
             logging.debug("Unexpected error - Popen function (ping): %s" % (str(sys.exc_info()[:2])))
+            sys.exit(3)
         else:
             if ptup[1] == '':
                 n = re.search(r'(\d+)\%\spacket loss', ptup[0])
@@ -102,7 +103,15 @@ class Router(threading.Thread):
             logging.warning("Unexpected error during snmpwalk")
             logging.debug("Unexpected error - Popen function (snmpwalk): %s" % (str(sys.exc_info()[:2])))
             sys.exit(3)
-        return stup
+        else:
+            if stup[1] == '':
+                snmpwr = stup[0]
+                #snmpwr = stup[0].strip('\n')
+            else:
+                logging.warning("Unexpected error during snmpwalk")
+                logging.debug("Unexpected error during snmpwalk: ### %s ###" % (str(stup)))
+                sys.exit(3)
+        return snmpwr
     def snmpwalk(self,ipaddr,oid):
         snmpwr = 1
         stup = None
