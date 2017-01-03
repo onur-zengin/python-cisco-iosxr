@@ -32,9 +32,10 @@ class Router(threading.Thread):
         self.ping(self.ipaddr)
         if self.switch is True:
             logging.info("New inventory file detected. Initializing node discovery")
-            #iflist, iplist = self.discovery(self.ipaddr, self.oidlist)
-            tuple = self.discovery(self.ipaddr, self.oidlist)
-            print tuple
+            iflist, iplist = self.discovery(self.ipaddr, self.oidlist)
+            #tuple = self.discovery(self.ipaddr, self.oidlist)
+            print iflist
+            print iplist
         #self.snmpwalk(self.ipaddr, self.oid)
         logging.info("Completed")
     def dns(self,node):
