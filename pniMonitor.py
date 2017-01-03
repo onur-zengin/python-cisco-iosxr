@@ -16,11 +16,11 @@ oidw = [
     'IP-MIB::ipAddressIfIndex', '.1.3.6.1.2.1.4.34.1.3'
 ]
 
-oidd = ['IF-MIB::ifName']
+oidd = ['IF-MIB::ifName', 'IP-MIB::ipAddressIfIndex']
 
 class Router(threading.Thread):
     oid = oidw[1]
-    oidd = oidd[0]
+    oidlist = oidd
     def __init__(self, threadID, node, interfaces, dswitch):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
@@ -32,10 +32,9 @@ class Router(threading.Thread):
         self.ping(self.ipaddr)
         if self.switch is True:
             logging.info("New inventory file detected. Initializing node discovery")
-            inv = self.discovery(self.ipaddr, self.oidd)
-            print inv
-            print type(inv)
-            print len(inv)
+            iflist, iplist = self.discovery(self.ipaddr, self.oidlist)
+            print iflist
+            print iplist
         #self.snmpwalk(self.ipaddr, self.oid)
         logging.info("Completed")
     def dns(self,node):
@@ -81,15 +80,17 @@ class Router(threading.Thread):
                 logging.debug("Unexpected error during ping test: ### %s ###" % (str(ptup)))
                 sys.exit(3)
         return pingr
-    def discovery(self,ipaddr,oid):
-        try:
-            stup = subprocess.Popen(['snmpwalk', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
+    def discovery(self,ipaddr,oidlist):
+        for oid in oidlist:
+            try:
+                stup = subprocess.Popen(['snmpwalk', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE).communicate()
-        except:
-            logging.warning("Unexpected error during snmpwalk")
-            logging.debug("Unexpected error - Popen function (snmpwalk): %s" % (str(sys.exc_info()[:2])))
-            sys.exit(3)
-        return stup[0].split('\n')
+            except:
+                logging.warning("Unexpected error during snmpwalk")
+                logging.debug("Unexpected error - Popen function (snmpwalk): %s" % (str(sys.exc_info()[:2])))
+                sys.exit(3)
+        return stup
+        #return stup[0].split('\n')
     def snmpwalk(self,ipaddr,oid):
         snmpwr = 1
         stup = None
