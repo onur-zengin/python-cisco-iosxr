@@ -23,7 +23,9 @@ class Router(threading.Thread):
     def __init__(self, threadID, node, interfaces, dswitch):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
-        self.interfaces = interfaces
+        self.pni_interfaces = interfaces['pni']
+        self.cdn_interfaces = interfaces['cdn']
+        self.interfaces = self.pni_interfaces + self.cdn_interfaces
         self.switch = dswitch
     def run(self):
         logging.info("Starting")
@@ -32,8 +34,11 @@ class Router(threading.Thread):
         if self.switch is True:
             logging.info("New inventory file detected. Initializing node discovery")
             iflist, iplist = self.discovery(self.ipaddr, self.oids)
-            print iflist
-            print iplist
+            for interface in self.interfaces:
+                for i in iflist:
+                    if interface in i:
+                        ifindex = i
+                print ifindex
         #self.snmpwalk(self.ipaddr, self.oid)
         logging.info("Completed")
     def dns(self,node):
