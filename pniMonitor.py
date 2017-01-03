@@ -64,8 +64,10 @@ class Router(threading.Thread):
                         pingr = 0
                     elif 0 < int(n.group(1)) < 100:
                         logging.warning("Operation halted. Packet loss detected")
+                        sys.exit(3)
                     elif int(n.group(1)) == 100:
                         logging.warning("Operation halted. Node unreachable")
+                        #sys.exit(3)
                     else:
                         logging.warning("Unexpected error during ping test")
                         logging.debug("Unexpected regex error during ping test: ### %s ###" % (str(n)))
@@ -87,7 +89,7 @@ class Router(threading.Thread):
             logging.warning("Unexpected error during snmpwalk")
             logging.debug("Unexpected error - Popen function (snmpwalk): %s" % (str(sys.exc_info()[:2])))
             sys.exit(3)
-        return stup[0]
+        return stup[0].split('\n')
     def snmpwalk(self,ipaddr,oid):
         snmpwr = 1
         stup = None
