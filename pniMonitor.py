@@ -16,11 +16,10 @@ oidw = [
     'IP-MIB::ipAddressIfIndex', '.1.3.6.1.2.1.4.34.1.3'
 ]
 
-oidd = ['IF-MIB::ifName', 'IP-MIB::ipAddressIfIndex']
+oidlist = ['IF-MIB::ifName', 'IP-MIB::ipAddressIfIndex']
 
 class Router(threading.Thread):
-    oid = oidw[1]
-    oidlist = oidd
+    #oidlist = oidd
     def __init__(self, threadID, node, interfaces, dswitch):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
@@ -33,7 +32,6 @@ class Router(threading.Thread):
         if self.switch is True:
             logging.info("New inventory file detected. Initializing node discovery")
             iflist, iplist = self.discovery(self.ipaddr, self.oidlist)
-            #tuple = self.discovery(self.ipaddr, self.oidlist)
             print iflist
             print iplist
         #self.snmpwalk(self.ipaddr, self.oid)
@@ -92,9 +90,8 @@ class Router(threading.Thread):
                 logging.debug("Unexpected error - Popen function (snmpwalk): %s" % (str(sys.exc_info()[:2])))
                 sys.exit(3)
             else:
-                dtup += (stup[0],)
+                dtup += (stup[0].split('\n'),)
         return dtup
-        #return stup[0].split('\n')
     def snmpwalk(self,ipaddr,oid):
         snmpwr = 1
         stup = None
