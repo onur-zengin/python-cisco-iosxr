@@ -81,10 +81,11 @@ class Router(threading.Thread):
                 sys.exit(3)
         return pingr
     def discovery(self,ipaddr,oidlist):
+        stup = ()
         for oid in oidlist:
             try:
-                stup = subprocess.Popen(['snmpwalk', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE).communicate()
+                stup.append(subprocess.Popen(['snmpwalk', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE).communicate())
             except:
                 logging.warning("Unexpected error during snmpwalk")
                 logging.debug("Unexpected error - Popen function (snmpwalk): %s" % (str(sys.exc_info()[:2])))
