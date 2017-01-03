@@ -93,7 +93,7 @@ class Router(threading.Thread):
             #dtup += (stup[0].split('\n'),)
         iflist = self.snmpw(ipaddr, self.oids[0])
         iplist = self.snmpw(ipaddr, self.oids[1])
-        print iflist
+        print iflist.split('\n')
         print iplist
     def snmpw(self, ipaddr, oid):
         try:
@@ -105,8 +105,7 @@ class Router(threading.Thread):
             sys.exit(3)
         else:
             if stup[1] == '':
-                snmpwr = stup[0]
-                #snmpwr = stup[0].strip('\n')
+                snmpwr = stup[0].strip('\n').split('\n')
             else:
                 logging.warning("Unexpected error during snmpwalk")
                 logging.debug("Unexpected error during snmpwalk: ### %s ###" % (str(stup)))
