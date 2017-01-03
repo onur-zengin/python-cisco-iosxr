@@ -37,8 +37,7 @@ class Router(threading.Thread):
             for interface in self.interfaces:
                 for i in iflist:
                     if interface in i:
-                        ifindex = i
-                print ifindex
+                        print i
         #self.snmpwalk(self.ipaddr, self.oid)
         logging.info("Completed")
     def dns(self,node):
