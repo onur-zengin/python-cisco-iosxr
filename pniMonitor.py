@@ -93,7 +93,7 @@ class Router(threading.Thread):
             #dtup += (stup[0].split('\n'),)
         iflist = self.snmpw(ipaddr, self.oids[0])
         iplist = self.snmpw(ipaddr, self.oids[1])
-        print iflist.split('\n')
+        print iflist
         print iplist
     def snmpw(self, ipaddr, oid):
         try:
