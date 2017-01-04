@@ -94,7 +94,7 @@ class Router(threading.Thread):
         for interface in intdict:
             for i in siplist:
                 if intdict[interface]['ifIndex'] == i[3]:
-                    print i[0].split('.')[2]
+                    print i[0].split('"')
                     #intdict[interface] +=
         # once done, write the results to a file
     def snmpw(self, ipaddr, oid):
