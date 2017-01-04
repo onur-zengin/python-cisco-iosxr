@@ -92,7 +92,10 @@ class Router(threading.Thread):
                 if interface == i[3]:
                     intdict[interface] = {'ifIndex':i[0].split('.')[1]}
         for interface in intdict:
-            print interface
+            for i in siplist:
+                if intdict[interface]['ifIndex'] == i[3]:
+                    print i[0].split('.')[2]
+                    #intdict[interface] +=
         # once done, write the results to a file
     def snmpw(self, ipaddr, oid):
         try:
