@@ -95,9 +95,10 @@ class Router(threading.Thread):
         for interface in disc:
             for i in iplist:
                 if disc[interface]['ifIndex'] == i[3]:
-                    print i[0].split('"')[0].split('.')[1]
-                    print interface, i[0].split('"')[1]
-                    #intdict[interface] +=
+                    type = i[0].split('"')[0].split('.')[1]
+                    if type == 'ipv4' or type == 'ipv6':
+                        disc[interface][type] = i[0].split('"')[1]
+        print disc
         # once done, write the results to a file
     def snmpw(self, ipaddr, oid):
         try:
