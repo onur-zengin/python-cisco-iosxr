@@ -84,7 +84,7 @@ class Router(threading.Thread):
         return pingr
     def discovery(self, ipaddr):
         #iflist, iplist = tuple(self.snmpw(self.ipaddr, oid) for oid in self.oids[:2])
-        lst = [self.snmpw(self.ipaddr, oid) for oid in self.oids[:2]]
+        lst = [item.split(' ') for item in [slst for slst in [self.snmpw(self.ipaddr, oid) for oid in self.oids[:2]]]]
         print len(lst)
         print lst
         #print tuple(i.split(' ') for i in tuple(self.snmpw(self.ipaddr, oid) for oid in self.oids[:2]))
