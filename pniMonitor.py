@@ -17,7 +17,8 @@ oidw = [
 ]
 
 oidlist = ['IF-MIB::ifName',
-           'IP-MIB::ipAddressIfIndex'
+           'IP-MIB::ipAddressIfIndex',
+           '.1.3.6.1.2.1.15.3.1.5'
            ]
 
 class Router(threading.Thread):
@@ -83,10 +84,10 @@ class Router(threading.Thread):
                 sys.exit(3)
         return pingr
     def discovery(self, ipaddr):
-        #iflist, iplist = tuple(self.snmpw(self.ipaddr, oid) for oid in self.oids[:2])
-        dtup = tuple(self.snmpw(self.ipaddr, oid) for oid in self.oids[:2])
-        iflist = [i.split(' ') for i in dtup[0]]
-        iplist = [i.split(' ') for i in dtup[1]]
+        dlist = map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:2])
+        #dtup = tuple(self.snmpw(self.ipaddr, oid) for oid in self.oids[:2])
+        iflist = [i.split(' ') for i in dlist[0]]
+        iplist = [i.split(' ') for i in dlist[1]]
         disc = {}
         for interface in self.interfaces:
             for i in iflist:
