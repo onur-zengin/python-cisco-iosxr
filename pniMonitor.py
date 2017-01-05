@@ -84,10 +84,12 @@ class Router(threading.Thread):
                 sys.exit(3)
         return pingr
     def discovery(self, ipaddr):
-        dlist = map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:2])
-        #dtup = tuple(self.snmpw(self.ipaddr, oid) for oid in self.oids[:2])
+        dlist = map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3])
         iflist = [i.split(' ') for i in dlist[0]]
         iplist = [i.split(' ') for i in dlist[1]]
+        tup = tuple(i.split(' ') for i in [dlist[n] for n in range(len(dlist))])
+        print tup
+        #localaddr = [i.split(' ') for i in dlist[2]]
         disc = {}
         for interface in self.interfaces:
             for i in iflist:
