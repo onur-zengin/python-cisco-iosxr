@@ -11,14 +11,10 @@ import re
 import resource
 import os
 
-oidw = [
-    'IF-MIB::ifName', '.1.3.6.1.2.1.31.1.1.1.1',
-    'IP-MIB::ipAddressIfIndex', '.1.3.6.1.2.1.4.34.1.3'
-]
-
-oidlist = ['IF-MIB::ifName',
-           'IP-MIB::ipAddressIfIndex',
-           '.1.3.6.1.2.1.15.3.1.5'
+oidlist = ['.1.3.6.1.2.1.31.1.1.1.1', #IF-MIB::ifName
+           '.1.3.6.1.2.1.4.34.1.3', #IP-MIB::ipAddressIfIndex
+           '.1.3.6.1.4.1.9.9.187.1.2.5.1.6', # cbgpPeer2LocalAddr
+           '.1.3.6.1.4.1.9.9.187.1.2.5.1.11' # cbgpPeer2RemoteAs
            ]
 
 class Router(threading.Thread):
@@ -84,20 +80,15 @@ class Router(threading.Thread):
                 sys.exit(3)
         return pingr
     def discovery(self, ipaddr):
-        dlist = map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3])
-        print dlist
-        iflist = [i.split(' ') for i in dlist[0]]
-        iplist = [i.split(' ') for i in dlist[1]]
-        tup = tuple(i.split(' ') for i in [dlist[n] for n in range(len(dlist))])
-        print tup
-        #localaddr = [i.split(' ') for i in dlist[2]]
+        #dlist = map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3])
+        ifTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3]))
         disc = {}
         for interface in self.interfaces:
-            for i in iflist:
+            for i in ifTable:
                 if interface == i[3]:
                     disc[interface] = {'ifIndex':i[0].split('.')[1]}
         for interface in disc:
-            for i in iplist:
+            for i in ipTable:
                 if disc[interface]['ifIndex'] == i[3]:
                     type = i[0].split('"')[0].split('.')[1]
                     if type == 'ipv4' or type == 'ipv6':
