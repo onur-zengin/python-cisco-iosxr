@@ -83,10 +83,14 @@ class Router(threading.Thread):
                 sys.exit(3)
         return pingr
     def discovery(self, ipaddr):
-        iflist, iplist = tuple(self.snmpw(self.ipaddr, oid) for oid in self.oids[:2])
-        siflist = [i.split(' ') for i in iflist]
-        siplist = [i.split(' ') for i in iplist]
+        # iflist, iplist = tuple(self.snmpw(self.ipaddr, oid) for oid in self.oids[:2])
+        print [i.split(' ') for i in tuple(self.snmpw(self.ipaddr, oid) for oid in self.oids[:2])]
+        #list = [self.snmpw(self.ipaddr, oid) for oid in self.oids[:2]]
+        #print list
+        #siflist = [i.split(' ') for i in iflist]
+        #siplist = [i.split(' ') for i in iplist]
         intdict = {}
+        '''
         for interface in self.interfaces:
             for i in siflist:
                 if interface == i[3]:
@@ -97,6 +101,7 @@ class Router(threading.Thread):
                     print interface, i[0].split('"')[1]
                     #intdict[interface] +=
         # once done, write the results to a file
+        '''
     def snmpw(self, ipaddr, oid):
         try:
             stup = subprocess.Popen(['snmpwalk', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
