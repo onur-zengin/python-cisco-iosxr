@@ -95,7 +95,7 @@ class Router(threading.Thread):
         for interface in disc:
             for i in iplist:
                 if disc[interface]['ifIndex'] == i[3]:
-                    print i[0].split('"')[0]
+                    print i[0].split('"')[0].split('.')[1]
                     print interface, i[0].split('"')[1]
                     #intdict[interface] +=
         # once done, write the results to a file
