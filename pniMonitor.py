@@ -85,24 +85,20 @@ class Router(threading.Thread):
     def discovery(self, ipaddr):
         #iflist, iplist = tuple(self.snmpw(self.ipaddr, oid) for oid in self.oids[:2])
         dtup = tuple(self.snmpw(self.ipaddr, oid) for oid in self.oids[:2])
-        iflist, iplist = map(lambda i: i.split(' '), dtup)
-        print iflist
-        print iplist
-        #siflist = [i.split(' ') for i in iflist]
-        #siplist = [i.split(' ') for i in iplist]
-        '''
-        intdict = {}
+        iflist = [i.split(' ') for i in dtup[0]]
+        iplist = [i.split(' ') for i in dtup[1]]
+        disc = {}
         for interface in self.interfaces:
-            for i in siflist:
+            for i in iflist:
                 if interface == i[3]:
-                    intdict[interface] = {'ifIndex':i[0].split('.')[1]}
-        for interface in intdict:
-            for i in siplist:
-                if intdict[interface]['ifIndex'] == i[3]:
+                    disc[interface] = {'ifIndex':i[0].split('.')[1]}
+        for interface in disc:
+            for i in iplist:
+                if disc[interface]['ifIndex'] == i[3]:
+                    print i
                     print interface, i[0].split('"')[1]
                     #intdict[interface] +=
         # once done, write the results to a file
-        '''
     def snmpw(self, ipaddr, oid):
         try:
             stup = subprocess.Popen(['snmpwalk', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
