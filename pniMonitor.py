@@ -82,7 +82,6 @@ class Router(threading.Thread):
     def discovery(self, ipaddr):
         #dlist = map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3])
         ifTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3]))
-        print peerTable
         disc = {}
         for interface in self.interfaces:
             for i in ifTable:
