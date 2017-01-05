@@ -82,17 +82,21 @@ class Router(threading.Thread):
     def discovery(self, ipaddr):
         #dlist = map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3])
         ifTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3]))
+        print peerTable
         disc = {}
         for interface in self.interfaces:
             for i in ifTable:
                 if interface == i[3]:
                     disc[interface] = {'ifIndex':i[0].split('.')[1]}
-        for interface in disc:
+        for interface in self.pni_interfaces:
             for i in ipTable:
                 if disc[interface]['ifIndex'] == i[3]:
                     type = i[0].split('"')[0].split('.')[1]
                     if type == 'ipv4' or type == 'ipv6':
-                        disc[interface][type] = i[0].split('"')[1]
+                        if not disc[interface].has_key(type):
+                            disc[interface][type] = [i[0].split('"')[1]]
+                        else:
+                            disc[interface][type] += [i[0].split('"')[1]]
         print disc
         # once done, write the results to a file
     def snmpw(self, ipaddr, oid):
