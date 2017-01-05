@@ -92,11 +92,32 @@ class Router(threading.Thread):
                 if disc[interface]['ifIndex'] == i[3]:
                     type = i[0].split('"')[0].split('.')[1]
                     if type == 'ipv4' or type == 'ipv6':
-                        if not disc[interface].has_key(type):
-                            disc[interface][type] = [i[0].split('"')[1]]
+                        if not disc[interface].has_key('local_' + type):
+                            disc[interface]['local_' + type] = [i[0].split('"')[1]]
                         else:
-                            disc[interface][type] += [i[0].split('"')[1]]
-        print disc
+                            disc[interface]['local_' + type] += [i[0].split('"')[1]]
+        for interface in self.pni_interfaces:
+            for i in peerTable:
+                if len(i) == 8:
+                    locaddr = ('.').join([str(int(i[n], 16)) for n in range(3, 7)])
+                    if disc[interface].has_key('local_ipv4'):
+                        if locaddr in disc[interface]['local_ipv4']:
+                            peeraddr = ('.').join(i[0].split('.')[-4:])
+                            if not disc[interface].has_key('peer_ipv4'):
+                                disc[interface]['peer_ipv4'] = [peeraddr]
+                            else:
+                                disc[interface]['peer_ipv4'] += [peeraddr]
+                elif len(i) == 20:
+                    locaddr = (':').join([str(i[n]) for n in range(3, 19)])
+                    if disc[interface].has_key('local_ipv6'):
+                        if locaddr in disc[interface]['local_ipv6']:
+                            peeraddr = (':').join([format(int(n), '02x') for n in i[0].split('.')[-16:]])
+                            if not disc[interface].has_key('peer_ipv6'):
+                                disc[interface]['peer_ipv6'] = [peeraddr]
+                            else:
+                                disc[interface]['peer_ipv6'] += [peeraddr]
+        for i in disc:
+            print i, disc[i]
         # once done, write the results to a file
     def snmpw(self, ipaddr, oid):
         try:
