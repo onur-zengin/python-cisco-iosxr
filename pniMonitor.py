@@ -85,6 +85,7 @@ class Router(threading.Thread):
     def discovery(self, ipaddr):
         # iflist, iplist = tuple(self.snmpw(self.ipaddr, oid) for oid in self.oids[:2])
         print [i.split(' ') for i in tuple(self.snmpw(self.ipaddr, oid) for oid in self.oids[:2])]
+        print tuple(i.split(' ') for i in tuple(self.snmpw(self.ipaddr, oid) for oid in self.oids[:2]))
         #list = [self.snmpw(self.ipaddr, oid) for oid in self.oids[:2]]
         #print list
         #siflist = [i.split(' ') for i in iflist]
