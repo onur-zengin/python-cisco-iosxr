@@ -35,7 +35,7 @@ class Router(threading.Thread):
             disc = self.discovery(self.ipaddr)
         else:
             try:
-                with open('do_not_modify_'.upper() + self.node + '.desc') as tf:
+                with open('do_not_modify_'.upper() + self.node + '.dsc') as tf:
                     disc = eval(tf.read())
             except IOError:
                 logging.info("Discovery files could not be located. Initializing node discovery")
@@ -88,6 +88,7 @@ class Router(threading.Thread):
                 sys.exit(3)
         return pingr
     def discovery(self, ipaddr):
+        #os.remove("*.dsc")
         ifTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
                                             map(lambda oid: self.snmpw(self.ipaddr, oid, quiet='off'), self.oids[:3]))
         disc = {}
@@ -124,7 +125,7 @@ class Router(threading.Thread):
                                 disc[interface]['peer_ipv6'] = [peeraddr]
                             else:
                                 disc[interface]['peer_ipv6'] += [peeraddr]
-        with open('do_not_modify_'.upper()+self.node+'.desc', 'w') as tf:
+        with open('do_not_modify_'.upper()+self.node+'.dsc', 'w') as tf:
             tf.write(str(disc))
         return disc
     def probe(self, ipaddr, inv):
@@ -136,7 +137,7 @@ class Router(threading.Thread):
                 stup = subprocess.Popen(['snmpwalk', '-Oqv', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE).communicate()
             else:
-                stup = subprocess.Popen(['snmpwalk', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
+                stup = subprocess.Popen(['snmpwalk', '', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE).communicate()
         except:
             logging.warning("Unexpected error during snmpwalk")
