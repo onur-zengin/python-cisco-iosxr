@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import sys
 import getopt
@@ -32,14 +32,21 @@ class Router(threading.Thread):
         #self.ping(self.ipaddr)
         if self.switch is True:
             logging.info("New inventory file detected. Initializing node discovery")
+            for f in os.listdir('.'):
+                if self.node+'.dsc' in f:
+                    print f
+                    #os.remove(f)
             disc = self.discovery(self.ipaddr)
+            print 1
         else:
             try:
                 with open('do_not_modify_'.upper() + self.node + '.dsc') as tf:
                     disc = eval(tf.read())
+                    print 2
             except IOError:
-                logging.info("Discovery files could not be located. Initializing node discovery")
+                logging.info("Discovery file(s) could not be located. Initializing node discovery")
                 disc = self.discovery(self.ipaddr)
+                print 3
         self.probe(self.ipaddr, disc)
         #self.snmpwalk(self.ipaddr, self.oid)
         logging.info("Completed")
@@ -124,7 +131,6 @@ class Router(threading.Thread):
                                 disc[interface]['peer_ipv6'] = [peeraddr]
                             else:
                                 disc[interface]['peer_ipv6'] += [peeraddr]
-        os.remove("*.dsc")
         with open('do_not_modify_'.upper()+self.node+'.dsc', 'w') as tf:
             tf.write(str(disc))
         return disc
