@@ -35,16 +35,13 @@ class Router(threading.Thread):
             for f in os.listdir('.'):
                 if self.node+'.dsc' in f:
                     os.remove(f)
-            print 1
             disc = self.discovery(self.ipaddr)
         else:
             try:
-                print 2
                 with open('do_not_modify_'.upper() + self.node + '.dsc') as tf:
                     disc = eval(tf.read())
             except IOError:
                 logging.info("Discovery file(s) could not be located. Initializing node discovery")
-                print 3
                 disc = self.discovery(self.ipaddr)
         self.probe(self.ipaddr, disc)
         #self.snmpwalk(self.ipaddr, self.oid)
@@ -95,7 +92,7 @@ class Router(threading.Thread):
         return pingr
     def discovery(self, ipaddr):
         ifTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
-                                            map(lambda oid: self.snmpw(self.ipaddr, oid, quiet='off'), self.oids[:3]))
+                                            map(lambda oid: self.snmp(self.ipaddr, oid, quiet='off'), self.oids[:3]))
         disc = {}
         for interface in self.interfaces:
             for i in ifTable:
@@ -135,27 +132,36 @@ class Router(threading.Thread):
         return disc
     def probe(self, ipaddr, inv):
         print inv
-        # plist = map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3])
-    def snmpw(self, ipaddr, oid, quiet='on'):
+        #plist = map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3])
+        testoids = [
+            ".1.3.6.1.2.1.2.2.1.7.327",
+            ".1.3.6.1.2.1.2.2.1.8.327",
+            ".1.3.6.1.2.1.2.2.1.10.327",
+            ".1.3.6.1.2.1.2.2.1.16.327",
+            ".1.3.6.1.4.1.9.9.187.1.2.5.1.3.1.4.2.120.9.120"
+        ]
+        plist = self.snmp(self.ipaddr, testoids, cmd='snmpget')
+        print plist
+    def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
+        args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
+        if quiet is 'on':
+            args.insert(1, '-Oqv')
+        for oid in oids:
+            args.append(oid)
         try:
-            if quiet is 'on':
-                stup = subprocess.Popen(['snmpwalk', '-Oqv', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE).communicate()
-            else:
-                stup = subprocess.Popen(['snmpwalk', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE).communicate()
+            stup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
             logging.warning("Unexpected error during snmpwalk")
-            logging.debug("Unexpected error - Popen function snmpw(): %s" % (str(sys.exc_info()[:2])))
+            logging.debug("Unexpected error - Popen function snmp(): %s" % (str(sys.exc_info()[:2])))
             sys.exit(3)
         else:
             if stup[1] == '':
-                snmpwr = stup[0].strip('\n').split('\n')
+                snmpr = stup[0].strip('\n').split('\n')
             else:
                 logging.warning("Unexpected error during snmpwalk")
                 logging.debug("Unexpected error during snmpwalk: ### %s ###" % (str(stup)))
                 sys.exit(3)
-        return snmpwr
+        return snmpr
     def snmpwalk(self,ipaddr,oid):
         snmpwr = 1
         stup = None
