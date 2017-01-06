@@ -88,7 +88,6 @@ class Router(threading.Thread):
                 sys.exit(3)
         return pingr
     def discovery(self, ipaddr):
-        #os.remove("*.dsc")
         ifTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
                                             map(lambda oid: self.snmpw(self.ipaddr, oid, quiet='off'), self.oids[:3]))
         disc = {}
@@ -125,6 +124,7 @@ class Router(threading.Thread):
                                 disc[interface]['peer_ipv6'] = [peeraddr]
                             else:
                                 disc[interface]['peer_ipv6'] += [peeraddr]
+        os.remove("*.dsc")
         with open('do_not_modify_'.upper()+self.node+'.dsc', 'w') as tf:
             tf.write(str(disc))
         return disc
