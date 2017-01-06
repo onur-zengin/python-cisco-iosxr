@@ -34,19 +34,18 @@ class Router(threading.Thread):
             logging.info("New inventory file detected. Initializing node discovery")
             for f in os.listdir('.'):
                 if self.node+'.dsc' in f:
-                    print f
-                    #os.remove(f)
-            disc = self.discovery(self.ipaddr)
+                    os.remove(f)
             print 1
+            disc = self.discovery(self.ipaddr)
         else:
             try:
+                print 2
                 with open('do_not_modify_'.upper() + self.node + '.dsc') as tf:
                     disc = eval(tf.read())
-                    print 2
             except IOError:
                 logging.info("Discovery file(s) could not be located. Initializing node discovery")
-                disc = self.discovery(self.ipaddr)
                 print 3
+                disc = self.discovery(self.ipaddr)
         self.probe(self.ipaddr, disc)
         #self.snmpwalk(self.ipaddr, self.oid)
         logging.info("Completed")
