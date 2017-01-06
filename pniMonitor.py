@@ -40,7 +40,7 @@ class Router(threading.Thread):
             except IOError:
                 logging.info("Discovery files could not be located. Initializing node discovery")
                 disc = self.discovery(self.ipaddr)
-        print disc
+        self.probe(self.ipaddr, disc)
         #self.snmpwalk(self.ipaddr, self.oid)
         logging.info("Completed")
     def dns(self,node):
@@ -60,7 +60,7 @@ class Router(threading.Thread):
                                     stderr=subprocess.PIPE).communicate()
         except:
             logging.warning("Unexpected error during ping test")
-            logging.debug("Unexpected error - Popen function (ping): %s" % (str(sys.exc_info()[:2])))
+            logging.debug("Unexpected error - Popen function ping(): %s" % (str(sys.exc_info()[:2])))
             sys.exit(3)
         else:
             if ptup[1] == '':
@@ -89,7 +89,7 @@ class Router(threading.Thread):
         return pingr
     def discovery(self, ipaddr):
         ifTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
-                                            map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3]))
+                                            map(lambda oid: self.snmpw(self.ipaddr, oid, quiet=None), self.oids[:3]))
         disc = {}
         for interface in self.interfaces:
             for i in ifTable:
@@ -127,16 +127,16 @@ class Router(threading.Thread):
         with open('do_not_modify_'.upper()+self.node+'.desc', 'w') as tf:
             tf.write(str(disc))
         return disc
-    def probe(self):
-        pass
+    def probe(self, ipaddr, inv):
+        print inv
         # plist = map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3])
-    def snmpw(self, ipaddr, oid):
+    def snmpw(self, ipaddr, oid, quiet='-Oqv'):
         try:
-            stup = subprocess.Popen(['snmpwalk', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
+            stup = subprocess.Popen(['snmpwalk', quiet, '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE).communicate()
         except:
             logging.warning("Unexpected error during snmpwalk")
-            logging.debug("Unexpected error - Popen function (snmpwalk): %s" % (str(sys.exc_info()[:2])))
+            logging.debug("Unexpected error - Popen function snmpw(): %s" % (str(sys.exc_info()[:2])))
             sys.exit(3)
         else:
             if stup[1] == '':
