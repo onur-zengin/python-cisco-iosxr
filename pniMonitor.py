@@ -92,7 +92,7 @@ class Router(threading.Thread):
         return pingr
     def discovery(self, ipaddr):
         ifTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
-                                            map(lambda oid: self.snmp(self.ipaddr, oid, quiet='off'), [self.oids[:3]]))
+                                            map(lambda oid: self.snmp(self.ipaddr, oid, quiet='off'), self.oids[:3]))
         disc = {}
         for interface in self.interfaces:
             for i in ifTable:
@@ -146,8 +146,7 @@ class Router(threading.Thread):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
         if quiet is 'on':
             args.insert(1, '-Oqv')
-        for oid in oids:
-            args.append(oid)
+        args += oids
         print args
         try:
             stup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
