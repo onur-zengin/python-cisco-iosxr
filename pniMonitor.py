@@ -29,10 +29,18 @@ class Router(threading.Thread):
     def run(self):
         logging.info("Starting")
         self.ipaddr = self.dns(self.node)
-        self.ping(self.ipaddr)
+        #self.ping(self.ipaddr)
         if self.switch is True:
             logging.info("New inventory file detected. Initializing node discovery")
-            self.discovery(self.ipaddr)
+            disc = self.discovery(self.ipaddr)
+        else:
+            try:
+                with open('do_not_modify_'.upper() + self.node + '.desc') as tf:
+                    disc = eval(tf.read())
+            except IOError:
+                logging.info("Discovery files could not be located. Initializing node discovery")
+                disc = self.discovery(self.ipaddr)
+        print disc
         #self.snmpwalk(self.ipaddr, self.oid)
         logging.info("Completed")
     def dns(self,node):
@@ -80,8 +88,8 @@ class Router(threading.Thread):
                 sys.exit(3)
         return pingr
     def discovery(self, ipaddr):
-        #dlist = map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3])
-        ifTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3]))
+        ifTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
+                                            map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3]))
         disc = {}
         for interface in self.interfaces:
             for i in ifTable:
@@ -116,9 +124,12 @@ class Router(threading.Thread):
                                 disc[interface]['peer_ipv6'] = [peeraddr]
                             else:
                                 disc[interface]['peer_ipv6'] += [peeraddr]
-        for i in disc:
-            print i, disc[i]
-        # once done, write the results to a file
+        with open('do_not_modify_'.upper()+self.node+'.desc', 'w') as tf:
+            file.write(disc)
+        return disc
+    def probe(self):
+        pass
+        # plist = map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3])
     def snmpw(self, ipaddr, oid):
         try:
             stup = subprocess.Popen(['snmpwalk', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
@@ -208,7 +219,8 @@ def main(args):
         else:
             assert False, "unhandled option"
     logging.basicConfig(level=logging.getLevelName(loglevel),
-                        format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')  # FIXME revisit formatting %-Ns
+                        format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')  # FIXME
+                                                                                            # revisit formatting %-Ns
     lastChanged = ""
     while True:
         try:
