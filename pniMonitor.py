@@ -149,6 +149,7 @@ class Router(threading.Thread):
         args += oids
         print args
         try:
+            pass
             #stup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
             logging.warning("Unexpected error during snmpwalk")
