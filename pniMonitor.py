@@ -89,7 +89,7 @@ class Router(threading.Thread):
         return pingr
     def discovery(self, ipaddr):
         ifTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
-                                            map(lambda oid: self.snmpw(self.ipaddr, oid, quiet=''), self.oids[:3]))
+                                            map(lambda oid: self.snmpw(self.ipaddr, oid, quiet='off'), self.oids[:3]))
         disc = {}
         for interface in self.interfaces:
             for i in ifTable:
@@ -130,10 +130,14 @@ class Router(threading.Thread):
     def probe(self, ipaddr, inv):
         print inv
         # plist = map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3])
-    def snmpw(self, ipaddr, oid, quiet='-Oqv'):
+    def snmpw(self, ipaddr, oid, quiet='on'):
         try:
-            stup = subprocess.Popen(['snmpwalk', quiet, '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
+            if quiet is 'on':
+                stup = subprocess.Popen(['snmpwalk', '-Oqv', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE).communicate()
+            else:
+                stup = subprocess.Popen(['snmpwalk', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE).communicate()
         except:
             logging.warning("Unexpected error during snmpwalk")
             logging.debug("Unexpected error - Popen function snmpw(): %s" % (str(sys.exc_info()[:2])))
