@@ -92,7 +92,7 @@ class Router(threading.Thread):
         return pingr
     def discovery(self, ipaddr):
         ifTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
-                                            map(lambda oid: self.snmp(self.ipaddr, oid, quiet='off'), self.oids[:3]))
+                                            map(lambda oid: self.snmp(self.ipaddr, oid, quiet='off'), [self.oids[:3]]))
         disc = {}
         for interface in self.interfaces:
             for i in ifTable:
