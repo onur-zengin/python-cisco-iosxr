@@ -125,7 +125,7 @@ class Router(threading.Thread):
                             else:
                                 disc[interface]['peer_ipv6'] += [peeraddr]
         with open('do_not_modify_'.upper()+self.node+'.desc', 'w') as tf:
-            file.write(disc)
+            tf.write(str(disc))
         return disc
     def probe(self):
         pass
