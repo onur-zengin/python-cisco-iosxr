@@ -44,7 +44,6 @@ class Router(threading.Thread):
                 logging.info("Discovery file(s) could not be located. Initializing node discovery")
                 disc = self.discovery(self.ipaddr)
         self.probe(self.ipaddr, disc)
-        #self.snmpwalk(self.ipaddr, self.oid)
         logging.info("Completed")
     def dns(self,node):
         try:
@@ -130,50 +129,39 @@ class Router(threading.Thread):
         with open('do_not_modify_'.upper()+self.node+'.dsc', 'w') as tf:
             tf.write(str(disc))
         return disc
-    def probe(self, ipaddr, inv):
-        print inv
-        #plist = map(lambda oid: self.snmpw(self.ipaddr, oid), self.oids[:3])
-        testoids = [
-            ".1.3.6.1.2.1.2.2.1.7.327",
-            ".1.3.6.1.2.1.2.2.1.8.327",
-            ".1.3.6.1.2.1.2.2.1.10.327",
-            ".1.3.6.1.2.1.2.2.1.16.327",
+    def probe(self, ipaddr, disc):
+        intoids = [
+            ".1.3.6.1.2.1.2.2.1.5", #ifSpeed (bps)
+            ".1.3.6.1.2.1.2.2.1.7", #ifAdminStatus 1up 2down 3testing
+            ".1.3.6.1.2.1.2.2.1.8", #ifOperStatus 1up 2down 3testing 4unknown ...
+            ".1.3.6.1.2.1.2.2.1.10", #ifInOctets
+            ".1.3.6.1.2.1.2.2.1.16", #ifOutOctets
+            ]
+        bgpoids = [
             ".1.3.6.1.4.1.9.9.187.1.2.5.1.3.1.4.2.120.9.120"
-        ]
-        plist = self.snmp(self.ipaddr, testoids, cmd='snmpget')
-        print plist
+            ]
+        for interface in disc:
+            plist = self.snmp(self.ipaddr, [i+'.'+disc[interface]['ifIndex'] for i in intoids], cmd='snmpget')
+            print interface, plist
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
         if quiet is 'on':
             args.insert(1, '-Oqv')
         args += oids
-        print args
         try:
             stup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
-            logging.warning("Unexpected error during snmpwalk")
+            logging.warning("Unexpected error during %s operation" % (cmd))
             logging.debug("Unexpected error - Popen function snmp(): %s" % (str(sys.exc_info()[:2])))
             sys.exit(3)
         else:
             if stup[1] == '':
                 snmpr = stup[0].strip('\n').split('\n')
             else:
-                logging.warning("Unexpected error during snmpwalk")
-                logging.debug("Unexpected error during snmpwalk: ### %s ###" % (str(stup)))
+                logging.warning("Unexpected error during %s operation" % (cmd))
+                logging.debug("Unexpected error during %s operation: ### %s ###" % (cmd, str(stup)))
                 sys.exit(3)
         return snmpr
-    def snmpwalk(self,ipaddr,oid):
-        snmpwr = 1
-        stup = None
-        try:
-            stup = subprocess.Popen(['snmpwalk', '-Oqv', '-v2c', '-c', 'kN8qpTxH', ipaddr, oid], stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE).communicate()
-        except:
-            logging.warning("Unexpected error during snmpwalk")
-            logging.debug("Unexpected error - Popen function (snmpwalk): %s" % (str(sys.exc_info()[:2])))
-        else:
-            print stup
-        return snmpwr, stup
 
 
 def parser(lst):
