@@ -140,14 +140,15 @@ class Router(threading.Thread):
             ".1.3.6.1.2.1.2.2.1.16.327",
             ".1.3.6.1.4.1.9.9.187.1.2.5.1.3.1.4.2.120.9.120"
         ]
-        plist = self.snmp(self.ipaddr, testoids, cmd='snmpget')
-        print plist
+        #plist = self.snmp(self.ipaddr, testoids, cmd='snmpget')
+        #print plist
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
         if quiet is 'on':
             args.insert(1, '-Oqv')
         for oid in oids:
             args.append(oid)
+        print args
         try:
             stup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
