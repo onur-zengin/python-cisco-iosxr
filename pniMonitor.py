@@ -11,14 +11,23 @@ import re
 import resource
 import os
 
-oidlist = ['.1.3.6.1.2.1.31.1.1.1.1', #IF-MIB::ifName
-           '.1.3.6.1.2.1.4.34.1.3', #IP-MIB::ipAddressIfIndex
-           '.1.3.6.1.4.1.9.9.187.1.2.5.1.6', # cbgpPeer2LocalAddr
-           '.1.3.6.1.4.1.9.9.187.1.2.5.1.11' # cbgpPeer2RemoteAs
+oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #IF-MIB::ifName
+           '.1.3.6.1.2.1.4.34.1.3',  #IP-MIB::ipAddressIfIndex
+           '.1.3.6.1.4.1.9.9.187.1.2.5.1.6',  # cbgpPeer2LocalAddr
+           '.1.3.6.1.4.1.9.9.187.1.2.5.1.11', # cbgpPeer2RemoteAs
+           ".1.3.6.1.2.1.2.2.1.7",  # ifAdminStatus 1up 2down 3testing
+           ".1.3.6.1.2.1.2.2.1.8",  # ifOperStatus 1up 2down 3testing 4unknown ...
+           ".1.3.6.1.2.1.31.1.1.1.15",  # ifHighSpeed
+           ".1.3.6.1.2.1.31.1.1.1.6",  # ifHCInOctets
+           ".1.3.6.1.2.1.31.1.1.1.10",  # ifHCOutOctets
+           ".1.3.6.1.4.1.9.9.187.1.2.5.1.3.1.4.2.120.9.120"
            ]
 
 class Router(threading.Thread):
-    oids = oidlist
+    dsc_oids = oidlist[:3]
+    int_oids = oidlist[4:9]
+    bw_oids = oidlist[6:9]
+    bgp_oids = oidlist[9:]
     def __init__(self, threadID, node, interfaces, dswitch):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
@@ -91,7 +100,7 @@ class Router(threading.Thread):
         return pingr
     def discovery(self, ipaddr):
         ifTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
-                                            map(lambda oid: self.snmp(self.ipaddr, [oid], quiet='off'), self.oids[:3]))
+                                            map(lambda oid: self.snmp(self.ipaddr, [oid], quiet='off'), self.dsc_oids))
         disc = {}
         for interface in self.interfaces:
             for i in ifTable:
@@ -130,22 +139,15 @@ class Router(threading.Thread):
             tf.write(str(disc))
         return disc
     def probe(self, ipaddr, disc):
-        intoids = [
-            ".1.3.6.1.2.1.31.1.1.1.15", #ifHighSpeed
-            ".1.3.6.1.2.1.2.2.1.7", #ifAdminStatus 1up 2down 3testing
-            ".1.3.6.1.2.1.2.2.1.8", #ifOperStatus 1up 2down 3testing 4unknown ...
-            ".1.3.6.1.2.1.31.1.1.1.6", #ifHCInOctets
-            ".1.3.6.1.2.1.31.1.1.1.10", #ifHCOutOctets
-            ]
-        bgpoids = [
-            ".1.3.6.1.4.1.9.9.187.1.2.5.1.3.1.4.2.120.9.120"
-            ]
         for interface in disc:
-            plist = self.snmp(self.ipaddr, [i+'.'+disc[interface]['ifIndex'] for i in intoids], cmd='snmpget')
-            print interface, plist
+            plist = self.snmp(self.ipaddr, [i+'.'+disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
+            time.sleep(1)
+            plist2 = self.snmp(self.ipaddr, [i+'.'+disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
+            for i,j in zip(plist,plist2)[:2]:
+                print i,j
             #Bundle-Ether23 ['0', 'up', 'down', 'No Such Instance currently exists at this OID', 'No Such Instance currently exists at this OID']
-            #Bundle-Ether63 ['4294967295', 'up', 'up', '3980125023', '4244150009']
-            #Bundle-Ether225 ['4294967295', 'up', 'up', '2496069843', '2532820877']
+            #Bundle-Ether63 ['10000', 'up', 'up', '1532991345289', '867536356782']
+            #Bundle-Ether225 ['100000', 'up', 'up', '1548687916224', '4001150262734']
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
         if quiet is 'on':
