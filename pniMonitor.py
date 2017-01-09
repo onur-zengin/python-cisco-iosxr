@@ -11,7 +11,8 @@ import re
 import resource
 import os
 
-asctime = time.asctime()
+def ts():
+	return time.asctime()
 
 oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #IF-MIB::ifName
            '.1.3.6.1.2.1.4.34.1.3',  #IP-MIB::ipAddressIfIndex
@@ -39,7 +40,7 @@ class Router(threading.Thread):
         self.switch = dswitch
     def run(self):
         logging.info("Starting")
-        self.asctime = asctime
+        self.asctime = ts()
         self.ipaddr = self.dns(self.node)
         #self.ping(self.ipaddr)
         if self.switch is True:
@@ -195,6 +196,7 @@ def usage(args):
 
 
 def main(args):
+    asctime = ts()
     loglevel = 'INFO'
     runtime = 'infinite'
     frequency = 5
