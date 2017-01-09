@@ -10,9 +10,14 @@ import subprocess
 import re
 import resource
 import os
+import datetime
 
-def ts():
-	return time.asctime()
+
+def ts(format):
+    if format == 'hr':
+	    return time.asctime()
+    elif format == 'mr':
+        return datetime.datetime.now()
 
 oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #IF-MIB::ifName
            '.1.3.6.1.2.1.4.34.1.3',  #IP-MIB::ipAddressIfIndex
@@ -40,7 +45,7 @@ class Router(threading.Thread):
         self.switch = dswitch
     def run(self):
         logging.info("Starting")
-        self.asctime = ts()
+        self.time = ts('mr')
         self.ipaddr = self.dns(self.node)
         #self.ping(self.ipaddr)
         if self.switch is True:
@@ -144,14 +149,17 @@ class Router(threading.Thread):
             tf.write(str(disc))
         return disc
     def probe(self, ipaddr, disc):
-        print self.asctime
+        a = self.time
+        print a
         print disc
         for interface in disc:
             plist = self.snmp(self.ipaddr, [i+'.'+disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
             print plist
             #disc[interface]['utilization'][self.asctime] = plist
         print disc
-        print self.asctime
+        b = self.time
+        print b
+        print (b-a).total_seconds()
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
         if quiet is 'on':
@@ -196,7 +204,7 @@ def usage(args):
 
 
 def main(args):
-    asctime = ts()
+    asctime = ts('hr')
     loglevel = 'INFO'
     runtime = 'infinite'
     frequency = 5
