@@ -39,6 +39,7 @@ class Router(threading.Thread):
         self.switch = dswitch
     def run(self):
         logging.info("Starting")
+        self.asctime = asctime
         self.ipaddr = self.dns(self.node)
         #self.ping(self.ipaddr)
         if self.switch is True:
@@ -146,7 +147,7 @@ class Router(threading.Thread):
         print disc
         for interface in disc:
             plist = self.snmp(self.ipaddr, [i+'.'+disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
-            disc[interface]['utilization'][asctime] = plist
+            disc[interface]['utilization'][self.asctime] = plist
         print disc
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
