@@ -11,6 +11,8 @@ import re
 import resource
 import os
 
+asctime = time.asctime()
+
 oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #IF-MIB::ifName
            '.1.3.6.1.2.1.4.34.1.3',  #IP-MIB::ipAddressIfIndex
            '.1.3.6.1.4.1.9.9.187.1.2.5.1.6',  # cbgpPeer2LocalAddr
@@ -106,6 +108,7 @@ class Router(threading.Thread):
             for i in ifTable:
                 if interface == i[3]:
                     disc[interface] = {'ifIndex':i[0].split('.')[1]}
+                    disc[interface]['utilization'] = []
         for interface in self.pni_interfaces:
             for i in ipTable:
                 if disc[interface]['ifIndex'] == i[3]:
@@ -141,10 +144,9 @@ class Router(threading.Thread):
     def probe(self, ipaddr, disc):
         for interface in disc:
             plist = self.snmp(self.ipaddr, [i+'.'+disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
-            time.sleep(1)
-            plist2 = self.snmp(self.ipaddr, [i+'.'+disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
-            for i,j in zip(plist,plist2)[:2]:
-                print i,j
+            plist.insert(0, asctime)
+            disc[interface]['utilization'].append(plist)
+        print disc
             #Bundle-Ether23 ['0', 'up', 'down', 'No Such Instance currently exists at this OID', 'No Such Instance currently exists at this OID']
             #Bundle-Ether63 ['10000', 'up', 'up', '1532991345289', '867536356782']
             #Bundle-Ether225 ['100000', 'up', 'up', '1548687916224', '4001150262734']
@@ -192,7 +194,6 @@ def usage(args):
 
 
 def main(args):
-    asctime = time.asctime()
     loglevel = 'INFO'
     runtime = 'infinite'
     frequency = 5
