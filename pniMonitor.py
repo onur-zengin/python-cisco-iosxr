@@ -142,14 +142,12 @@ class Router(threading.Thread):
             tf.write(str(disc))
         return disc
     def probe(self, ipaddr, disc):
+        print asctime
+        print disc
         for interface in disc:
             plist = self.snmp(self.ipaddr, [i+'.'+disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
-            plist.insert(0, asctime)
-            disc[interface]['utilization'].append(plist)
+            disc[interface]['utilization'][asctime] = plist
         print disc
-            #Bundle-Ether23 ['0', 'up', 'down', 'No Such Instance currently exists at this OID', 'No Such Instance currently exists at this OID']
-            #Bundle-Ether63 ['10000', 'up', 'up', '1532991345289', '867536356782']
-            #Bundle-Ether225 ['100000', 'up', 'up', '1548687916224', '4001150262734']
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
         if quiet is 'on':
