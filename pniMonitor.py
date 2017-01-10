@@ -152,7 +152,8 @@ class Router(threading.Thread):
         probed = dict((interface, []) for interface in disc)
         try:
             with open('do_not_modify_'.upper() + self.node + '.prb') as pf:
-                probed = eval(pf.read())[-1]
+                probed = eval(pf.read())
+                probed = probed[-1]
                 logging.info("Not new node")
                 print "probed dict:", probed
         except IOError:
