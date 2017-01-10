@@ -153,7 +153,7 @@ class Router(threading.Thread):
         print "timestamp", a
         for interface in disc:
             plist = self.snmp(self.ipaddr, [i+'.'+disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
-            plist.insert(0, a)
+            plist.insert(0, str(a))
             print plist
             #disc[interface]['utilization'][self.asctime] = plist
         print disc
