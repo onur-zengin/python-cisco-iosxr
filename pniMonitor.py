@@ -162,7 +162,7 @@ class Router(threading.Thread):
             #print "probed dict:", probed
         else:
             for interface in disc:
-                print probed_c[interface]
+                print probed_c[interface][-1]
             #d = (b-a).total_seconds()
         finally:
             for interface in disc:
