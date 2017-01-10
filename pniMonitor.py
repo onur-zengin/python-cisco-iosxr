@@ -155,7 +155,8 @@ class Router(threading.Thread):
                 probed = eval(tf.read())
         except IOError:
             logging.info("New Node")
-            probed = {interface: [] for interface in disc}
+            #probed = {interface: [] for interface in disc} # Not compatible with Py <2.7
+            probed = dict((interface, []) for interface in disc)
             print "probed dict:", probed
         else:
             logging.info("Not new node")
