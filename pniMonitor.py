@@ -153,18 +153,13 @@ class Router(threading.Thread):
             tf.write(str(disc))
         return disc
     def probe(self, ipaddr, disc):
-        a = self.tstamp()
-        print a
-        print disc
+        a = self.tstamp('mr')
         for interface in disc:
             plist = self.snmp(self.ipaddr, [i+'.'+disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
             print plist
             #disc[interface]['utilization'][self.asctime] = plist
         print disc
-        b = self.time
-        print b
-        d = (b-a).total_seconds()
-        print d
+        #d = (b-a).total_seconds()
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
         if quiet is 'on':
@@ -209,7 +204,7 @@ def usage(args):
 
 
 def main(args):
-    asctime = ts('hr')
+    asctime = tstamp('hr')
     loglevel = 'INFO'
     runtime = 'infinite'
     frequency = 5
