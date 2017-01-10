@@ -51,7 +51,7 @@ class Router(threading.Thread):
         if self.switch is True:
             logging.info("New inventory file detected. Initializing node discovery")
             for f in os.listdir('.'):
-                if self.node+'.dsc' in f:
+                if self.node+'.dsc' in f or self.node+'.prb' in f:
                     os.remove(f)
             disc = self.discovery(self.ipaddr)
         else:
@@ -151,7 +151,7 @@ class Router(threading.Thread):
     def probe(self, ipaddr, disc):
         try:
             with open('do_not_modify_'.upper() + self.node + '.prb') as pf:
-                probed = eval(pf.read())
+                probed = eval(pf.read())[-1]
         except IOError:
             logging.info("New Node")
             #probed = {interface: [] for interface in disc} # Not compatible with Py <2.7
