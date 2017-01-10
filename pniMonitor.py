@@ -15,7 +15,7 @@ import datetime
 
 def tstamp(format):
     if format == 'hr':
-	    return time.asctime()
+        return time.asctime()
     elif format == 'mr':
         return datetime.datetime.now()
 
@@ -115,7 +115,7 @@ class Router(threading.Thread):
             for i in ifTable:
                 if interface == i[3]:
                     disc[interface] = {'ifIndex':i[0].split('.')[1]}
-                    disc[interface]['utilization'] = []
+                    #disc[interface]['utilization'] = []
         for interface in self.pni_interfaces:
             for i in ipTable:
                 if disc[interface]['ifIndex'] == i[3]:
@@ -150,12 +150,24 @@ class Router(threading.Thread):
         return disc
     def probe(self, ipaddr, disc):
         print disc
-        for interface in disc:
-            plist = self.snmp(self.ipaddr, [i+'.'+disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
-            plist.insert(0, str(self.tstamp))
-            disc[interface]['utilization'].append(plist)
-        print disc
-        #d = (b-a).total_seconds()
+        try:
+            with open('do_not_modify_'.upper() + self.node + '.prb') as tf:
+                probed = eval(tf.read())
+        except IOError:
+            logging.info("New Node")
+            probed = {interface: [] for interface in disc}
+            print "probed dict:", probed
+        else:
+            logging.info("Not new node")
+            print "probed dict:", probed
+            #for interface in disc:
+             #   plist = self.snmp(self.ipaddr, [i+'.'+disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
+              #  plist.insert(0, str(self.tstamp))
+               # probed[interface].append(plist)
+                #d = (b-a).total_seconds()
+        finally:
+            with open('do_not_modify_'.upper()+self.node+'.prb', 'w') as pf:
+                pf.write(str(probed))
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
         if quiet is 'on':
