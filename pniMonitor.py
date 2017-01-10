@@ -149,25 +149,29 @@ class Router(threading.Thread):
             tf.write(str(disc))
         return disc
     def probe(self, ipaddr, disc):
+        probed = dict((interface, []) for interface in disc)
         try:
             with open('do_not_modify_'.upper() + self.node + '.prb') as pf:
                 probed = eval(pf.read())[-1]
+                logging.info("Not new node")
+                print "probed dict:", probed
         except IOError:
             logging.info("New Node")
             #probed = {interface: [] for interface in disc} # Not compatible with Py <2.7
-            probed = dict((interface, []) for interface in disc)
             print "probed dict:", probed
         else:
-            logging.info("Not new node")
-            print "probed dict:", probed
+            pass
             #d = (b-a).total_seconds()
         finally:
+            pass
+            """
             for interface in disc:
                 plist = self.snmp(self.ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
                 plist.insert(0, str(self.tstamp))
                 probed[interface].append(plist)
             with open('do_not_modify_'.upper()+self.node+'.prb', 'w') as pf:
                 pf.write(str(probed))
+            """
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
         if quiet is 'on':
