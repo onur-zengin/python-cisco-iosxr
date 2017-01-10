@@ -13,11 +13,14 @@ import os
 import datetime
 
 
-def ts(format):
+def tstamp(format):
     if format == 'hr':
 	    return time.asctime()
     elif format == 'mr':
         return datetime.datetime.now()
+
+def tdelta(new,old):
+    (new - datetime.datetime.strptime(old, "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
 
 oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #IF-MIB::ifName
            '.1.3.6.1.2.1.4.34.1.3',  #IP-MIB::ipAddressIfIndex
@@ -45,7 +48,8 @@ class Router(threading.Thread):
         self.switch = dswitch
     def run(self):
         logging.info("Starting")
-        self.time = ts('mr')
+        self.tstamp = tstamp('mr')
+        self.tdelta = tdelta()
         self.ipaddr = self.dns(self.node)
         #self.ping(self.ipaddr)
         if self.switch is True:
@@ -149,7 +153,7 @@ class Router(threading.Thread):
             tf.write(str(disc))
         return disc
     def probe(self, ipaddr, disc):
-        a = self.time
+        a = self.tstamp()
         print a
         print disc
         for interface in disc:
@@ -159,7 +163,8 @@ class Router(threading.Thread):
         print disc
         b = self.time
         print b
-        print (b-a).total_seconds()
+        d = (b-a).total_seconds()
+        print d
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
         if quiet is 'on':
