@@ -169,9 +169,9 @@ class Router(threading.Thread):
                 plist = self.snmp(self.ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
                 plist.insert(0, str(self.tstamp))
                 probed[interface].append(plist)
+            """
             with open('do_not_modify_'.upper()+self.node+'.prb', 'w') as pf:
                 pf.write(str(probed))
-            """
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
         if quiet is 'on':
