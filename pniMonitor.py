@@ -154,18 +154,17 @@ class Router(threading.Thread):
         try:
             with open('do_not_modify_'.upper() + self.node + '.prb') as pf:
                 probed_c = eval(pf.read())
-                probed = dict((interface, probed_c[interface]) for interface in disc)
+                #probed = dict((interface, probed_c[interface]) for interface in disc)
                 logging.info("Not new node")
-                print "probed dict:", probed
+                #print "probed dict:", probed
         except IOError:
             logging.info("New Node")
-
-            print "probed dict:", probed
+            #print "probed dict:", probed
         else:
-            pass
+            for interface in disc:
+                print probed_c[interface]
             #d = (b-a).total_seconds()
         finally:
-            pass
             """
             for interface in disc:
                 plist = self.snmp(self.ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
