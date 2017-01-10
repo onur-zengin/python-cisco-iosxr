@@ -36,18 +36,6 @@ class Router(threading.Thread):
     int_oids = oidlist[4:9]
     bw_oids = oidlist[6:9]
     bgp_oids = oidlist[9:]
-    usage = resource.getrusage(resource.RUSAGE_SELF)
-    for name, desc in [
-        ('ru_utime', 'User time'),
-        ('ru_stime', 'System time'),
-        ('ru_maxrss', 'Max. Resident Set Size'),
-        ('ru_ixrss', 'Shared Memory Size'),
-        ('ru_idrss', 'Unshared Memory Size'),
-        ('ru_isrss', 'Stack Size'),
-        ('ru_inblock', 'Block inputs'),
-        ('ru_oublock', 'Block outputs'),
-    ]:
-        print '%-25s (%-10s) = %s' % (desc, name, getattr(usage, name))
     def __init__(self, threadID, node, interfaces, dswitch):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
