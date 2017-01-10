@@ -149,7 +149,6 @@ class Router(threading.Thread):
             tf.write(str(disc))
         return disc
     def probe(self, ipaddr, disc):
-        print disc
         try:
             with open('do_not_modify_'.upper() + self.node + '.prb') as pf:
                 probed = eval(pf.read())
