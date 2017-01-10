@@ -154,7 +154,7 @@ class Router(threading.Thread):
         try:
             with open('do_not_modify_'.upper() + self.node + '.prb') as pf:
                 probed_c = eval(pf.read())
-                #probed = dict((interface, probed_c[interface]) for interface in disc)
+                probed = dict((interface, probed_c[interface]) for interface in disc)
                 logging.info("Not new node")
                 #print "probed dict:", probed
         except IOError:
@@ -165,12 +165,10 @@ class Router(threading.Thread):
                 print probed_c[interface]
             #d = (b-a).total_seconds()
         finally:
-            """
             for interface in disc:
                 plist = self.snmp(self.ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
                 plist.insert(0, str(self.tstamp))
                 probed[interface].append(plist)
-            """
             with open('do_not_modify_'.upper()+self.node+'.prb', 'w') as pf:
                 pf.write(str(probed))
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
