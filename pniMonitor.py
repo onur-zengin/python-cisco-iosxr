@@ -19,9 +19,6 @@ def tstamp(format):
     elif format == 'mr':
         return datetime.datetime.now()
 
-def tdelta(new,old):
-    (new - datetime.datetime.strptime(old, "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
-
 oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #IF-MIB::ifName
            '.1.3.6.1.2.1.4.34.1.3',  #IP-MIB::ipAddressIfIndex
            '.1.3.6.1.4.1.9.9.187.1.2.5.1.6',  # cbgpPeer2LocalAddr
@@ -49,7 +46,6 @@ class Router(threading.Thread):
     def run(self):
         logging.info("Starting")
         self.tstamp = tstamp('mr')
-        self.tdelta = tdelta()
         self.ipaddr = self.dns(self.node)
         #self.ping(self.ipaddr)
         if self.switch is True:
@@ -179,6 +175,8 @@ class Router(threading.Thread):
                 logging.debug("Unexpected error during %s operation: ### %s ###" % (cmd, str(stup)))
                 sys.exit(3)
         return snmpr
+    def tdelta(new, old):
+        (new - datetime.datetime.strptime(old, "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
 
 
 def parser(lst):
