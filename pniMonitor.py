@@ -10,14 +10,14 @@ import subprocess
 import re
 import resource
 import os
-import datetime as dt
+from datetime import datetime as dt
 
 
 def tstamp(format):
     if format == 'hr':
         return time.asctime()
     elif format == 'mr':
-        return dt.datetime.now()
+        return dt.now()
 
 oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #IF-MIB::ifName
            '.1.3.6.1.2.1.4.34.1.3',  #IP-MIB::ipAddressIfIndex
@@ -205,7 +205,7 @@ class Router(threading.Thread):
         print new
         if old is not '':
             for o , n in zip(old, new):
-                delta = (n[1] - dt.datetime.strptime(o[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
+                delta = (dt.strptime(n[1], "%Y-%m-%d %H:%M:%S.%f") - dt.strptime(o[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
                 print delta
         else:
             print "new node"
