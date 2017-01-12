@@ -203,8 +203,12 @@ class Router(threading.Thread):
         old, new = self.probe(ipaddr, disc)
         print old
         print new
-        #delta = (new[1] - dt.datetime.strptime(old[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
-        #print delta
+        if old is not '':
+            for o , n in zip(old, new):
+                delta = (n[1] - dt.datetime.strptime(o[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
+                print delta
+        else:
+            print "new node"
 
 
 def parser(lst):
