@@ -201,10 +201,10 @@ class Router(threading.Thread):
         return snmpr
     def decide(self, ipaddr, disc):
         old, new = self.probe(ipaddr, disc)
-        delta = (new[1] - dt.datetime.strptime(old[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
-        print delta
         print old
         print new
+        #delta = (new[1] - dt.datetime.strptime(old[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
+        #print delta
 
 
 def parser(lst):
