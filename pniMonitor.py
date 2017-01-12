@@ -10,14 +10,14 @@ import subprocess
 import re
 import resource
 import os
-import datetime
+import datetime as dt
 
 
 def tstamp(format):
     if format == 'hr':
         return time.asctime()
     elif format == 'mr':
-        return datetime.datetime.now()
+        return dt.datetime.now()
 
 oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #IF-MIB::ifName
            '.1.3.6.1.2.1.4.34.1.3',  #IP-MIB::ipAddressIfIndex
@@ -61,7 +61,7 @@ class Router(threading.Thread):
             except IOError:
                 logging.info("Discovery file(s) could not be located. Initializing node discovery")
                 disc = self.discovery(self.ipaddr)
-        self.probe(self.ipaddr, disc)
+        self.decide(self.ipaddr, disc)
         logging.info("Completed")
     def dns(self,node):
         try:
@@ -93,7 +93,7 @@ class Router(threading.Thread):
                         sys.exit(3)
                     elif int(n.group(1)) == 100:
                         logging.warning("Operation halted. Node unreachable")
-                        #sys.exit(3)
+                        sys.exit(3)
                     else:
                         logging.warning("Unexpected error during ping test")
                         logging.debug("Unexpected regex error during ping test: ### %s ###" % (str(n)))
@@ -149,7 +149,8 @@ class Router(threading.Thread):
             tf.write(str(disc))
         return disc
     def probe(self, ipaddr, disc):
-        probed = []
+        old = []
+        new = []
         args = ['tail', '-1']
         args.append('do_not_modify_'.upper() + self.node + '.prb')
         try:
@@ -160,25 +161,25 @@ class Router(threading.Thread):
             sys.exit(3)
         else:
             if ptup[1] == '':
-                #probed = ptup[0]
-                probed = eval(ptup[0])
-                print "probed found:", probed
+                old = eval(ptup[0])
+                print "old found:", old
                 # d = (b-a).total_seconds()
             elif "No such file or directory" in ptup[1]:
                 logging.info("New Node")
-                print "probed not found:", probed
+                print "old not found:", old
             else:
                 logging.warning("Unexpected error during %s operation" % (str(ptup)))
                 logging.debug("Unexpected error during %s operation: ### %s ###" % (str(ptup)))
                 sys.exit(3)
         finally:
-            aggplist = []
             for interface in disc:
-                plist = self.snmp(self.ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
-                plist.insert(0, str(self.tstamp))
-                aggplist.append(plist)
+                int_new = self.snmp(self.ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
+                int_new.insert(0, str(self.tstamp))
+                int_new.insert(0, interface)
+                new.append(int_new)
             with open('do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
-                pf.write(str(aggplist)+'\n')
+                pf.write(str(new)+'\n')
+        return old, new
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
         if quiet is 'on':
@@ -198,8 +199,12 @@ class Router(threading.Thread):
                 logging.debug("Unexpected error during %s operation: ### %s ###" % (cmd, str(stup)))
                 sys.exit(3)
         return snmpr
-    def tdelta(new, old):
-        (new - datetime.datetime.strptime(old, "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
+    def decide(self, ipaddr, disc):
+        old, new = self.probe(ipaddr, disc)
+        delta = (new[1] - dt.datetime.strptime(old[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
+        print delta
+        print old
+        print new
 
 
 def parser(lst):
