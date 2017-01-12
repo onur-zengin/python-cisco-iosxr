@@ -172,12 +172,13 @@ class Router(threading.Thread):
                 logging.debug("Unexpected error during %s operation: ### %s ###" % (str(ptup)))
                 sys.exit(3)
         finally:
+            aggplist = []
             for interface in disc:
                 plist = self.snmp(self.ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
                 plist.insert(0, str(self.tstamp))
-                probed.append(plist)
+                aggplist.append(plist)
             with open('do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
-                pf.write(str(probed)+'\n')
+                pf.write(str(aggplist))
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
         if quiet is 'on':
