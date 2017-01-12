@@ -149,27 +149,34 @@ class Router(threading.Thread):
             tf.write(str(disc))
         return disc
     def probe(self, ipaddr, disc):
-        #probed = {interface: [] for interface in disc} # Not compatible with Py <2.7
-        probed = dict((interface, []) for interface in disc)
+        probed = []
+        args = ['tail', '-1']
+        args.append('do_not_modify_'.upper() + self.node + '.prb')
         try:
-            with open('do_not_modify_'.upper() + self.node + '.prb') as pf:
-                probed_c = eval(pf.read())
-                probed = dict((interface, probed_c[interface]) for interface in disc)
-                logging.info("Not new node")
-                #print "probed dict:", probed
-        except IOError:
-            logging.info("New Node")
-            #print "probed dict:", probed
+            ptup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+        except:
+            logging.warning("Unexpected error during probe operation")
+            logging.debug("Unexpected error - Popen function probe(): %s" % (str(sys.exc_info()[:2])))
+            sys.exit(3)
         else:
-            for interface in disc:
-                print probed_c[interface][-1]
-            #d = (b-a).total_seconds()
+            if ptup[1] == '':
+                #probed = ptup[0]
+                probed = eval(ptup[0])
+                print "probed found:", probed
+                # d = (b-a).total_seconds()
+            elif "No such file or directory" in ptup[1]:
+                logging.info("New Node")
+                print "probed not found:", probed
+            else:
+                logging.warning("Unexpected error during %s operation" % (str(ptup)))
+                logging.debug("Unexpected error during %s operation: ### %s ###" % (str(ptup)))
+                sys.exit(3)
         finally:
             for interface in disc:
                 plist = self.snmp(self.ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
                 plist.insert(0, str(self.tstamp))
-                probed[interface].append(plist)
-            with open('do_not_modify_'.upper()+self.node+'.prb', 'w') as pf:
+                probed.append(plist)
+            with open('do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                 pf.write(str(probed))
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
