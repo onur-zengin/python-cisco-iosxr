@@ -13,6 +13,7 @@ import os
 from datetime import datetime as dt
 
 
+
 def tstamp(format):
     if format == 'hr':
         return time.asctime()
@@ -61,7 +62,8 @@ class Router(threading.Thread):
             except IOError:
                 logging.info("Discovery file(s) could not be located. Initializing node discovery")
                 disc = self.discovery(self.ipaddr)
-        self.decide(self.ipaddr, disc)
+        logging.info("Starting to Decide")
+        self.process(self.ipaddr, disc)
         logging.info("Completed")
     def dns(self,node):
         try:
@@ -162,11 +164,10 @@ class Router(threading.Thread):
         else:
             if ptup[1] == '':
                 old = eval(ptup[0])
-                print "old found:", old
+                logging.info("Existing Node")
                 # d = (b-a).total_seconds()
             elif "No such file or directory" in ptup[1]:
                 logging.info("New Node")
-                print "old not found:", old
             else:
                 logging.warning("Unexpected error during %s operation" % (str(ptup)))
                 logging.debug("Unexpected error during %s operation: ### %s ###" % (str(ptup)))
@@ -199,16 +200,14 @@ class Router(threading.Thread):
                 logging.debug("Unexpected error during %s operation: ### %s ###" % (cmd, str(stup)))
                 sys.exit(3)
         return snmpr
-    def decide(self, ipaddr, disc):
+    def process(self, ipaddr, disc):
         old, new = self.probe(ipaddr, disc)
-        print old
-        print new
         if old is not '':
             for o , n in zip(old, new):
                 delta = (dt.strptime(n[1], "%Y-%m-%d %H:%M:%S.%f") - dt.strptime(o[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
-                print delta
+                print delta,
         else:
-            print "new node"
+            pass
 
 
 def parser(lst):
