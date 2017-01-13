@@ -202,16 +202,16 @@ class Router(threading.Thread):
         old, new = self.probe(ipaddr, disc)
         if old is not '':
             for o , n in zip(old, new):
-                if n[1] in self.cdn_interfaces:
-                    print "cdn",n[1]
+                if n[0] in self.cdn_interfaces:
+                    print "cdn",n[0]
                     if o[3] is "up" and n[3] is "up":
                         tdelta = (dt.strptime(n[1], "%Y-%m-%d %H:%M:%S.%f") - dt.strptime(o[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
-                elif n[1] in self.pni_interfaces:
-                    print "pni",n[1]
+                elif n[0] in self.pni_interfaces:
+                    print "pni",n[0]
                 else:
                     for i in self.interfaces:
                         print i
-                    print n[1]
+                    print n[0]
         else:
             pass
 
