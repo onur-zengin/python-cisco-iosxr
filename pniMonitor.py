@@ -200,19 +200,21 @@ class Router(threading.Thread):
         return snmpr
     def process(self, ipaddr, disc):
         old, new = self.probe(ipaddr, disc)
-        aggCdnIn, aggPniOut = 0 , 0
+        aggCdnIn, aggPniOut , dateFormat = 0 , 0 , "%Y-%m-%d %H:%M:%S.%f"
         if old is not '':
             for o , n in zip(old, new):
                 if n[0] in self.cdn_interfaces:
+                    print n
                     if o[3] == 'up' and n[3] == 'up':
-                        delta_time = (dt.strptime(n[1], "%Y-%m-%d %H:%M:%S.%f") - dt.strptime(o[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
+                        delta_time = (dt.strptime(n[1], dateFormat) - dt.strptime(o[1], dateFormat)).total_seconds()
                         delta_inOct = int(n[5]) - int(o[5])
                         util = (delta_inOct * 800) / (delta_time * int(n[4]) * 10**6)
                         aggCdnIn += util
                         print n[0], "utilization: %.2f" % util
                 elif n[0] in self.pni_interfaces:
+                    print n
                     if o[3] == 'up' and n[3] == 'up':
-                        delta_time = (dt.strptime(n[1], "%Y-%m-%d %H:%M:%S.%f") - dt.strptime(o[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
+                        delta_time = (dt.strptime(n[1], dateFormat) - dt.strptime(o[1], dateFormat)).total_seconds()
                         delta_outOct = int(n[6]) - int(o[6])
                         print n[0], "octets" , delta_outOct , "time" , delta_time
                         util = (delta_outOct * 800) / (delta_time * int(n[4]) * 10**6)
