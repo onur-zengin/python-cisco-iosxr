@@ -13,7 +13,6 @@ import os
 from datetime import datetime as dt
 
 
-
 def tstamp(format):
     if format == 'hr':
         return time.asctime()
@@ -48,7 +47,6 @@ class Router(threading.Thread):
         logging.info("Starting")
         self.tstamp = tstamp('mr')
         self.ipaddr = self.dns(self.node)
-        #self.ping(self.ipaddr)
         if self.switch is True:
             logging.info("New inventory file detected. Initializing node discovery")
             for f in os.listdir('.'):
@@ -162,8 +160,6 @@ class Router(threading.Thread):
         else:
             if ptup[1] == '':
                 old = eval(ptup[0])
-                logging.info("Existing Node")
-                # d = (b-a).total_seconds()
             elif "No such file or directory" in ptup[1]:
                 logging.info("New Node")
             else:
@@ -193,6 +189,7 @@ class Router(threading.Thread):
         else:
             if stup[1] == '':
                 snmpr = stup[0].strip('\n').split('\n')
+                # elif timeout self.ping(self.ipaddr)
             else:
                 logging.warning("Unexpected error during %s operation" % (cmd))
                 logging.debug("Unexpected error during %s operation: ### %s ###" % (cmd, str(stup)))
@@ -200,30 +197,40 @@ class Router(threading.Thread):
         return snmpr
     def process(self, ipaddr, disc):
         old, new = self.probe(ipaddr, disc)
-        aggCdnIn, aggPniOut , dateFormat = 0 , 0 , "%Y-%m-%d %H:%M:%S.%f"
+        actCdnIn, aggCdnIn, actPniOut, aggPniOut, dateFormat = 0, 0, 0, 0, "%Y-%m-%d %H:%M:%S.%f"
         if old is not '':
             for o , n in zip(old, new):
                 if n[0] in self.cdn_interfaces:
                     if o[3] == 'up' and n[3] == 'up':
-                        print n
                         delta_time = (dt.strptime(n[1], dateFormat) - dt.strptime(o[1], dateFormat)).total_seconds()
                         delta_inOct = int(n[5]) - int(o[5])
-                        util = (delta_inOct * 800) / (delta_time * int(n[4]) * 10**6)
-                        aggCdnIn += util
-                        print n[0], "utilization: %.2f" % util
+                        int_util = (delta_inOct * 800) / (delta_time * int(n[4]) * 10**6)
+                        actCdnIn += int_util
+                    if n[3] == 'up':
+                        aggCdnIn += int(n[4])
                 elif n[0] in self.pni_interfaces:
                     if o[3] == 'up' and n[3] == 'up':
-                        print n
                         delta_time = (dt.strptime(n[1], dateFormat) - dt.strptime(o[1], dateFormat)).total_seconds()
                         delta_outOct = int(n[6]) - int(o[6])
                         print n[0], "octets" , delta_outOct , "time" , delta_time
-                        util = (delta_outOct * 800) / (delta_time * int(n[4]) * 10**6)
-                        aggPniOut += util
-                        print n[0], "utilization: %.2f" % util
-            print "Total CDN Ingress utilization: %.2f" % aggCdnIn
-            print "Total PNI Egress utilization: %.2f" % aggPniOut
+                        int_util = (delta_outOct * 800) / (delta_time * int(n[4]) * 10**6)
+                        actPniOut += int_util
+                    if n[3] == 'up':
+                        aggPniOut += int(n[4])
+            print "Active CDN Capacity: %.2f" % aggCdnIn
+            print "Actual CDN Ingress: %.2f" % actCdnIn
+            print "Usable PNI Capacity: %.2f" % aggPniOut
+            print "Actual PNI Egress: %.2f" % actPniOut
         else:
             pass
+        #if actPniOut / aggPniOut >= 0.96:
+         #   self.acl('block',)
+    def acl(self, decision, interface):
+        if decision == 'block':
+            logging.warning("%s will now be blocked" % (interface))
+        else:
+            logging.info("%s will now be unblocked" % (interface))
+
 
 
 def parser(lst):
@@ -253,6 +260,14 @@ def main(args):
     loglevel = 'INFO'
     runtime = 'infinite'
     frequency = 5
+    try:
+        with open("pniMonitor.conf") as pf:
+            parameters = [n.strip('\n') for n in pf.readlines()]
+    except IOError as ioerr:
+        print ioerr
+        sys.exit(1)
+    else:
+        print parameters
     try:
         options, remainder = getopt.getopt(args, "i:hl:r:f:", ["input=", "help", "logging=", "repeat=", "frequency="])
     except getopt.GetoptError as err:
