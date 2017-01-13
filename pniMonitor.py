@@ -204,16 +204,16 @@ class Router(threading.Thread):
         if old is not '':
             for o , n in zip(old, new):
                 if n[0] in self.cdn_interfaces:
-                    print n
                     if o[3] == 'up' and n[3] == 'up':
+                        print n
                         delta_time = (dt.strptime(n[1], dateFormat) - dt.strptime(o[1], dateFormat)).total_seconds()
                         delta_inOct = int(n[5]) - int(o[5])
                         util = (delta_inOct * 800) / (delta_time * int(n[4]) * 10**6)
                         aggCdnIn += util
                         print n[0], "utilization: %.2f" % util
                 elif n[0] in self.pni_interfaces:
-                    print n
                     if o[3] == 'up' and n[3] == 'up':
+                        print n
                         delta_time = (dt.strptime(n[1], dateFormat) - dt.strptime(o[1], dateFormat)).total_seconds()
                         delta_outOct = int(n[6]) - int(o[6])
                         print n[0], "octets" , delta_outOct , "time" , delta_time
