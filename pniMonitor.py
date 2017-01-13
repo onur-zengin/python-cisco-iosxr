@@ -208,6 +208,10 @@ class Router(threading.Thread):
                         tdelta = (dt.strptime(n[1], "%Y-%m-%d %H:%M:%S.%f") - dt.strptime(o[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
                 elif n[1] in self.pni_interfaces:
                     print "pni",n[1]
+                else:
+                    for i in self.interfaces:
+                        print i
+                    print n[1]
         else:
             pass
 
