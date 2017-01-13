@@ -268,12 +268,15 @@ def main(args):
         sys.exit(1)
     else:
         print parameters
+        print '%s parameters file' % type(parameters)
     try:
         options, remainder = getopt.getopt(args, "i:hl:r:f:", ["input=", "help", "logging=", "repeat=", "frequency="])
     except getopt.GetoptError as err:
         print err
         usage(sys.argv)
         sys.exit(2)
+    print options
+    print '%s options' % type(options)
     for opt, arg in options:
         if opt in ('-h','--help'):
             usage(sys.argv)
