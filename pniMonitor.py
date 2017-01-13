@@ -200,18 +200,25 @@ class Router(threading.Thread):
         return snmpr
     def process(self, ipaddr, disc):
         old, new = self.probe(ipaddr, disc)
+        aggCdnIn, aggPniOut = 0 , 0
         if old is not '':
             for o , n in zip(old, new):
                 if n[0] in self.cdn_interfaces:
-                    print "cdn",n[0]
                     if o[3] is "up" and n[3] is "up":
-                        tdelta = (dt.strptime(n[1], "%Y-%m-%d %H:%M:%S.%f") - dt.strptime(o[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
+                        delta_time = (dt.strptime(n[1], "%Y-%m-%d %H:%M:%S.%f") - dt.strptime(o[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
+                        delta_inOct = int(n[5]) - int(o[5])
+                        util = (delta_inOct * 800) / (delta_time * n[4])
+                        aggCdnIn += util
+                        print n[0], util
                 elif n[0] in self.pni_interfaces:
-                    print "pni",n[0]
-                else:
-                    for i in self.interfaces:
-                        print i
-                    print n[0]
+                    if o[3] is "up" and n[3] is "up":
+                        delta_time = (dt.strptime(n[1], "%Y-%m-%d %H:%M:%S.%f") - dt.strptime(o[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
+                        delta_outOct = int(n[6]) - int(o[6])
+                        util = (delta_outOct * 800) / (delta_time * n[4])
+                        aggPniOut += util
+                        print n[0], util
+            print "Total CDN Ingress", str(aggCdnIn)
+            print "Total PNI Egress", str(aggPniOut)
         else:
             pass
 
