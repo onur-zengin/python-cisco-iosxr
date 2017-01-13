@@ -62,7 +62,6 @@ class Router(threading.Thread):
             except IOError:
                 logging.info("Discovery file(s) could not be located. Initializing node discovery")
                 disc = self.discovery(self.ipaddr)
-        logging.info("Starting to Decide")
         self.process(self.ipaddr, disc)
         logging.info("Completed")
     def dns(self,node):
@@ -203,9 +202,12 @@ class Router(threading.Thread):
     def process(self, ipaddr, disc):
         old, new = self.probe(ipaddr, disc)
         if old is not '':
+
             for o , n in zip(old, new):
-                delta = (dt.strptime(n[1], "%Y-%m-%d %H:%M:%S.%f") - dt.strptime(o[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
-                print delta,
+                tdelta = (dt.strptime(n[1], "%Y-%m-%d %H:%M:%S.%f") - dt.strptime(o[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
+                print tdelta
+                print o[4],type(o[4]),o[5],type(o[5])
+                print n[4], type(n[4]), n[5], type(n[5])
         else:
             pass
 
