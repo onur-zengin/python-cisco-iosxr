@@ -207,14 +207,16 @@ class Router(threading.Thread):
                     if o[3] == 'up' and n[3] == 'up':
                         delta_time = (dt.strptime(n[1], "%Y-%m-%d %H:%M:%S.%f") - dt.strptime(o[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
                         delta_inOct = int(n[5]) - int(o[5])
-                        util = (delta_inOct * 800) / (delta_time * n[4])
+                        print type(delta_time)
+                        util = (delta_inOct * 800) / (delta_time * int(n[4]))
                         aggCdnIn += util
                         print n[0], util
                 elif n[0] in self.pni_interfaces:
                     if o[3] == 'up' and n[3] == 'up':
                         delta_time = (dt.strptime(n[1], "%Y-%m-%d %H:%M:%S.%f") - dt.strptime(o[1], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
                         delta_outOct = int(n[6]) - int(o[6])
-                        util = (delta_outOct * 800) / (delta_time * n[4])
+                        print type(delta_time)
+                        util = (delta_outOct * 800) / (delta_time * int(n[4]))
                         aggPniOut += util
                         print n[0], str(util)
             print "Total CDN Ingress", str(aggCdnIn)
