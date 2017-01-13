@@ -262,7 +262,7 @@ def main(args):
     frequency = 5
     try:
         with open("pniMonitor.conf") as pf:
-            parameters = [n.strip('\n') for n in pf.readlines()]
+            parameters = [i.split('=') for i in [n.strip('\n') for n in pf.readlines()]]
     except IOError as ioerr:
         print ioerr
         sys.exit(1)
