@@ -19,8 +19,9 @@ def tstamp(format):
     elif format == 'mr':
         return dt.now()
 
-oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #IF-MIB::ifName
-           '.1.3.6.1.2.1.4.34.1.3',  #IP-MIB::ipAddressIfIndex
+oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  # IF-MIB::ifName
+           '.1.3.6.1.2.1.2.2.1.2', # IF-MIB::ifDescr
+           '.1.3.6.1.2.1.4.34.1.3',  # IP-MIB::ipAddressIfIndex
            '.1.3.6.1.4.1.9.9.187.1.2.5.1.6',  # cbgpPeer2LocalAddr
            '.1.3.6.1.4.1.9.9.187.1.2.5.1.11', # cbgpPeer2RemoteAs
            ".1.3.6.1.2.1.2.2.1.7",  # ifAdminStatus 1up 2down 3testing
@@ -32,10 +33,10 @@ oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #IF-MIB::ifName
            ]
 
 class Router(threading.Thread):
-    dsc_oids = oidlist[:3]
-    int_oids = oidlist[4:9]
-    bw_oids = oidlist[6:9]
-    bgp_oids = oidlist[9:]
+    dsc_oids = oidlist[:4]
+    int_oids = oidlist[5:10]
+    bw_oids = oidlist[7:10]
+    bgp_oids = oidlist[10:]
     def __init__(self, threadID, node, interfaces, dswitch, riskfactor):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
@@ -108,12 +109,12 @@ class Router(threading.Thread):
                 sys.exit(3)
         return pingr
     def discovery(self, ipaddr):
-        ifTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
+        ifNameTable, ifDescrTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
                                             map(lambda oid: self.snmp(self.ipaddr, [oid], quiet='off'), self.dsc_oids))
         disc = {}
-        print ifTable
+        print ifDescrTable
         for interface in self.interfaces:
-            for i in ifTable:
+            for i in ifNameTable:
                 if interface == i[3]:
                     disc[interface] = {'ifIndex':i[0].split('.')[1]}
         for interface in self.pni_interfaces:
