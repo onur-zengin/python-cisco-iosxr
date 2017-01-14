@@ -277,7 +277,7 @@ def main(args):
                     inputfile = arg
                 elif opt == 'loglevel':
                     if arg.lower() in ('info', 'warning', 'debug'):
-                        loglevel = arg.lower()
+                        loglevel = arg.upper()
                     else:
                         print 'Invalid value specified for loglevel, program will continue with its default ' \
                               'setting: "info"'
@@ -327,8 +327,8 @@ def main(args):
         elif opt in ('-i', '--input'):
             inputfile = arg
         elif opt in ('-l','--logging'):
-            if arg in ('INFO','WARNING','DEBUG'):
-                loglevel = arg
+            if arg.lower() in ('INFO','WARNING','DEBUG'):
+                loglevel = arg.upper()
             else:
                 loglevel = 'INFO'
         elif opt in ('-r', '--runtime'):
