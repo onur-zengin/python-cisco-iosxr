@@ -36,32 +36,33 @@ class Router(threading.Thread):
     int_oids = oidlist[4:9]
     bw_oids = oidlist[6:9]
     bgp_oids = oidlist[9:]
-    def __init__(self, threadID, node, interfaces, dswitch):
+    def __init__(self, threadID, node, interfaces, dswitch, riskfactor):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
         self.pni_interfaces = interfaces['pni']
         self.cdn_interfaces = interfaces['cdn']
         self.interfaces = self.pni_interfaces + self.cdn_interfaces
         self.switch = dswitch
+        self.riskfactor = riskfactor
     def run(self):
-        logging.info("Starting")
+        logging.debug("Starting")
         self.tstamp = tstamp('mr')
         self.ipaddr = self.dns(self.node)
         if self.switch is True:
-            logging.info("New inventory file detected. Initializing node discovery")
+            logging.info("New inventory file / inventory updates detected. Initializing node discovery")
             for f in os.listdir('.'):
                 if self.node+'.dsc' in f or self.node+'.prb' in f:
                     os.remove(f)
             disc = self.discovery(self.ipaddr)
         else:
             try:
-                with open('do_not_modify_'.upper() + self.node + '.dsc') as tf:
+                with open('.do_not_modify_'.upper() + self.node + '.dsc') as tf:
                     disc = eval(tf.read())
             except IOError:
                 logging.info("Discovery file(s) could not be located. Initializing node discovery")
                 disc = self.discovery(self.ipaddr)
         self.process(self.ipaddr, disc)
-        logging.info("Completed")
+        logging.debug("Completed")
     def dns(self,node):
         try:
             ipaddr = socket.gethostbyname(node)
@@ -110,6 +111,7 @@ class Router(threading.Thread):
         ifTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
                                             map(lambda oid: self.snmp(self.ipaddr, [oid], quiet='off'), self.dsc_oids))
         disc = {}
+        print ifTable
         for interface in self.interfaces:
             for i in ifTable:
                 if interface == i[3]:
@@ -143,14 +145,14 @@ class Router(threading.Thread):
                                 disc[interface]['peer_ipv6'] = [peeraddr]
                             else:
                                 disc[interface]['peer_ipv6'] += [peeraddr]
-        with open('do_not_modify_'.upper()+self.node+'.dsc', 'w') as tf:
+        with open('.do_not_modify_'.upper()+self.node+'.dsc', 'w') as tf:
             tf.write(str(disc))
         return disc
     def probe(self, ipaddr, disc):
         old = []
         new = []
         args = ['tail', '-1']
-        args.append('do_not_modify_'.upper() + self.node + '.prb')
+        args.append('.do_not_modify_'.upper() + self.node + '.prb')
         try:
             ptup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
@@ -168,11 +170,12 @@ class Router(threading.Thread):
                 sys.exit(3)
         finally:
             for interface in disc:
-                int_new = self.snmp(self.ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids], cmd='snmpget')
+                int_new = self.snmp(self.ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids],
+                                    cmd='snmpget')
                 int_new.insert(0, str(self.tstamp))
                 int_new.insert(0, interface)
                 new.append(int_new)
-            with open('do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
+            with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                 pf.write(str(new)+'\n')
         return old, new
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
@@ -205,6 +208,7 @@ class Router(threading.Thread):
                         delta_time = (dt.strptime(n[1], dateFormat) - dt.strptime(o[1], dateFormat)).total_seconds()
                         delta_inOct = int(n[5]) - int(o[5])
                         int_util = (delta_inOct * 800) / (delta_time * int(n[4]) * 10**6)
+                        disc[n[0]]['util'] = int_util
                         actCdnIn += int_util
                     if n[3] == 'up':
                         aggCdnIn += int(n[4])
@@ -221,10 +225,12 @@ class Router(threading.Thread):
             print "Actual CDN Ingress: %.2f" % actCdnIn
             print "Usable PNI Capacity: %.2f" % aggPniOut
             print "Actual PNI Egress: %.2f" % actPniOut
+            print [util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]
+            print min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]])
         else:
-            pass
-        #if actPniOut / aggPniOut >= 0.96:
-         #   self.acl('block',)
+            pass # make sure the following lines don't fail due to unknown argument
+        if actPniOut / aggPniOut * 100 >= self.riskfactor: # consider nesting the following if to the one above
+            self.acl('block', min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]))
     def acl(self, decision, interface):
         if decision == 'block':
             logging.warning("%s will now be blocked" % (interface))
@@ -257,26 +263,63 @@ def usage(args):
 
 def main(args):
     asctime = tstamp('hr')
-    loglevel = 'INFO'
-    runtime = 'infinite'
-    frequency = 5
     try:
         with open("pniMonitor.conf") as pf:
-            parameters = [i.split('=') for i in [n.strip('\n') for n in pf.readlines()]]
+            parameters = [tuple(i.split('=')) for i in
+                            filter(lambda line: line[0] != '#', [n.strip('\n') for n in pf.readlines()])]
     except IOError as ioerr:
         print ioerr
         sys.exit(1)
     else:
-        print parameters
-        print '%s parameters file' % type(parameters)
+        try:
+            for opt, arg in parameters:
+                if opt == 'inputfile':
+                    inputfile = arg
+                elif opt == 'loglevel':
+                    if arg.lower() in ('info', 'warning', 'debug'):
+                        loglevel = arg.lower()
+                    else:
+                        print 'Invalid value specified for loglevel, program will continue with its default ' \
+                              'setting: "info"'
+                        loglevel = 'info'
+                elif opt == 'riskfactor':
+                    try:
+                        riskfactor = int(arg)
+                    except ValueError:
+                        print 'The value of the riskfactor argument must be an integer'
+                        sys.exit(2)
+                    else:
+                        if not 0 <= riskfactor and riskfactor <= 100:
+                            print 'The value of the riskfactor argument must be an integer between 0 and 100'
+                            sys.exit(2)
+                elif opt == 'frequency':
+                    try:
+                        frequency = int(arg)
+                    except ValueError:
+                        print 'The value of the frequency argument must be an integer'
+                        sys.exit(2)
+                elif opt == 'runtime':
+                    if arg.lower() == 'infinite':
+                        runtime = 'infinite'
+                    else:
+                        try:
+                            runtime = int(arg)
+                        except ValueError:
+                            print 'The value of the runtime argument must be either be "infinite" or an integer'
+                            sys.exit(2)
+                else:
+                    print "Invalid parameter found in the configuration file: %s" % (opt)
+                    sys.exit(2)
+        except ValueError:
+            print "Configuration parameters must be provided in key value pairs separated by an equal sign (=)" \
+                  "\nExample:\n\tfrequency=5\n\tloglevel=info"
+            sys.exit(2)
     try:
-        options, remainder = getopt.getopt(args, "i:hl:r:f:", ["input=", "help", "logging=", "repeat=", "frequency="])
+        options, remainder = getopt.getopt(args, "i:hl:r:f:", ["input=", "help", "logging=", "runtime=", "frequency="])
     except getopt.GetoptError as err:
         print err
         usage(sys.argv)
         sys.exit(2)
-    print options
-    print '%s options' % type(options)
     for opt, arg in options:
         if opt in ('-h','--help'):
             usage(sys.argv)
@@ -288,12 +331,15 @@ def main(args):
                 loglevel = arg
             else:
                 loglevel = 'INFO'
-        elif opt in ('-r','--repeat'):
-            try:
-                runtime = int(arg)
-            except ValueError:
-                print 'The value of the repeat (-r) argument must be an integer'
-                sys.exit(2)
+        elif opt in ('-r', '--runtime'):
+            if arg.lower() == 'infinite':
+                runtime = 'infinite'
+            else:
+                try:
+                    runtime = int(arg)
+                except ValueError:
+                    print 'The value of the runtime argument must either be "infinite" or an integer'
+                    sys.exit(2)
         elif opt in ('-f','--frequency'):
             try:
                 frequency = int(arg)
@@ -301,7 +347,8 @@ def main(args):
                 print 'The value of the frequency (-f) argument must be an integer'
                 sys.exit(2)
         else:
-            assert False, "unhandled option"
+            print "Unhandled option: %s" % (opt)
+            sys.exit(2)
     logging.basicConfig(level=logging.getLevelName(loglevel),
                         format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')  # FIXME
                                                                                             # revisit formatting %-Ns
@@ -309,7 +356,7 @@ def main(args):
     while True:
         try:
             with open(inputfile) as sf:
-                inventory = parser([n.strip('\n') for n in sf.readlines()])
+                inventory = parser(filter(lambda line: line[0] != '#', [n.strip('\n') for n in sf.readlines()]))
             if lastChanged != os.stat(inputfile).st_mtime:
                 dswitch = True
             else:
@@ -324,7 +371,7 @@ def main(args):
             threads = []
             logging.debug("Initializing subThreads")
             for n,node in enumerate(inventory):
-                t = Router(n+1, node, inventory[node], dswitch)
+                t = Router(n+1, node, inventory[node], dswitch, riskfactor)
                 threads.append(t)
                 t.start()
             for t in threads:
