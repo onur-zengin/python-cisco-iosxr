@@ -20,7 +20,7 @@ def tstamp(format):
         return dt.now()
 
 oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  # IF-MIB::ifName
-           '.1.3.6.1.2.1.2.2.1.2', # IF-MIB::ifDescr
+           '.1.3.6.1.2.1.31.1.1.1.18', # IF-MIB::ifDescr
            '.1.3.6.1.2.1.4.34.1.3',  # IP-MIB::ipAddressIfIndex
            '.1.3.6.1.4.1.9.9.187.1.2.5.1.6',  # cbgpPeer2LocalAddr
            '.1.3.6.1.4.1.9.9.187.1.2.5.1.11', # cbgpPeer2RemoteAs
@@ -37,14 +37,11 @@ class Router(threading.Thread):
     int_oids = oidlist[5:10]
     bw_oids = oidlist[7:10]
     bgp_oids = oidlist[10:]
-    def __init__(self, threadID, node, interfaces, dswitch, riskfactor):
+    def __init__(self, threadID, node, dswitch, risk_factor):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
-        self.pni_interfaces = interfaces['pni']
-        self.cdn_interfaces = interfaces['cdn']
-        self.interfaces = self.pni_interfaces + self.cdn_interfaces
         self.switch = dswitch
-        self.riskfactor = riskfactor
+        self.risk_factor = risk_factor
     def run(self):
         logging.debug("Starting")
         self.tstamp = tstamp('mr')
@@ -62,6 +59,10 @@ class Router(threading.Thread):
             except IOError:
                 logging.info("Discovery file(s) could not be located. Initializing node discovery")
                 disc = self.discovery(self.ipaddr)
+        print disc
+        self.pni_interfaces = [int for int in disc if disc[int]['type'] == 'pni']
+        self.cdn_interfaces = [int for int in disc if disc[int]['type'] == 'cdn']
+        self.interfaces = self.pni_interfaces + self.cdn_interfaces
         self.process(self.ipaddr, disc)
         logging.debug("Completed")
     def dns(self,node):
@@ -109,15 +110,21 @@ class Router(threading.Thread):
                 sys.exit(3)
         return pingr
     def discovery(self, ipaddr):
-        ifNameTable, ifDescrTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
-                                            map(lambda oid: self.snmp(self.ipaddr, [oid], quiet='off'), self.dsc_oids))
+        pni_interfaces = []
+        cdn_interfaces = []
         disc = {}
-        print ifDescrTable
-        for interface in self.interfaces:
-            for i in ifNameTable:
-                if interface == i[3]:
-                    disc[interface] = {'ifIndex':i[0].split('.')[1]}
-        for interface in self.pni_interfaces:
+        ifNameTable, ifDescrTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
+                                            map(lambda oid: self.snmp(ipaddr, [oid], quiet='off'), self.dsc_oids))
+        for i, j in zip(ifDescrTable, ifNameTable):
+            if 'no-mon' not in i[3] and '[CDPautomation:PNI]' in i[3]:
+                pni_interfaces.append(j[3])
+                disc[j[3]] = {'ifIndex': j[0].split('.')[1]}
+                disc[j[3]]['type'] = 'cdn'
+            elif 'no-mon' not in i[3] and '[CDPautomation:CDN]' in i[3]:
+                cdn_interfaces.append(j[3])
+                disc[j[3]] = {'ifIndex': j[0].split('.')[1]}
+                disc[j[3]]['type'] = 'pni'
+        for interface in pni_interfaces:
             for i in ipTable:
                 if disc[interface]['ifIndex'] == i[3]:
                     type = i[0].split('"')[0].split('.')[1]
@@ -126,7 +133,7 @@ class Router(threading.Thread):
                             disc[interface]['local_' + type] = [i[0].split('"')[1]]
                         else:
                             disc[interface]['local_' + type] += [i[0].split('"')[1]]
-        for interface in self.pni_interfaces:
+        for interface in pni_interfaces:
             for i in peerTable:
                 if len(i) == 8:
                     locaddr = ('.').join([str(int(i[n], 16)) for n in range(3, 7)])
@@ -152,8 +159,7 @@ class Router(threading.Thread):
     def probe(self, ipaddr, disc):
         old = []
         new = []
-        args = ['tail', '-1']
-        args.append('.do_not_modify_'.upper() + self.node + '.prb')
+        args = ['tail', '-1', '.do_not_modify_'.upper() + ipaddr + '.prb']
         try:
             ptup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
@@ -171,7 +177,7 @@ class Router(threading.Thread):
                 sys.exit(3)
         finally:
             for interface in disc:
-                int_new = self.snmp(self.ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids],
+                int_new = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids],
                                     cmd='snmpget')
                 int_new.insert(0, str(self.tstamp))
                 int_new.insert(0, interface)
@@ -230,8 +236,8 @@ class Router(threading.Thread):
             print min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]])
         else:
             pass # make sure the following lines don't fail due to unknown argument
-        if actPniOut / aggPniOut * 100 >= self.riskfactor: # consider nesting the following if to the one above
-            self.acl('block', min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]))
+        #if actPniOut / aggPniOut * 100 >= self.risk_factor: # consider nesting the following if to the one above
+         #   self.acl('block', min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]))
     def acl(self, decision, interface):
         if decision == 'block':
             logging.warning("%s will now be blocked" % (interface))
@@ -283,15 +289,15 @@ def main(args):
                         print 'Invalid value specified for loglevel, program will continue with its default ' \
                               'setting: "info"'
                         loglevel = 'info'
-                elif opt == 'riskfactor':
+                elif opt == 'risk_factor':
                     try:
-                        riskfactor = int(arg)
+                        risk_factor = int(arg)
                     except ValueError:
-                        print 'The value of the riskfactor argument must be an integer'
+                        print 'The value of the risk_factor argument must be an integer'
                         sys.exit(2)
                     else:
-                        if not 0 <= riskfactor and riskfactor <= 100:
-                            print 'The value of the riskfactor argument must be an integer between 0 and 100'
+                        if not 0 <= risk_factor and risk_factor <= 100:
+                            print 'The value of the risk_factor argument must be an integer between 0 and 100'
                             sys.exit(2)
                 elif opt == 'frequency':
                     try:
@@ -357,7 +363,7 @@ def main(args):
     while True:
         try:
             with open(inputfile) as sf:
-                inventory = parser(filter(lambda line: line[0] != '#', [n.strip('\n') for n in sf.readlines()]))
+                inventory = filter(lambda line: line[0] != '#', [n.strip('\n') for n in sf.readlines()])
             if lastChanged != os.stat(inputfile).st_mtime:
                 dswitch = True
             else:
@@ -372,7 +378,7 @@ def main(args):
             threads = []
             logging.debug("Initializing subThreads")
             for n,node in enumerate(inventory):
-                t = Router(n+1, node, inventory[node], dswitch, riskfactor)
+                t = Router(n+1, node, dswitch, risk_factor)
                 threads.append(t)
                 t.start()
             for t in threads:

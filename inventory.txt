@@ -1,3 +1,5 @@
-er11.bllab:pni,BE1056,BE1032:cdn,be3040
-er10.bllab:pni,BE1045:cdn,be10
-er12.bllab:pni,be4
+#er11.bllab:pni,BE1056,BE1032:cdn,be3040
+#er10.bllab:pni,Bundle-Ether1045:cdn,Bundle-Ether10
+#google.com:pni,be4:cdn
+er11.bllab
+er10.bllab
