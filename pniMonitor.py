@@ -120,7 +120,6 @@ class Router(threading.Thread):
         ifNameTable, ifDescrTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
                                             map(lambda oid: self.snmp(ipaddr, [oid], quiet='off'), self.dsc_oids))
         for i, j in zip(ifDescrTable, ifNameTable):
-            logging.debug("interface description: %s, Name: %s" % (i[3:],j[3]))
             if 'no-mon' not in str(i[3:]) and '[CDPautomation:PNI]' in str(i[3:]) and 'Bundle-Ether' in j[3]:
                 pni_interfaces.append(j[3])
                 disc[j[3]] = {'ifIndex': j[0].split('.')[1]}
@@ -239,8 +238,8 @@ class Router(threading.Thread):
             print "Actual PNI Egress: %.2f" % actPniOut
             print [util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]
             print min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]])
-        else:
-            pass # make sure the following lines don't fail due to unknown argument
+        else: # make sure the following lines don't fail due to unknown argument
+            logging.debug("probe() function returned no data")
         #if actPniOut / aggPniOut * 100 >= self.risk_factor: # consider nesting the following if to the one above
          #   self.acl('block', min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]))
     def acl(self, decision, interface):
