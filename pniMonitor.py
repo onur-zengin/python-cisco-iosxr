@@ -119,9 +119,8 @@ class Router(threading.Thread):
         disc = {}
         ifNameTable, ifDescrTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
                                             map(lambda oid: self.snmp(ipaddr, [oid], quiet='off'), self.dsc_oids))
-        logging.debug("interface names %s" % ifNameTable)
-        logging.debug("interface descriptions %s" % ifDescrTable)
         for i, j in zip(ifDescrTable, ifNameTable):
+            logging.debug("interface description: %s, Name: %s" % i[3],j[3])
             if 'no-mon' not in i[3] and '[CDPautomation:PNI]' in i[3] and 'Bundle-Ether' in j[3]:
                 pni_interfaces.append(j[3])
                 disc[j[3]] = {'ifIndex': j[0].split('.')[1]}
