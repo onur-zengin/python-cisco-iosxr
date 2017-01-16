@@ -121,11 +121,11 @@ class Router(threading.Thread):
                                             map(lambda oid: self.snmp(ipaddr, [oid], quiet='off'), self.dsc_oids))
         for i, j in zip(ifDescrTable, ifNameTable):
             logging.debug("interface description: %s, Name: %s" % (i[3:],j[3]))
-            if 'no-mon' not in i[3:] and '[CDPautomation:PNI]' in i[3:] and 'Bundle-Ether' in j[3]:
+            if 'no-mon' not in str(i[3:]) and '[CDPautomation:PNI]' in str(i[3:]) and 'Bundle-Ether' in j[3]:
                 pni_interfaces.append(j[3])
                 disc[j[3]] = {'ifIndex': j[0].split('.')[1]}
                 disc[j[3]]['type'] = 'cdn'
-            elif 'no-mon' not in i[3:] and '[CDPautomation:CDN]' in i[3:] and 'Bundle-Ether' in j[3]:
+            elif 'no-mon' not in str(i[3:]) and '[CDPautomation:CDN]' in str(i[3:]) and 'Bundle-Ether' in j[3]:
                 cdn_interfaces.append(j[3])
                 disc[j[3]] = {'ifIndex': j[0].split('.')[1]}
                 disc[j[3]]['type'] = 'pni'
