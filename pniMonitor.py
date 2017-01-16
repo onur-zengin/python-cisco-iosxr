@@ -63,8 +63,11 @@ class Router(threading.Thread):
         self.pni_interfaces = [int for int in disc if disc[int]['type'] == 'pni']
         self.cdn_interfaces = [int for int in disc if disc[int]['type'] == 'cdn']
         self.interfaces = self.pni_interfaces + self.cdn_interfaces
-        logging.debug("Discovered interfaces: %s" % str(self.interfaces))
-        self.process(self.ipaddr, disc)
+        if self.interfaces != []:
+            logging.debug("Discovered interfaces: %s" % str(self.interfaces))
+            self.process(self.ipaddr, disc)
+        else:
+            logging.info("No interfaces eligible for monitoring")
         logging.debug("Completed")
     def dns(self,node):
         try:
@@ -116,6 +119,8 @@ class Router(threading.Thread):
         disc = {}
         ifNameTable, ifDescrTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
                                             map(lambda oid: self.snmp(ipaddr, [oid], quiet='off'), self.dsc_oids))
+        logging.debug("interface names %s" % ifNameTable)
+        logging.debug("interface descriptions %s" % ifDescrTable)
         for i, j in zip(ifDescrTable, ifNameTable):
             if 'no-mon' not in i[3] and '[CDPautomation:PNI]' in i[3] and 'Bundle-Ether' in j[3]:
                 pni_interfaces.append(j[3])
@@ -209,8 +214,7 @@ class Router(threading.Thread):
     def process(self, ipaddr, disc):
         old, new = self.probe(ipaddr, disc)
         actCdnIn, aggCdnIn, actPniOut, aggPniOut, dateFormat = 0, 0, 0, 0, "%Y-%m-%d %H:%M:%S.%f"
-        if old is not '':
-            print "old is not '': %s" % old
+        if old != []:
             for o , n in zip(old, new):
                 if n[0] in self.cdn_interfaces:
                     if o[3] == 'up' and n[3] == 'up':
