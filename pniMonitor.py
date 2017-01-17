@@ -240,8 +240,8 @@ class Router(threading.Thread):
             print "Usable PNI Capacity: %.2f" % aggPniOut
             print "Actual PNI Egress: %.2f" % actPniOut
             print disc
-            print [util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]
-            print min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]])
+            #print [util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]
+            #print min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]])
             # if actPniOut / aggPniOut * 100 >= self.risk_factor:
             #   self.acl('block', min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]))
         elif old != [] and len(old) < len(new):
