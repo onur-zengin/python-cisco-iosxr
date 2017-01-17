@@ -441,7 +441,11 @@ def main(args):
             finally:
                 if runtime == 0:
                     break
-                time.sleep(frequency)
+                try: 
+                    time.sleep(frequency)
+                except KeyboardInterrupt as kint:
+                    print kint
+                    sys.exit(1)
 
 
 if __name__ == '__main__':
