@@ -19,17 +19,17 @@ def tstamp(format):
     elif format == 'mr':
         return dt.now()
 
-oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  # IF-MIB::ifName
-           '.1.3.6.1.2.1.31.1.1.1.18', # IF-MIB::ifDescr
-           '.1.3.6.1.2.1.4.34.1.3',  # IP-MIB::ipAddressIfIndex
-           '.1.3.6.1.4.1.9.9.187.1.2.5.1.6',  # cbgpPeer2LocalAddr
-           '.1.3.6.1.4.1.9.9.187.1.2.5.1.11', # cbgpPeer2RemoteAs
-           ".1.3.6.1.2.1.2.2.1.7",  # ifAdminStatus 1up 2down 3testing
-           ".1.3.6.1.2.1.2.2.1.8",  # ifOperStatus 1up 2down 3testing 4unknown ...
-           ".1.3.6.1.2.1.31.1.1.1.15",  # ifHighSpeed
-           ".1.3.6.1.2.1.31.1.1.1.6",  # ifHCInOctets
-           ".1.3.6.1.2.1.31.1.1.1.10",  # ifHCOutOctets
-           ".1.3.6.1.4.1.9.9.187.1.2.5.1.3.1.4.2.120.9.120"
+oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #0 IF-MIB::ifName
+           '.1.3.6.1.2.1.31.1.1.1.18', #1 IF-MIB::ifDescr
+           '.1.3.6.1.2.1.4.34.1.3',  #2 IP-MIB::ipAddressIfIndex
+           '.1.3.6.1.4.1.9.9.187.1.2.5.1.6',  #3 cbgpPeer2LocalAddr
+           '.1.3.6.1.4.1.9.9.187.1.2.5.1.11', #4 cbgpPeer2RemoteAs
+           ".1.3.6.1.2.1.2.2.1.7",  #5 ifAdminStatus 1up 2down 3testing
+           ".1.3.6.1.2.1.2.2.1.8",  #6 ifOperStatus 1up 2down 3testing 4unknown ...
+           ".1.3.6.1.2.1.31.1.1.1.15",  #7 ifHighSpeed
+           ".1.3.6.1.2.1.31.1.1.1.6",  #8 ifHCInOctets
+           ".1.3.6.1.2.1.31.1.1.1.10",  #9 ifHCOutOctets
+           ".1.3.6.1.4.1.9.9.187.1.2.5.1.3.1.4.2.120.9.120" #10
            ]
 
 class Router(threading.Thread):
@@ -178,7 +178,6 @@ class Router(threading.Thread):
                 logging.info("New Node")
             else:
                 logging.warning("Unexpected error during %s operation" % (str(ptup)))
-                logging.debug("Unexpected error during %s operation: ### %s ###" % (str(ptup)))
                 sys.exit(3)
         finally:
             for interface in disc:
@@ -212,6 +211,9 @@ class Router(threading.Thread):
         return snmpr
     def _process(self, ipaddr, disc):
         old, new = self.probe(ipaddr, disc)
+        logging.debug(old)
+        logging.debug(new)
+        # ARE THE INTERFACES IN OLD & NEW ALWAYS IN ORDER?
         actCdnIn, aggCdnIn, actPniOut, aggPniOut, dateFormat = 0, 0, 0, 0, "%Y-%m-%d %H:%M:%S.%f"
         if old != [] and len(old) == len(new):
             for o , n in zip(old, new):
@@ -225,7 +227,7 @@ class Router(threading.Thread):
                     if n[3] == 'up':
                         aggCdnIn += int(n[4])
                 elif n[0] in self.pni_interfaces:
-                    if o[3] == 'up' and n[3] == 'up':
+                    if o[3] == 'up' and n[3] == 'up': # ADD BGP STATE IN THE CONDITIONS
                         delta_time = (dt.strptime(n[1], dateFormat) - dt.strptime(o[1], dateFormat)).total_seconds()
                         delta_outOct = int(n[6]) - int(o[6])
                         print n[0], "octets" , delta_outOct , "time" , delta_time
@@ -239,10 +241,15 @@ class Router(threading.Thread):
             print "Actual PNI Egress: %.2f" % actPniOut
             print [util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]
             print min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]])
-        else: # make sure the following lines don't fail due to unknown argument
-            logging.debug("probe() function returned no data")
-        #if actPniOut / aggPniOut * 100 >= self.risk_factor: # consider nesting the following if to the one above
-         #   self.acl('block', min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]))
+            # if actPniOut / aggPniOut * 100 >= self.risk_factor:
+            #   self.acl('block', min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]))
+        elif old != [] and len(old) < len(new):
+            logging.debug("New interface discovered.")
+            # take care of this. _process() should continue for the old interfaces.
+        elif old == [] and new != []:
+            logging.info("New node detected. _process() module will be activated in the next polling cycle")
+        else:
+            logging.warning("Unexpected error in the _process() function")
     def acl(self, decision, interface):
         if decision == 'block':
             logging.warning("%s will now be blocked" % (interface))
@@ -441,7 +448,7 @@ def main(args):
             finally:
                 if runtime == 0:
                     break
-                try: 
+                try:
                     time.sleep(frequency)
                 except KeyboardInterrupt as kint:
                     print kint
