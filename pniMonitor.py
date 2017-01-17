@@ -37,11 +37,12 @@ class Router(threading.Thread):
     int_oids = oidlist[5:10]
     bw_oids = oidlist[7:10]
     bgp_oids = oidlist[10:]
-    def __init__(self, threadID, node, dswitch, risk_factor):
+    def __init__(self, threadID, node, dswitch, risk_factor, int_identifiers):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
         self.switch = dswitch
         self.risk_factor = risk_factor
+        self.pni_identifier, self.cdn_identifier = int_identifiers
     def run(self):
         logging.debug("Starting")
         self.tstamp = tstamp('mr')
@@ -120,11 +121,11 @@ class Router(threading.Thread):
         ifNameTable, ifDescrTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
                                             map(lambda oid: self.snmp(ipaddr, [oid], quiet='off'), self.dsc_oids))
         for i, j in zip(ifDescrTable, ifNameTable):
-            if 'no-mon' not in str(i[3:]) and '[CDPautomation:PNI]' in str(i[3:]) and 'Bundle-Ether' in j[3]:
+            if 'no-mon' not in str(i[3:]) and self.pni_identifier in str(i[3:]) and 'Bundle-Ether' in j[3]:
                 pni_interfaces.append(j[3])
                 disc[j[3]] = {'ifIndex': j[0].split('.')[1]}
                 disc[j[3]]['type'] = 'cdn'
-            elif 'no-mon' not in str(i[3:]) and '[CDPautomation:CDN]' in str(i[3:]) and 'Bundle-Ether' in j[3]:
+            elif 'no-mon' not in str(i[3:]) and self.cdn_identifier in str(i[3:]) and 'Bundle-Ether' in j[3]:
                 cdn_interfaces.append(j[3])
                 disc[j[3]] = {'ifIndex': j[0].split('.')[1]}
                 disc[j[3]]['type'] = 'pni'
@@ -212,7 +213,7 @@ class Router(threading.Thread):
     def process(self, ipaddr, disc):
         old, new = self.probe(ipaddr, disc)
         actCdnIn, aggCdnIn, actPniOut, aggPniOut, dateFormat = 0, 0, 0, 0, "%Y-%m-%d %H:%M:%S.%f"
-        if old != []:
+        if old != [] and len(old) == len(new):
             for o , n in zip(old, new):
                 if n[0] in self.cdn_interfaces:
                     if o[3] == 'up' and n[3] == 'up':
@@ -248,8 +249,7 @@ class Router(threading.Thread):
         else:
             logging.info("%s will now be unblocked" % (interface))
 
-
-
+"""
 def parser(lst):
     dict = {}
     for node in [line.split(':') for line in lst]:
@@ -257,30 +257,50 @@ def parser(lst):
         for i in range(len(node))[1:]:
             dict[node[0]][node[i].split(',')[0]] = [int for int in node[i].split(',')[1:]]
     return dict
+"""
 
-
-def usage(args):
-    print 'USAGE:\n\t%s\t[-i <filename>] [--input <filename>] [-l <loglevel>] [--logging <loglevel>]' \
-          '\n\t\t\t[-f <value>] [--frequency <value>] [-r <value>] [--repeat <value>]' % (args[0])
-    print '\nDESCRIPTION:\n\t[-i <filename>], [--input <filename>]' \
-          '\n\t\tThe inventory details must be provided in a text file structured in the following format,' \
-          'while each node being written on a separate line:' \
-          '\n\t\t\t<nodename>:pni,<intname-1>,...,<intname-M>:cdn,<intname-1>,...,<intname-N>' \
-          '\n\t\t\tEXAMPLE: er12.thlon:pni,Bundle-Ether1024,Bundle-Ether1040:cdn,Bundle-Ether1064' \
-          '\n\t[-l <loglevel>], [--logging <loglevel>]' \
-          '\n\t\tThe loglevel must be specified as one of INFO, WARNING, DEBUG in capital letters. ' \
-          'If none specified, the program will run with default level INFO.'
+def usage(arg,opt=False):
+    if opt is True:
+        try:
+            with open("README.md") as readme_file:
+                print readme_file.read()
+        except IOError:
+            print "README file could not be located. Printing the basic help menu instead"
+            usage(arg)
+            sys.exit(2)
+    else:
+        print 'USAGE:\n\t%s\t[-i <filename>] [--inputfile <filename>] [-f <value>] [--frequency <value>] [-r <value>]' \
+          '\n\t\t\t[--risk_factor <value>] [-l <info|warning|debug>] [--loglevel <info|warning|debug>]' % (arg)
 
 
 def main(args):
     asctime = tstamp('hr')
+    pni_interface_tag = '[CDPautomation:PNI]'
+    cdn_interface_tag = '[CDPautomation:CDN]'
     try:
-        with open("pniMonitor.conf") as pf:
+        with open(args[0][:-3] + ".conf") as pf:
             parameters = [tuple(i.split('=')) for i in
                             filter(lambda line: line[0] != '#', [n.strip('\n') for n in pf.readlines()])]
     except IOError as ioerr:
-        print ioerr
-        sys.exit(1)
+        try:
+            options, remainder = getopt.getopt(args[1:], "i:hl:r:f:", ["inputfile=", "help", "loglevel=",
+                                                                       "risk_factor=", "frequency=", "runtime="])
+        except getopt.GetoptError as err:
+            print err
+            usage(sys.argv[0])
+            sys.exit(2)
+        else:
+            rg = re.search(r'(\'.+\')', str(ioerr))
+            if options == []:
+                print "'%s could not be located and no command line arguments provided.\nUse '%s --help' " \
+                      "to see usage instructions \n" % (rg.group(1)[3:], args[0])
+                sys.exit(2)
+            elif '-h' in str(options) or '--help' in str(options):
+                usage(args[0], opt=True)
+                sys.exit(1)
+            else:
+                print "%s could not be located. The program will try to run with command line arguments.." \
+                      % rg.group(1)
     else:
         try:
             for opt, arg in parameters:
@@ -318,86 +338,108 @@ def main(args):
                         except ValueError:
                             print 'The value of the runtime argument must be either be "infinite" or an integer'
                             sys.exit(2)
+                elif opt.lower() == 'pni_interface_tag':
+                    pni_interface_tag = str(arg)
+                elif opt.lower() == 'cdn_interface_tag':
+                    cdn_interface_tag = str(arg)
                 else:
                     print "Invalid parameter found in the configuration file: %s" % (opt)
                     sys.exit(2)
         except ValueError:
             print "Configuration parameters must be provided in key value pairs separated by an equal sign (=)" \
-                  "\nExample:\n\tfrequency=5\n\tloglevel=info"
+                  "\nUse '%s --help' for more details" % (args[0])
             sys.exit(2)
-    try:
-        options, remainder = getopt.getopt(args, "i:hl:r:f:", ["input=", "help", "logging=", "runtime=", "frequency="])
-    except getopt.GetoptError as err:
-        print err
-        usage(sys.argv)
-        sys.exit(2)
-    for opt, arg in options:
-        if opt in ('-h','--help'):
-            usage(sys.argv)
-            sys.exit(2)
-        elif opt in ('-i', '--input'):
-            inputfile = arg
-        elif opt in ('-l','--logging'):
-            if arg.lower() in ('INFO','WARNING','DEBUG'):
-                loglevel = arg.upper()
-            else:
-                loglevel = 'INFO'
-        elif opt in ('-r', '--runtime'):
-            if arg.lower() == 'infinite':
-                runtime = 'infinite'
-            else:
-                try:
-                    runtime = int(arg)
-                except ValueError:
-                    print 'The value of the runtime argument must either be "infinite" or an integer'
-                    sys.exit(2)
-        elif opt in ('-f','--frequency'):
-            try:
-                frequency = int(arg)
-            except ValueError:
-                print 'The value of the frequency (-f) argument must be an integer'
-                sys.exit(2)
-        else:
-            print "Unhandled option: %s" % (opt)
-            sys.exit(2)
-    logging.basicConfig(level=logging.getLevelName(loglevel),
-                        format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')  # FIXME
-                                                                                            # revisit formatting %-Ns
-    lastChanged = ""
-    while True:
+    finally:
         try:
-            with open(inputfile) as sf:
-                inventory = filter(lambda line: line[0] != '#', [n.strip('\n') for n in sf.readlines()])
-            if lastChanged != os.stat(inputfile).st_mtime:
-                dswitch = True
+            options, remainder = getopt.getopt(args[1:], "i:hl:r:f:", ["inputfile=", "help", "loglevel=",
+                                                                       "risk_factor=", "frequency=", "runtime="])
+        except getopt.GetoptError:
+            sys.exit(2)
+        for opt, arg in options:
+            if opt in ('-h', '--help'):
+                pass
+            elif opt in ('-i', '--inputfile'):
+                inputfile = arg
+            elif opt in ('-l', '--loglevel'):
+                if arg.lower() in ('info', 'warning', 'debug'):
+                    loglevel = arg.upper()
+                else:
+                    print 'Invalid value specified for loglevel, program will continue with its default ' \
+                          'setting: "info"'
+                    loglevel = 'INFO'
+            elif opt in ('-r', '--risk_factor'):
+                try:
+                    risk_factor = int(arg)
+                except ValueError:
+                    print 'The value of the risk_factor argument must be an integer'
+                    sys.exit(2)
+                else:
+                    if not 0 <= int(risk_factor) and int(risk_factor) <= 100:
+                        print 'The value of the risk_factor argument must be an integer between 0 and 100'
+                        sys.exit(2)
+            elif opt in ('-f', '--frequency'):
+                try:
+                    frequency = int(arg)
+                except ValueError:
+                    print 'The value of the frequency (-f) argument must be an integer'
+                    sys.exit(2)
+            elif opt == '--runtime':
+                if arg.lower() == 'infinite':
+                    runtime = 'infinite'
+                else:
+                    try:
+                        runtime = int(arg)
+                    except ValueError:
+                        print 'The value of the runtime (-r) argument must be either be "infinite" or an integer'
+                        sys.exit(2)
             else:
-                dswitch = False
-        except IOError as ioerr:
-            print ioerr
-            sys.exit(1)
-        except OSError as oserr:
-            print oserr
-            sys.exit(1)
-        else:
-            threads = []
-            logging.debug("Initializing subThreads")
-            for n,node in enumerate(inventory):
-                t = Router(n+1, node, dswitch, risk_factor)
-                threads.append(t)
-                t.start()
-            for t in threads:
-                t.join()
-            lastChanged = os.stat(inputfile).st_mtime
-            if type(runtime) == int:
-                runtime -= 1
-        finally:
-            if runtime == 0:
-                break
-            time.sleep(frequency)
+                print "Invalid option specified on the command line: %s" % (opt)
+                sys.exit(2)
+    try:
+        inputfile = inputfile
+        frequency = frequency
+        risk_factor = risk_factor
+        loglevel = loglevel
+        runtime = runtime
+    except UnboundLocalError as missing_arg:
+        rg = re.search(r'(\'.+\')', str(missing_arg))
+        print "%s is a mandatory argument" % rg.group(1)
+        sys.exit(2)
+    else:
+        logging.basicConfig(level=logging.getLevelName(loglevel),
+                            format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
+        lastChanged = ""
+        while True:
+            try:
+                with open(inputfile) as sf:
+                    inventory = filter(lambda line: line[0] != '#', [n.strip('\n') for n in sf.readlines()])
+                if lastChanged != os.stat(inputfile).st_mtime:
+                    dswitch = True
+                else:
+                    dswitch = False
+            except IOError as ioerr:
+                print ioerr
+                sys.exit(1)
+            except OSError as oserr:
+                print oserr
+                sys.exit(1)
+            else:
+                threads = []
+                logging.debug("Initializing subThreads")
+                for n, node in enumerate(inventory):
+                    t = Router(n + 1, node, dswitch, risk_factor, (pni_interface_tag, cdn_interface_tag))
+                    threads.append(t)
+                    t.start()
+                for t in threads:
+                    t.join()
+                lastChanged = os.stat(inputfile).st_mtime
+                if type(runtime) == int:
+                    runtime -= 1
+            finally:
+                if runtime == 0:
+                    break
+                time.sleep(frequency)
+
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        main(sys.argv[1:])
-    else:
-        usage(sys.argv)
-        sys.exit(2)
+    main(sys.argv)
