@@ -66,7 +66,7 @@ class Router(threading.Thread):
         self.interfaces = self.pni_interfaces + self.cdn_interfaces
         if self.interfaces != []:
             logging.debug("Discovered interfaces: %s" % str(self.interfaces))
-            self.process(self.ipaddr, disc)
+            self._process(self.ipaddr, disc)
         else:
             logging.info("No interfaces eligible for monitoring")
         logging.debug("Completed")
@@ -210,7 +210,7 @@ class Router(threading.Thread):
                 logging.debug("Unexpected error during %s operation: ### %s ###" % (cmd, str(stup)))
                 sys.exit(3)
         return snmpr
-    def process(self, ipaddr, disc):
+    def _process(self, ipaddr, disc):
         old, new = self.probe(ipaddr, disc)
         actCdnIn, aggCdnIn, actPniOut, aggPniOut, dateFormat = 0, 0, 0, 0, "%Y-%m-%d %H:%M:%S.%f"
         if old != [] and len(old) == len(new):
@@ -422,6 +422,9 @@ def main(args):
                 sys.exit(1)
             except OSError as oserr:
                 print oserr
+                sys.exit(1)
+            except KeyboardInterrupt as kint:
+                print kint
                 sys.exit(1)
             else:
                 threads = []
