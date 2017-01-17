@@ -60,6 +60,7 @@ class Router(threading.Thread):
             except IOError:
                 logging.info("Discovery file(s) could not be located. Initializing node discovery")
                 disc = self.discovery(self.ipaddr)
+        logging.debug("DISC: %s" % disc)
         self.pni_interfaces = [int for int in disc if disc[int]['type'] == 'pni']
         self.cdn_interfaces = [int for int in disc if disc[int]['type'] == 'cdn']
         self.interfaces = self.pni_interfaces + self.cdn_interfaces
@@ -210,8 +211,8 @@ class Router(threading.Thread):
         return snmpr
     def _process(self, ipaddr, disc):
         old, new = self.probe(ipaddr, disc)
-        logging.debug("OLD:", old)
-        logging.debug("NEW:", new)
+        logging.debug("OLD: %s" % old)
+        logging.debug("NEW: %s" % new)
         # ARE THE INTERFACES IN OLD & NEW ALWAYS IN ORDER?
         actCdnIn, aggCdnIn, actPniOut, aggPniOut, dateFormat = 0, 0, 0, 0, "%Y-%m-%d %H:%M:%S.%f"
         if old != [] and len(old) == len(new):
