@@ -164,7 +164,7 @@ class Router(threading.Thread):
     def probe(self, ipaddr, disc):
         old = []
         new = []
-        args = ['tail', '-1', '.do_not_modify_'.upper() + ipaddr + '.prb']
+        args = ['tail', '-1', '.do_not_modify_'.upper() + self.node + '.prb']
         try:
             ptup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
