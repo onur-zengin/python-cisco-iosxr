@@ -29,7 +29,9 @@ oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #0 IF-MIB::ifName
            ".1.3.6.1.2.1.31.1.1.1.15",  #7 ifHighSpeed
            ".1.3.6.1.2.1.31.1.1.1.6",  #8 ifHCInOctets
            ".1.3.6.1.2.1.31.1.1.1.10",  #9 ifHCOutOctets
-           ".1.3.6.1.4.1.9.9.187.1.2.5.1.3.1.4.2.120.9.120" #10
+           ".1.3.6.1.4.1.9.9.187.1.2.5.1.3" #10 cbgpPeer2State
+           # ".1.4.2.120.9.120" #10
+           # .2.16.32.1.0.101.0.101.0.0.0.0.0.0.0.0.0.2
            ]
 
 class Router(threading.Thread):
@@ -138,6 +140,7 @@ class Router(threading.Thread):
                             disc[interface]['local_' + type] = [i[0].split('"')[1]]
                         else:
                             disc[interface]['local_' + type] += [i[0].split('"')[1]]
+        logging.debug("peerTable %s" % peerTable)
         for interface in pni_interfaces:
             for i in peerTable:
                 if len(i) == 8:
@@ -167,8 +170,7 @@ class Router(threading.Thread):
         try:
             ptup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
-            logging.warning("Unexpected error during probe operation")
-            logging.debug("Unexpected error - Popen function probe(): %s" % (str(sys.exc_info()[:2])))
+            logging.warning("Unexpected error - Popen function probe(): %s" % (str(sys.exc_info()[:2])))
             sys.exit(3)
         else:
             if ptup[1] == '':
@@ -179,12 +181,15 @@ class Router(threading.Thread):
                 logging.warning("Unexpected error during %s operation" % (str(ptup)))
                 sys.exit(3)
         finally:
-            for interface in disc:
+            for interface in sorted(disc):
+                print interface
                 int_new = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids],
                                     cmd='snmpget')
                 int_new.insert(0, str(self.tstamp))
                 int_new.insert(0, interface)
                 new.append(int_new)
+            for interface in sorted(disc, disc["interface"]):
+                print interface
             with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                 pf.write(str(new)+'\n')
         return old, new
@@ -212,20 +217,10 @@ class Router(threading.Thread):
         old, new = self.probe(ipaddr, disc)
         logging.debug("OLD: %s" % old)
         logging.debug("NEW: %s" % new)
-        # ARE THE INTERFACES IN OLD & NEW ALWAYS IN ORDER?
         actCdnIn, aggCdnIn, actPniOut, aggPniOut, dateFormat = 0, 0, 0, 0, "%Y-%m-%d %H:%M:%S.%f"
         if old != [] and len(old) == len(new):
             for o , n in zip(old, new):
-                if n[0] in self.cdn_interfaces:
-                    if o[3] == 'up' and n[3] == 'up':
-                        delta_time = (dt.strptime(n[1], dateFormat) - dt.strptime(o[1], dateFormat)).total_seconds()
-                        delta_inOct = int(n[5]) - int(o[5])
-                        int_util = (delta_inOct * 800) / (delta_time * int(n[4]) * 10**6)
-                        disc[n[0]]['util'] = int_util
-                        actCdnIn += int_util
-                    if n[3] == 'up':
-                        aggCdnIn += int(n[4])
-                elif n[0] in self.pni_interfaces:
+                if n[0] in self.pni_interfaces:
                     if o[3] == 'up' and n[3] == 'up': # ADD BGP STATE IN THE CONDITIONS
                         delta_time = (dt.strptime(n[1], dateFormat) - dt.strptime(o[1], dateFormat)).total_seconds()
                         delta_outOct = int(n[6]) - int(o[6])
@@ -234,6 +229,15 @@ class Router(threading.Thread):
                         actPniOut += int_util
                     if n[3] == 'up':
                         aggPniOut += int(n[4])
+                elif n[0] in self.cdn_interfaces:
+                    if o[3] == 'up' and n[3] == 'up':
+                        delta_time = (dt.strptime(n[1], dateFormat) - dt.strptime(o[1], dateFormat)).total_seconds()
+                        delta_inOct = int(n[5]) - int(o[5])
+                        int_util = (delta_inOct * 800) / (delta_time * int(n[4]) * 10**6)
+                        disc[n[0]]['util'] = int_util
+                        actCdnIn += int_util
+                    if n[3] == 'up':
+                        aggCdnIn += int(n[4])
             print "Active CDN Capacity: %.2f" % aggCdnIn
             print "Actual CDN Ingress: %.2f" % actCdnIn
             print "Usable PNI Capacity: %.2f" % aggPniOut
@@ -243,13 +247,15 @@ class Router(threading.Thread):
             #print min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]])
             # if actPniOut / aggPniOut * 100 >= self.risk_factor:
             #   self.acl('block', min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]))
-        elif old != [] and len(old) < len(new):
-            logging.debug("New interface discovered.")
-            # take care of this. _process() should continue for the old interfaces.
         elif old == [] and new != []:
             logging.info("New node detected. _process() module will be activated in the next polling cycle")
+        elif old != [] and len(old) < len(new):
+            logging.info("New interface discovered.")
+            # PRB FILES ARE REMOVED WHEN A NEW INT IS DISCOVERED, SO THE STATEMENT IS A PLACEHOLDER
+            # REVISIT THIS IN VERSION-2 WHEN PRB PERSISTENCE IS ENABLED
+            # _process() should continue for the old interfaces.
         else:
-            logging.warning("Unexpected error in the _process() function")
+            logging.warning("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (old, new))
     def acl(self, decision, interface):
         if decision == 'block':
             logging.warning("%s will now be blocked" % (interface))
