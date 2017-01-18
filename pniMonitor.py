@@ -182,14 +182,11 @@ class Router(threading.Thread):
                 sys.exit(3)
         finally:
             for interface in sorted(disc):
-                print interface
                 int_new = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids],
                                     cmd='snmpget')
                 int_new.insert(0, str(self.tstamp))
                 int_new.insert(0, interface)
                 new.append(int_new)
-            for interface in sorted(disc, disc["interface"]):
-                print interface
             with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                 pf.write(str(new)+'\n')
         return old, new
