@@ -60,7 +60,7 @@ class Router(threading.Thread):
             except IOError:
                 logging.info("Discovery file(s) could not be located. Initializing node discovery")
                 disc = self.discovery(self.ipaddr)
-        logging.debug("DISC: %s" % disc)
+        logging.debug("DISC successfully loaded: %s" % disc)
         self.pni_interfaces = [int for int in disc if disc[int]['type'] == 'pni']
         self.cdn_interfaces = [int for int in disc if disc[int]['type'] == 'cdn']
         self.interfaces = self.pni_interfaces + self.cdn_interfaces
