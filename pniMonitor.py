@@ -420,6 +420,7 @@ def main(args):
             else:
                 print "Invalid option specified on the command line: %s" % (opt)
                 sys.exit(2)
+    print pni_interface_tag
     try:
         inputfile = inputfile
         frequency = frequency
