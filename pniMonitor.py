@@ -45,6 +45,7 @@ class Router(threading.Thread):
         self.switch = dswitch
         self.risk_factor = risk_factor
         self.pni_identifier, self.cdn_identifier = int_identifiers
+        print self.pni_identifier
     def run(self):
         logging.debug("Starting")
         self.tstamp = tstamp('mr')
@@ -420,7 +421,6 @@ def main(args):
             else:
                 print "Invalid option specified on the command line: %s" % (opt)
                 sys.exit(2)
-    print pni_interface_tag
     try:
         inputfile = inputfile
         frequency = frequency
