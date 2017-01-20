@@ -196,9 +196,10 @@ class Router(threading.Thread):
             for interface in sorted(disc):
                 int_new = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids],
                                     cmd='snmpget')
-                bgp_new = self.snmp(ipaddr, ['???'], cmd='snmpget')
+                #bgp_new = self.snmp(ipaddr, [i + '.' + disc[interface]['cbgpPeer2index'] for i in self.bgp_oids], cmd='snmpget')
                 int_new.insert(0, str(self.tstamp))
                 int_new.insert(0, interface)
+                #int_new = int_new + bgp_new
                 new.append(int_new)
             with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                 pf.write(str(new)+'\n')
