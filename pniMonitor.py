@@ -126,11 +126,11 @@ class Router(threading.Thread):
             if 'no-mon' not in (' ').join(i[3:]) and self.pni_identifier in (' ').join(i[3:]) and 'Bundle-Ether' in j[3]:
                 pni_interfaces.append(j[3])
                 disc[j[3]] = {'ifIndex': j[0].split('.')[1]}
-                disc[j[3]]['type'] = 'cdn'
-            elif 'no-mon' not in str(i[3:]) and self.cdn_identifier in str(i[3:]) and 'Bundle-Ether' in j[3]:
+                disc[j[3]]['type'] = 'pni'
+            elif 'no-mon' not in (' ').join(i[3:]) and self.cdn_identifier in (' ').join(i[3:]) and 'Bundle-Ether' in j[3]:
                 cdn_interfaces.append(j[3])
                 disc[j[3]] = {'ifIndex': j[0].split('.')[1]}
-                disc[j[3]]['type'] = 'pni'
+                disc[j[3]]['type'] = 'cdn'
         #logging.debug("ipTable %s" % ipTable)
         for interface in pni_interfaces:
             for i in ipTable:
@@ -196,7 +196,10 @@ class Router(threading.Thread):
             for interface in sorted(disc):
                 int_new = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids],
                                     cmd='snmpget')
-                #bgp_new = self.snmp(ipaddr, [i + '.' + disc[interface]['cbgpPeer2index'] for i in self.bgp_oids], cmd='snmpget')
+                #bgp_new = self.snmp(ipaddr, [i + '.' + n for n in disc[interface]['cbgpPeer2index'] for i in self.bgp_oids], cmd='snmpget')
+                #['.1.3.6.1.4.1.9.9.187.1.2.5.1.333.1.4.2.120.9.120', '.1.3.6.1.4.1.9.9.187.1.2.5.1.444.1.4.2.120.9.120',
+                # '.1.3.6.1.4.1.9.9.187.1.2.5.1.333.1.4.42.1.0.1', '.1.3.6.1.4.1.9.9.187.1.2.5.1.444.1.4.42.1.0.1',
+                # '.1.3.6.1.4.1.9.9.187.1.2.5.1.333.1.4.89.200.133.241', '.1.3.6.1.4.1.9.9.187.1.2.5.1.444.1.4.89.200.133.241']
                 int_new.insert(0, str(self.tstamp))
                 int_new.insert(0, interface)
                 #int_new = int_new + bgp_new
