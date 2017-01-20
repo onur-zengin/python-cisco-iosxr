@@ -50,7 +50,7 @@ class Router(threading.Thread):
         self.tstamp = tstamp('mr')
         self.ipaddr = self.dns(self.node)
         if self.switch is True:
-            logging.info("New inventory file / inventory updates detected. Initializing node discovery")
+            logging.info("Inventory updated. Initializing node discovery")
             for f in os.listdir('.'):
                 if self.node+'.dsc' in f or self.node+'.prb' in f:
                     os.remove(f)
@@ -68,7 +68,7 @@ class Router(threading.Thread):
         self.interfaces = self.pni_interfaces + self.cdn_interfaces
         if self.interfaces != []:
             logging.debug("Discovered interfaces: %s" % str(self.interfaces))
-            self._process(self.ipaddr, disc)
+            self._processor(self.ipaddr, disc)
         else:
             logging.info("No interfaces eligible for monitoring")
         logging.debug("Completed")
@@ -131,6 +131,7 @@ class Router(threading.Thread):
                 cdn_interfaces.append(j[3])
                 disc[j[3]] = {'ifIndex': j[0].split('.')[1]}
                 disc[j[3]]['type'] = 'pni'
+        #logging.debug("ipTable %s" % ipTable)
         for interface in pni_interfaces:
             for i in ipTable:
                 if disc[interface]['ifIndex'] == i[3]:
@@ -140,7 +141,7 @@ class Router(threading.Thread):
                             disc[interface]['local_' + type] = [i[0].split('"')[1]]
                         else:
                             disc[interface]['local_' + type] += [i[0].split('"')[1]]
-        logging.debug("peerTable %s" % peerTable)
+        #logging.debug("peerTable %s" % peerTable)
         for interface in pni_interfaces:
             for i in peerTable:
                 if len(i) == 8:
@@ -148,19 +149,30 @@ class Router(threading.Thread):
                     if disc[interface].has_key('local_ipv4'):
                         if locaddr in disc[interface]['local_ipv4']:
                             peeraddr = ('.').join(i[0].split('.')[-4:])
+                            cbgpPeer2index = ('.').join(i[0].split('.')[-6:])
                             if not disc[interface].has_key('peer_ipv4'):
                                 disc[interface]['peer_ipv4'] = [peeraddr]
                             else:
                                 disc[interface]['peer_ipv4'] += [peeraddr]
+                            if not disc[interface].has_key('cbgpPeer2index'):
+                                disc[interface]['cbgpPeer2index'] = [cbgpPeer2index]
+                            else:
+                                disc[interface]['cbgpPeer2index'] += [cbgpPeer2index]
                 elif len(i) == 20:
                     locaddr = (':').join([str(i[n]) for n in range(3, 19)])
                     if disc[interface].has_key('local_ipv6'):
                         if locaddr in disc[interface]['local_ipv6']:
                             peeraddr = (':').join([format(int(n), '02x') for n in i[0].split('.')[-16:]])
+                            cbgpPeer2index = ('.').join(i[0].split('.')[-18:])
+                            #peeraddr_decimal = ('.').join(i[0].split('.')[-16:])
                             if not disc[interface].has_key('peer_ipv6'):
                                 disc[interface]['peer_ipv6'] = [peeraddr]
                             else:
                                 disc[interface]['peer_ipv6'] += [peeraddr]
+                            if not disc[interface].has_key('cbgpPeer2index'):
+                                disc[interface]['cbgpPeer2index'] = [cbgpPeer2index]
+                            else:
+                                disc[interface]['cbgpPeer2index'] += [cbgpPeer2index]
         with open('.do_not_modify_'.upper()+self.node+'.dsc', 'w') as tf:
             tf.write(str(disc))
         return disc
@@ -184,6 +196,7 @@ class Router(threading.Thread):
             for interface in sorted(disc):
                 int_new = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids],
                                     cmd='snmpget')
+                bgp_new = self.snmp(ipaddr, ['???'], cmd='snmpget')
                 int_new.insert(0, str(self.tstamp))
                 int_new.insert(0, interface)
                 new.append(int_new)
@@ -210,11 +223,12 @@ class Router(threading.Thread):
                 logging.debug("Unexpected error during %s operation: ### %s ###" % (cmd, str(stup)))
                 sys.exit(3)
         return snmpr
-    def _process(self, ipaddr, disc):
+    def _processor(self, ipaddr, disc):
         old, new = self.probe(ipaddr, disc)
         logging.debug("OLD: %s" % old)
         logging.debug("NEW: %s" % new)
-        actCdnIn, aggCdnIn, actPniOut, aggPniOut, dateFormat = 0, 0, 0, 0, "%Y-%m-%d %H:%M:%S.%f"
+        actCdnIn, aggCdnIn, actPniOut, aggPniOut = 0, 0, 0, 0
+        dateFormat = "%Y-%m-%d %H:%M:%S.%f"
         if old != [] and len(old) == len(new):
             for o , n in zip(old, new):
                 if n[0] in self.pni_interfaces:
