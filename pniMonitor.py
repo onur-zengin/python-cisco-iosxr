@@ -177,7 +177,7 @@ class Router(threading.Thread):
             tf.write(str(disc))
         return disc
     def probe(self, ipaddr, disc):
-        old, new = [], []
+        old, new = {}, {}
         args = ['tail', '-1', '.do_not_modify_'.upper() + self.node + '.prb']
         try:
             ptup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
@@ -194,16 +194,15 @@ class Router(threading.Thread):
                 sys.exit(3)
         finally:
             for interface in sorted(disc):
-                int_new = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids],
+                int_status = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids],
                                     cmd='snmpget')
                 #bgp_new = self.snmp(ipaddr, [i + '.' + n for n in disc[interface]['cbgpPeer2index'] for i in self.bgp_oids], cmd='snmpget')
                 #['.1.3.6.1.4.1.9.9.187.1.2.5.1.333.1.4.2.120.9.120', '.1.3.6.1.4.1.9.9.187.1.2.5.1.444.1.4.2.120.9.120',
                 # '.1.3.6.1.4.1.9.9.187.1.2.5.1.333.1.4.42.1.0.1', '.1.3.6.1.4.1.9.9.187.1.2.5.1.444.1.4.42.1.0.1',
                 # '.1.3.6.1.4.1.9.9.187.1.2.5.1.333.1.4.89.200.133.241', '.1.3.6.1.4.1.9.9.187.1.2.5.1.444.1.4.89.200.133.241']
-                int_new.insert(0, str(self.tstamp))
-                int_new.insert(0, interface)
-                #int_new = int_new + bgp_new
-                new.append(int_new)
+                #int_new.insert(0, str(self.tstamp))
+                new[interface]['timestamp'] = str(self.tstamp)
+                new[interface]['status'] = [int_status]
             with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                 pf.write(str(new)+'\n')
         return old, new
@@ -233,6 +232,7 @@ class Router(threading.Thread):
         logging.debug("NEW: %s" % new)
         actCdnIn, aggCdnIn, actPniOut, aggPniOut = 0, 0, 0, 0
         dateFormat = "%Y-%m-%d %H:%M:%S.%f"
+        """
         if old != [] and len(old) == len(new):
             for o , n in zip(old, new):
                 if n[0] in self.pni_interfaces:
@@ -271,6 +271,7 @@ class Router(threading.Thread):
             # _process() should continue for the old interfaces.
         else:
             logging.warning("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (old, new))
+        """
     def acl(self, decision, interface):
         if decision == 'block':
             logging.warning("%s will now be blocked" % (interface))
