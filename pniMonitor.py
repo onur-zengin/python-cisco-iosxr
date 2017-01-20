@@ -201,8 +201,8 @@ class Router(threading.Thread):
                 # '.1.3.6.1.4.1.9.9.187.1.2.5.1.333.1.4.42.1.0.1', '.1.3.6.1.4.1.9.9.187.1.2.5.1.444.1.4.42.1.0.1',
                 # '.1.3.6.1.4.1.9.9.187.1.2.5.1.333.1.4.89.200.133.241', '.1.3.6.1.4.1.9.9.187.1.2.5.1.444.1.4.89.200.133.241']
                 #int_new.insert(0, str(self.tstamp))
-                new[interface]['timestamp'] = str(self.tstamp)
-                new[interface]['status'] = [int_status]
+                new[interface] = {'timestamp':str(self.tstamp)}
+                new[interface] += {'status':[int_status]}
             with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                 pf.write(str(new)+'\n')
         return old, new
