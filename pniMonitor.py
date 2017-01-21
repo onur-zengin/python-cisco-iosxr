@@ -150,6 +150,11 @@ class Router(threading.Thread):
                             peeraddr = ('.').join(i[0].split('.')[-4:])
                             cbgpPeer2index = ('.').join(i[0].split('.')[-6:])
                             if not disc[interface].has_key('peer_ipv4'):
+                                disc[interface]['peer_ipv4'] = [(peeraddr, cbgpPeer2index)]
+                            else:
+                                disc[interface]['peer_ipv4'] += [(peeraddr, cbgpPeer2index)]
+                            """
+                            if not disc[interface].has_key('peer_ipv4'):
                                 disc[interface]['peer_ipv4'] = [peeraddr]
                             else:
                                 disc[interface]['peer_ipv4'] += [peeraddr]
@@ -157,12 +162,18 @@ class Router(threading.Thread):
                                 disc[interface]['cbgpPeer2index'] = [cbgpPeer2index]
                             else:
                                 disc[interface]['cbgpPeer2index'] += [cbgpPeer2index]
+                            """
                 elif len(i) == 20:
                     locaddr = (':').join([str(i[n]) for n in range(3, 19)])
                     if disc[interface].has_key('local_ipv6'):
                         if locaddr in disc[interface]['local_ipv6']:
                             peeraddr = (':').join([format(int(n), '02x') for n in i[0].split('.')[-16:]])
                             cbgpPeer2index = ('.').join(i[0].split('.')[-18:])
+                            if not disc[interface].has_key('peer_ipv6'):
+                                disc[interface]['peer_ipv6'] = [(peeraddr, cbgpPeer2index)]
+                            else:
+                                disc[interface]['peer_ipv6'] += [(peeraddr, cbgpPeer2index)]
+                            """
                             #peeraddr_decimal = ('.').join(i[0].split('.')[-16:])
                             if not disc[interface].has_key('peer_ipv6'):
                                 disc[interface]['peer_ipv6'] = [peeraddr]
@@ -172,11 +183,12 @@ class Router(threading.Thread):
                                 disc[interface]['cbgpPeer2index'] = [cbgpPeer2index]
                             else:
                                 disc[interface]['cbgpPeer2index'] += [cbgpPeer2index]
+                            """
         with open('.do_not_modify_'.upper()+self.node+'.dsc', 'w') as tf:
             tf.write(str(disc))
         return disc
     def probe(self, ipaddr, disc):
-        old, new = {}, {}
+        prv, nxt = {}, {}
         args = ['tail', '-1', '.do_not_modify_'.upper() + self.node + '.prb']
         try:
             ptup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
@@ -185,7 +197,7 @@ class Router(threading.Thread):
             sys.exit(3)
         else:
             if ptup[1] == '':
-                old = eval(ptup[0])
+                prv = eval(ptup[0])
             elif "No such file or directory" in ptup[1]:
                 logging.info("New Node")
             else:
@@ -195,14 +207,15 @@ class Router(threading.Thread):
             for interface in sorted(disc):
                 int_status = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in
                                                 self.int_oids], cmd='snmpget')
-                new[interface] = {'timestamp': str(self.tstamp)}
-                new[interface]['adminStatus'] = int_status[0]
-                new[interface]['operStatus'] = int_status[1]
-                new[interface]['ifSpeed'] = int_status[2]
-                new[interface]['ifInOctets'] = int_status[3]
-                new[interface]['ifOutOctets'] = int_status[4]
-                bgpgetlist = []
-                if disc[interface]['type'] == 'pni' and disc[interface].has_key('cbgpPeer2index'):
+                nxt[interface] = {'timestamp': str(self.tstamp)}
+                nxt[interface]['adminStatus'] = int_status[0]
+                nxt[interface]['operStatus'] = int_status[1]
+                nxt[interface]['ifSpeed'] = int_status[2]
+                nxt[interface]['ifInOctets'] = int_status[3]
+                nxt[interface]['ifOutOctets'] = int_status[4]
+                """
+                if disc[interface]['type'] == 'pni' and disc[interface].has_key('peer_ipv4'):
+                    bgpgetlist = []
                     for n in disc[interface]['cbgpPeer2index']:
                         if len(n.split('.')) == 6:
                             bgpgetlist.append(self.bgp_oids[0] + '.' + n)
@@ -213,16 +226,18 @@ class Router(threading.Thread):
                     bgp_status = self.snmp(ipaddr, bgpgetlist, cmd='snmpget')
                     peer_bgp_status = [(i, bgp_status[bgp_status.index(i) + len(self.bgp_oids) - 1]) for i in
                                        bgp_status[::len(self.bgp_oids)]]
+                    print disc[interface]['cbgpPeer2index']
                     logging.debug("bgp status %s" % bgp_status)
                     logging.debug("peer bgp status %s" % peer_bgp_status)
                 elif disc[interface]['type'] == 'pni' and not disc[interface].has_key('cbgpPeer2index'):
                     logging.warning("PNI interface %s has no BGP sessions" % interface)
+                """
                 #['.1.3.6.1.4.1.9.9.187.1.2.5.1.333.1.4.2.120.9.120', '.1.3.6.1.4.1.9.9.187.1.2.5.1.444.1.4.2.120.9.120',
                 # '.1.3.6.1.4.1.9.9.187.1.2.5.1.333.1.4.42.1.0.1', '.1.3.6.1.4.1.9.9.187.1.2.5.1.444.1.4.42.1.0.1',
                 # '.1.3.6.1.4.1.9.9.187.1.2.5.1.333.1.4.89.200.133.241', '.1.3.6.1.4.1.9.9.187.1.2.5.1.444.1.4.89.200.133.241']
             with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
-                pf.write(str(new)+'\n')
-        return old, new
+                pf.write(str(nxt)+'\n')
+        return prv, nxt
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
         if quiet is 'on':
@@ -244,14 +259,14 @@ class Router(threading.Thread):
                 sys.exit(3)
         return snmpr
     def _processor(self, ipaddr, disc):
-        old, new = self.probe(ipaddr, disc)
-        logging.debug("OLD: %s" % old)
-        logging.debug("NEW: %s" % new)
+        prv, nxt = self.probe(ipaddr, disc)
+        logging.debug("PRV: %s" % prv)
+        logging.debug("NXT: %s" % nxt)
         actCdnIn, aggCdnIn, actPniOut, aggPniOut = 0, 0, 0, 0
         dateFormat = "%Y-%m-%d %H:%M:%S.%f"
         """
-        if old != [] and len(old) == len(new):
-            for o , n in zip(old, new):
+        if prv != [] and len(prv) == len(nxt):
+            for o , n in zip(prv, nxt):
                 if n[0] in self.pni_interfaces:
                     if o[3] == 'up' and n[3] == 'up': # ADD BGP STATE IN THE CONDITIONS
                         delta_time = (dt.strptime(n[1], dateFormat) - dt.strptime(o[1], dateFormat)).total_seconds()
@@ -279,15 +294,15 @@ class Router(threading.Thread):
             #print min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]])
             # if actPniOut / aggPniOut * 100 >= self.risk_factor:
             #   self.acl('block', min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]))
-        elif old == [] and new != []:
+        elif prv == [] and nxt != []:
             logging.info("New node detected. _process() module will be activated in the next polling cycle")
-        elif old != [] and len(old) < len(new):
+        elif prv != [] and len(prv) < len(nxt):
             logging.info("New interface discovered.")
             # PRB FILES ARE REMOVED WHEN A NEW INT IS DISCOVERED, SO THE STATEMENT IS A PLACEHOLDER
             # REVISIT THIS IN VERSION-2 WHEN PRB PERSISTENCE IS ENABLED
             # _process() should continue for the old interfaces.
         else:
-            logging.warning("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (old, new))
+            logging.warning("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (prv, nxt))
         """
     def acl(self, decision, interface):
         if decision == 'block':
