@@ -12,7 +12,6 @@ import resource
 import os
 from datetime import datetime as dt
 
-
 def tstamp(format):
     if format == 'hr':
         return time.asctime()
@@ -30,7 +29,8 @@ oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #0 IF-MIB::ifName
            ".1.3.6.1.2.1.31.1.1.1.6",  #8 ifHCInOctets
            ".1.3.6.1.2.1.31.1.1.1.10",  #9 ifHCOutOctets
            ".1.3.6.1.4.1.9.9.187.1.2.5.1.3", #10 cbgpPeer2State 3active 6established
-           ".1.3.6.1.4.1.9.9.187.1.2.8.1.1" #11 cbgpPeer2AcceptedPrefixes
+           ".1.3.6.1.4.1.9.9.187.1.2.8.1.1", #11 cbgpPeer2AcceptedPrefixes
+           ".1.3.6.1.4.1.9.9.808.1.1.4" #12 caAclAccessGroupCfgTable
            ]
 
 class Router(threading.Thread):
@@ -38,13 +38,14 @@ class Router(threading.Thread):
     int_oids = oidlist[5:10]
     bw_oids = oidlist[7:10]
     bgp_oids = oidlist[10:]
-    def __init__(self, threadID, node, dswitch, risk_factor, int_identifiers, pfx_thresholds):
+    def __init__(self, threadID, node, dswitch, risk_factor, cdn_serving_cap, int_identifiers, pfx_thresholds):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
         self.switch = dswitch
         self.risk_factor = risk_factor
         self.pni_identifier, self.cdn_identifier = int_identifiers
         self.ipv4_minPfx, self.ipv6_minPfx = pfx_thresholds
+        self.serving_cap = cdn_serving_cap
     def run(self):
         logging.debug("Starting")
         self.tstamp = tstamp('mr')
@@ -208,6 +209,8 @@ class Router(threading.Thread):
                             nxt[interface]['peerStatus_ipv6'][n[0]] = peer_status
                     if not disc[interface].has_key('peer_ipv4') and not disc[interface].has_key('peer_ipv6'):
                         logging.warning("PNI interface %s has no BGP sessions" % interface)
+                if disc[interface]['type'] == 'cdn':
+                    nxt[interface]['aclStatus'] = {}
             with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                 pf.write(str(nxt)+'\n')
         return prv, nxt
@@ -235,7 +238,7 @@ class Router(threading.Thread):
         prv, nxt = self.probe(ipaddr, disc)
         logging.debug("prev: %s" % prv)
         logging.debug("next: %s" % nxt)
-        actualCdnIn, connectedCdnIn, actualPniOut, usablePniOut = 0, 0, 0, 0
+        actualCdnIn, physicalCdnIn, servingCdnIn, actualPniOut, usablePniOut = 0, 0, 0, 0, 0
         dF = "%Y-%m-%d %H:%M:%S.%f"
         if prv != {} and len(prv) == len(nxt):
             for p , n in zip(sorted(prv), sorted(nxt)):
@@ -253,14 +256,16 @@ class Router(threading.Thread):
                             actualPniOut += int_util
                 elif n in self.cdn_interfaces:
                     if nxt[n]['operStatus'] == 'up':
-                        connectedCdnIn += int(nxt[n]['ifSpeed'])
+                        physicalCdnIn += int(nxt[n]['ifSpeed'])
+                        servingCdnIn += int(nxt[n]['ifSpeed']) * self.serving_cap / 100
                         if prv[p]['operStatus'] == 'up':
                             delta_time = (dt.strptime(nxt[n]['ts'], dF) - dt.strptime(prv[p]['ts'], dF)).total_seconds()
                             delta_ifInOctets = int(nxt[n]['ifInOctets']) - int(prv[p]['ifInOctets'])
                             int_util = (delta_ifInOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
                             #disc[n]['util'] = int_util
                             actualCdnIn += int_util
-            logging.debug("Connected CDN Capacity: %.2f" % connectedCdnIn)
+            logging.debug("Physical CDN Capacity: %.2f" % physicalCdnIn)
+            logging.debug("Serving CDN Capacity: %.2f" % servingCdnIn)
             logging.debug("Actual CDN Ingress: %.2f" % actualCdnIn)
             logging.debug("Usable PNI Capacity: %.2f" % usablePniOut)
             logging.debug("Actual PNI Egress: %.2f" % actualPniOut)
@@ -286,16 +291,6 @@ class Router(threading.Thread):
         else:
             logging.info("%s will now be unblocked" % (interface))
 
-"""
-def parser(lst):
-    dict = {}
-    for node in [line.split(':') for line in lst]:
-        dict[node[0]] = {}
-        for i in range(len(node))[1:]:
-            dict[node[0]][node[i].split(',')[0]] = [int for int in node[i].split(',')[1:]]
-    return dict
-"""
-
 def usage(arg,opt=False):
     if opt is True:
         try:
@@ -316,6 +311,7 @@ def main(args):
     cdn_interface_tag = '[CDPautomation:CDN]'
     ipv4_min_prefixes = 0
     ipv6_min_prefixes = 50
+    cdn_serving_cap = 90
     try:
         with open(args[0][:-3] + ".conf") as pf:
             parameters = [tuple(i.split('=')) for i in
@@ -469,8 +465,8 @@ def main(args):
                 threads = []
                 logging.debug("Initializing subThreads")
                 for n, node in enumerate(inventory):
-                    t = Router(n + 1, node, dswitch, risk_factor, (pni_interface_tag, cdn_interface_tag),
-                               (ipv4_min_prefixes, ipv6_min_prefixes))
+                    t = Router(n + 1, node, dswitch, risk_factor, cdn_serving_cap,
+                               (pni_interface_tag, cdn_interface_tag), (ipv4_min_prefixes, ipv6_min_prefixes))
                     threads.append(t)
                     t.start()
                 for t in threads:
