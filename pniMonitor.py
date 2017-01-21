@@ -266,7 +266,9 @@ class Router(threading.Thread):
             logging.debug("Actual PNI Egress: %.2f" % actualPniOut)
             #print [util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]
             #print min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]])
-            if actualPniOut / usablePniOut * 100 >= self.risk_factor:
+            if usablePniOut == 0:
+                self.acl('block', self.cdn_interfaces)
+            elif actualPniOut / usablePniOut * 100 >= self.risk_factor:
                 logging.info('risk factor hit')
             #   self.acl('block', min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]))
         elif prv == {} and len(nxt) > 0:
