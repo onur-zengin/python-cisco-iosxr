@@ -202,6 +202,7 @@ class Router(threading.Thread):
                 new[interface]['ifInOctets'] = int_status[3]
                 new[interface]['ifOutOctets'] = int_status[4]
                 bgpgetlist = []
+                print self.bgp_oids
                 if disc[interface]['type'] == 'pni' and disc[interface].has_key('cbgpPeer2index'):
                     for n in disc[interface]['cbgpPeer2index']:
                         if len(n.split('.')) == 6:
