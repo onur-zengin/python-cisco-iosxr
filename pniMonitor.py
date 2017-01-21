@@ -29,9 +29,8 @@ oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #0 IF-MIB::ifName
            ".1.3.6.1.2.1.31.1.1.1.15",  #7 ifHighSpeed
            ".1.3.6.1.2.1.31.1.1.1.6",  #8 ifHCInOctets
            ".1.3.6.1.2.1.31.1.1.1.10",  #9 ifHCOutOctets
-           ".1.3.6.1.4.1.9.9.187.1.2.5.1.3" #10 cbgpPeer2State
-           # ".1.4.2.120.9.120" #10
-           # .2.16.32.1.0.101.0.101.0.0.0.0.0.0.0.0.0.2
+           ".1.3.6.1.4.1.9.9.187.1.2.5.1.3" #10 cbgpPeer2State 3active 6established
+           ".1.3.6.1.4.1.9.9.187.1.2.8.1.1" #11 cbgpPeer2AcceptedPrefixes
            ]
 
 class Router(threading.Thread):
@@ -190,20 +189,33 @@ class Router(threading.Thread):
             elif "No such file or directory" in ptup[1]:
                 logging.info("New Node")
             else:
-                logging.warning("Unexpected error during %s operation" % (str(ptup)))
+                logging.warning("Unexpected output in the probe() function" % (str(ptup)))
                 sys.exit(3)
         finally:
             for interface in sorted(disc):
-                int_status = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in self.int_oids],
-                                    cmd='snmpget')
-                logging.debug(int_status)
-                #bgp_new = self.snmp(ipaddr, [i + '.' + n for n in disc[interface]['cbgpPeer2index'] for i in self.bgp_oids], cmd='snmpget')
+                int_status = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in
+                                                self.int_oids], cmd='snmpget')
+                new[interface] = {'timestamp': str(self.tstamp)}
+                new[interface]['status'] = int_status
+                bgpgetlist = []
+                if disc[interface]['type'] == 'pni' and disc[interface].has_key('cbgpPeer2index'):
+                    for n in disc[interface]['cbgpPeer2index']:
+                        if len(n.split('.')) == 6:
+                            bgpgetlist.append(self.bgp_oids[0] + '.' + n)
+                            bgpgetlist.append(self.bgp_oids[1] + '.' + n + '.1.1')
+                        else:
+                            bgpgetlist.append(self.bgp_oids[0] + '.' + n)
+                            bgpgetlist.append(self.bgp_oids[1] + '.' + n + '.2.1')
+                    bgp_status = self.snmp(ipaddr, bgpgetlist, cmd='snmpget')
+                    peer_bgp_status = [(i, bgp_status[bgp_status.index(i) + len(self.bgp_oids) - 1]) for i in
+                                       bgp_status[::len(self.bgp_oids)]]
+                    logging.debug("bgp status %s" % bgp_status)
+                    logging.debug("peer bgp status %s" % peer_bgp_status)
+                elif disc[interface]['type'] == 'pni' and not disc[interface].has_key('cbgpPeer2index'):
+                    logging.warning("PNI interface %s has no BGP sessions" % interface)
                 #['.1.3.6.1.4.1.9.9.187.1.2.5.1.333.1.4.2.120.9.120', '.1.3.6.1.4.1.9.9.187.1.2.5.1.444.1.4.2.120.9.120',
                 # '.1.3.6.1.4.1.9.9.187.1.2.5.1.333.1.4.42.1.0.1', '.1.3.6.1.4.1.9.9.187.1.2.5.1.444.1.4.42.1.0.1',
                 # '.1.3.6.1.4.1.9.9.187.1.2.5.1.333.1.4.89.200.133.241', '.1.3.6.1.4.1.9.9.187.1.2.5.1.444.1.4.89.200.133.241']
-                #int_new.insert(0, str(self.tstamp))
-                new[interface] = {'timestamp':str(self.tstamp)}
-                new[interface]['status'] = [int_status]
             with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                 pf.write(str(new)+'\n')
         return old, new
