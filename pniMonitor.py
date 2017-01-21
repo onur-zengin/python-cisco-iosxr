@@ -315,7 +315,7 @@ def main(args):
     pni_interface_tag = '[CDPautomation:PNI]'
     cdn_interface_tag = '[CDPautomation:CDN]'
     ipv4_min_prefixes = 0
-    ipv6_min_prefixes = 0
+    ipv6_min_prefixes = 50
     try:
         with open(args[0][:-3] + ".conf") as pf:
             parameters = [tuple(i.split('=')) for i in
