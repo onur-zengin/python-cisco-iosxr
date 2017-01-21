@@ -187,7 +187,7 @@ class Router(threading.Thread):
             for interface in sorted(disc):
                 int_status = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in
                                                 self.int_oids], cmd='snmpget')
-                nxt[interface] = {'tstamp': str(self.tstamp)}
+                nxt[interface] = {'ts': str(self.tstamp)}
                 nxt[interface]['adminStatus'] = int_status[0]
                 nxt[interface]['operStatus'] = int_status[1]
                 nxt[interface]['ifSpeed'] = int_status[2]
@@ -240,24 +240,24 @@ class Router(threading.Thread):
         if prv != {} and len(prv) == len(nxt):
             for p , n in zip(sorted(prv), sorted(nxt)):
                 if n in self.pni_interfaces:
-                    if n['operStatus'] == 'up' \
+                    if nxt[n]['operStatus'] == 'up' \
                             and reduce(lambda x, y: x[1] + y[1],
-                                       filter(lambda x: x[0] == '6', n['peerStatus_ipv4']), 0) > self.ipv4_minPfx \
+                                       filter(lambda x: x[0] == '6', nxt[n]['peerStatus_ipv4']), 0) > self.ipv4_minPfx \
                             or reduce(lambda x, y: x[1] + y[1],
-                                      filter(lambda x: x[0] == '6', n['peerStatus_ipv6']), 0) > self.ipv6_minPfx :
-                        usablePniOut += int(n['ifSpeed'])
-                        if p['operStatus'] == 'up':
-                            delta_time = (dt.strptime(n['tstamp'], dF) - dt.strptime(p['tstamp'], dF)).total_seconds()
-                            delta_ifOutOctets = int(n['ifOutOctets']) - int(p['ifOutOctets'])
-                            int_util = (delta_ifOutOctets * 800) / (delta_time * int(n[4]) * 10**6)
+                                      filter(lambda x: x[0] == '6', nxt[n]['peerStatus_ipv6']), 0) > self.ipv6_minPfx :
+                        usablePniOut += int(nxt[n]['ifSpeed'])
+                        if prv[p]['operStatus'] == 'up':
+                            delta_time = (dt.strptime(nxt[n]['ts'], dF) - dt.strptime(prv[p]['ts'], dF)).total_seconds()
+                            delta_ifOutOctets = int(nxt[n]['ifOutOctets']) - int(prv[p]['ifOutOctets'])
+                            int_util = (delta_ifOutOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
                             actualPniOut += int_util
                 elif n in self.cdn_interfaces:
-                    if n['operStatus'] == 'up':
-                        connectedCdnIn += int(n['ifSpeed'])
-                        if p['operStatus'] == 'up':
-                            delta_time = (dt.strptime(n['tstamp'], dF) - dt.strptime(p['tstamp'], dF)).total_seconds()
-                            delta_ifInOctets = int(n['ifInOctets']) - int(p['ifInOctets'])
-                            int_util = (delta_ifInOctets * 800) / (delta_time * int(n[4]) * 10**6)
+                    if nxt[n]['operStatus'] == 'up':
+                        connectedCdnIn += int(nxt[n]['ifSpeed'])
+                        if prv[p]['operStatus'] == 'up':
+                            delta_time = (dt.strptime(nxt[n]['ts'], dF) - dt.strptime(prv[p]['ts'], dF)).total_seconds()
+                            delta_ifInOctets = int(nxt[n]['ifInOctets']) - int(prv[p]['ifInOctets'])
+                            int_util = (delta_ifInOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
                             #disc[n]['util'] = int_util
                             actualCdnIn += int_util
             logging.debug("Connected CDN Capacity: %.2f" % connectedCdnIn)
