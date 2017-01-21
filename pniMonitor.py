@@ -213,28 +213,20 @@ class Router(threading.Thread):
                 nxt[interface]['ifSpeed'] = int_status[2]
                 nxt[interface]['ifInOctets'] = int_status[3]
                 nxt[interface]['ifOutOctets'] = int_status[4]
-                """
-                if disc[interface]['type'] == 'pni' and disc[interface].has_key('peer_ipv4'):
-                    bgpgetlist = []
-                    for n in disc[interface]['cbgpPeer2index']:
-                        if len(n.split('.')) == 6:
-                            bgpgetlist.append(self.bgp_oids[0] + '.' + n)
-                            bgpgetlist.append(self.bgp_oids[1] + '.' + n + '.1.1')
-                        else:
-                            bgpgetlist.append(self.bgp_oids[0] + '.' + n)
-                            bgpgetlist.append(self.bgp_oids[1] + '.' + n + '.2.1')
-                    bgp_status = self.snmp(ipaddr, bgpgetlist, cmd='snmpget')
-                    peer_bgp_status = [(i, bgp_status[bgp_status.index(i) + len(self.bgp_oids) - 1]) for i in
-                                       bgp_status[::len(self.bgp_oids)]]
-                    print disc[interface]['cbgpPeer2index']
-                    logging.debug("bgp status %s" % bgp_status)
-                    logging.debug("peer bgp status %s" % peer_bgp_status)
-                elif disc[interface]['type'] == 'pni' and not disc[interface].has_key('cbgpPeer2index'):
-                    logging.warning("PNI interface %s has no BGP sessions" % interface)
-                """
-                #['.1.3.6.1.4.1.9.9.187.1.2.5.1.333.1.4.2.120.9.120', '.1.3.6.1.4.1.9.9.187.1.2.5.1.444.1.4.2.120.9.120',
-                # '.1.3.6.1.4.1.9.9.187.1.2.5.1.333.1.4.42.1.0.1', '.1.3.6.1.4.1.9.9.187.1.2.5.1.444.1.4.42.1.0.1',
-                # '.1.3.6.1.4.1.9.9.187.1.2.5.1.333.1.4.89.200.133.241', '.1.3.6.1.4.1.9.9.187.1.2.5.1.444.1.4.89.200.133.241']
+                if disc[interface]['type'] == 'pni':
+                    if disc[interface].has_key('peer_ipv4') or disc[interface].has_key('peer_ipv6'):
+                        for n in disc[interface]['peer_ipv4'] + disc[interface]['peer_ipv6']:
+                            if len(n[0].split('.')) == 4:
+                                peer_status = self.snmp(ipaddr, [self.bgp_oids[0] + '.' + n[1]]
+                                                        + [self.bgp_oids[1] + '.' + n[1] + '.1.1'], cmd='snmpget')
+                                nxt[interface]['peerStatus'] = {n[0]:peer_status}
+                            else:
+                                peer_status = self.snmp(ipaddr, [self.bgp_oids[0] + '.' + n[1]]
+                                                        + [self.bgp_oids[1] + '.' + n[1] + '.2.1'], cmd='snmpget')
+                                nxt[interface]['peerStatus'] = {n[0]: peer_status}
+                    else:
+                        nxt[interface]['peerStatus'] = None
+                        logging.warning("PNI interface %s has no BGP sessions" % interface)
             with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                 pf.write(str(nxt)+'\n')
         return prv, nxt
