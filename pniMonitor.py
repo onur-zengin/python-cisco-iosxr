@@ -38,12 +38,13 @@ class Router(threading.Thread):
     int_oids = oidlist[5:10]
     bw_oids = oidlist[7:10]
     bgp_oids = oidlist[10:]
-    def __init__(self, threadID, node, dswitch, risk_factor, int_identifiers):
+    def __init__(self, threadID, node, dswitch, risk_factor, int_identifiers, pfx_thresholds):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
         self.switch = dswitch
         self.risk_factor = risk_factor
         self.pni_identifier, self.cdn_identifier = int_identifiers
+        self.ipv4_minPfx, self.ipv6_minPfx = pfx_thresholds
     def run(self):
         logging.debug("Starting")
         self.tstamp = tstamp('mr')
@@ -67,7 +68,7 @@ class Router(threading.Thread):
         self.interfaces = self.pni_interfaces + self.cdn_interfaces
         if self.interfaces != []:
             logging.debug("Discovered interfaces: %s" % str(self.interfaces))
-            self._processor(self.ipaddr, disc)
+            self._process(self.ipaddr, disc)
         else:
             logging.info("No interfaces eligible for monitoring")
         logging.debug("Completed")
@@ -153,16 +154,6 @@ class Router(threading.Thread):
                                 disc[interface]['peer_ipv4'] = [(peeraddr, cbgpPeer2index)]
                             else:
                                 disc[interface]['peer_ipv4'] += [(peeraddr, cbgpPeer2index)]
-                            """
-                            if not disc[interface].has_key('peer_ipv4'):
-                                disc[interface]['peer_ipv4'] = [peeraddr]
-                            else:
-                                disc[interface]['peer_ipv4'] += [peeraddr]
-                            if not disc[interface].has_key('cbgpPeer2index'):
-                                disc[interface]['cbgpPeer2index'] = [cbgpPeer2index]
-                            else:
-                                disc[interface]['cbgpPeer2index'] += [cbgpPeer2index]
-                            """
                 elif len(i) == 20:
                     locaddr = (':').join([str(i[n]) for n in range(3, 19)])
                     if disc[interface].has_key('local_ipv6'):
@@ -173,17 +164,6 @@ class Router(threading.Thread):
                                 disc[interface]['peer_ipv6'] = [(peeraddr, cbgpPeer2index)]
                             else:
                                 disc[interface]['peer_ipv6'] += [(peeraddr, cbgpPeer2index)]
-                            """
-                            #peeraddr_decimal = ('.').join(i[0].split('.')[-16:])
-                            if not disc[interface].has_key('peer_ipv6'):
-                                disc[interface]['peer_ipv6'] = [peeraddr]
-                            else:
-                                disc[interface]['peer_ipv6'] += [peeraddr]
-                            if not disc[interface].has_key('cbgpPeer2index'):
-                                disc[interface]['cbgpPeer2index'] = [cbgpPeer2index]
-                            else:
-                                disc[interface]['cbgpPeer2index'] += [cbgpPeer2index]
-                            """
         with open('.do_not_modify_'.upper()+self.node+'.dsc', 'w') as tf:
             tf.write(str(disc))
         return disc
@@ -207,26 +187,26 @@ class Router(threading.Thread):
             for interface in sorted(disc):
                 int_status = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in
                                                 self.int_oids], cmd='snmpget')
-                nxt[interface] = {'timestamp': str(self.tstamp)}
+                nxt[interface] = {'tstamp': str(self.tstamp)}
                 nxt[interface]['adminStatus'] = int_status[0]
                 nxt[interface]['operStatus'] = int_status[1]
                 nxt[interface]['ifSpeed'] = int_status[2]
                 nxt[interface]['ifInOctets'] = int_status[3]
                 nxt[interface]['ifOutOctets'] = int_status[4]
                 if disc[interface]['type'] == 'pni':
-                    nxt[interface]['peerStatus'] = {}
+                    nxt[interface]['peerStatus_ipv4'] = {}
+                    nxt[interface]['peerStatus_ipv6'] = {}
                     if disc[interface].has_key('peer_ipv4'):
                         for n in disc[interface]['peer_ipv4']:
                             peer_status = self.snmp(ipaddr, [self.bgp_oids[0] + '.' + n[1]]
                                                     + [self.bgp_oids[1] + '.' + n[1] + '.1.1'], cmd='snmpget')
-                            nxt[interface]['peerStatus'][n[0]] = peer_status
+                            nxt[interface]['peerStatus_ipv4'][n[0]] = peer_status
                     if disc[interface].has_key('peer_ipv6'):
                         for n in disc[interface]['peer_ipv6']:
                             peer_status = self.snmp(ipaddr, [self.bgp_oids[0] + '.' + n[1]]
                                                     + [self.bgp_oids[1] + '.' + n[1] + '.2.1'], cmd='snmpget')
-                            nxt[interface]['peerStatus'][n[0]] = peer_status
+                            nxt[interface]['peerStatus_ipv6'][n[0]] = peer_status
                     if not disc[interface].has_key('peer_ipv4') and not disc[interface].has_key('peer_ipv6'):
-                        nxt[interface]['peerStatus'] = None
                         logging.warning("PNI interface %s has no BGP sessions" % interface)
             with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                 pf.write(str(nxt)+'\n')
@@ -251,52 +231,53 @@ class Router(threading.Thread):
                 logging.debug("Unexpected error during %s operation: ### %s ###" % (cmd, str(stup)))
                 sys.exit(3)
         return snmpr
-    def _processor(self, ipaddr, disc):
+    def _process(self, ipaddr, disc):
         prv, nxt = self.probe(ipaddr, disc)
-        logging.debug("PRV: %s" % prv)
-        logging.debug("NXT: %s" % nxt)
-        actCdnIn, aggCdnIn, actPniOut, aggPniOut = 0, 0, 0, 0
-        dateFormat = "%Y-%m-%d %H:%M:%S.%f"
-        """
-        if prv != [] and len(prv) == len(nxt):
-            for o , n in zip(prv, nxt):
-                if n[0] in self.pni_interfaces:
-                    if o[3] == 'up' and n[3] == 'up': # ADD BGP STATE IN THE CONDITIONS
-                        delta_time = (dt.strptime(n[1], dateFormat) - dt.strptime(o[1], dateFormat)).total_seconds()
-                        delta_outOct = int(n[6]) - int(o[6])
-                        print n[0], "octets" , delta_outOct , "time" , delta_time
-                        int_util = (delta_outOct * 800) / (delta_time * int(n[4]) * 10**6)
-                        actPniOut += int_util
-                    if n[3] == 'up':
-                        aggPniOut += int(n[4])
-                elif n[0] in self.cdn_interfaces:
-                    if o[3] == 'up' and n[3] == 'up':
-                        delta_time = (dt.strptime(n[1], dateFormat) - dt.strptime(o[1], dateFormat)).total_seconds()
-                        delta_inOct = int(n[5]) - int(o[5])
-                        int_util = (delta_inOct * 800) / (delta_time * int(n[4]) * 10**6)
-                        disc[n[0]]['util'] = int_util
-                        actCdnIn += int_util
-                    if n[3] == 'up':
-                        aggCdnIn += int(n[4])
-            print "Active CDN Capacity: %.2f" % aggCdnIn
-            print "Actual CDN Ingress: %.2f" % actCdnIn
-            print "Usable PNI Capacity: %.2f" % aggPniOut
-            print "Actual PNI Egress: %.2f" % actPniOut
-            print disc
+        logging.debug("prev: %s" % prv)
+        logging.debug("next: %s" % nxt)
+        actualCdnIn, connectedCdnIn, actualPniOut, usablePniOut = 0, 0, 0, 0
+        dF = "%Y-%m-%d %H:%M:%S.%f"
+        if prv != {} and len(prv) == len(nxt):
+            for p , n in zip(sorted(prv), sorted(nxt)):
+                if n in self.pni_interfaces:
+                    if n['operStatus'] == 'up' \
+                            and reduce(lambda x, y: x[1] + y[1],
+                                       filter(lambda x: x[0] == '6', n['peerStatus_ipv4']), 0) > self.ipv4_minPfx \
+                            or reduce(lambda x, y: x[1] + y[1],
+                                      filter(lambda x: x[0] == '6', n['peerStatus_ipv6']), 0) > self.ipv6_minPfx :
+                        usablePniOut += int(n['ifSpeed'])
+                        if p['operStatus'] == 'up':
+                            delta_time = (dt.strptime(n['tstamp'], dF) - dt.strptime(p['tstamp'], dF)).total_seconds()
+                            delta_ifOutOctets = int(n['ifOutOctets']) - int(p['ifOutOctets'])
+                            int_util = (delta_ifOutOctets * 800) / (delta_time * int(n[4]) * 10**6)
+                            actualPniOut += int_util
+                elif n in self.cdn_interfaces:
+                    if n['operStatus'] == 'up':
+                        connectedCdnIn += int(n['ifSpeed'])
+                        if p['operStatus'] == 'up':
+                            delta_time = (dt.strptime(n['tstamp'], dF) - dt.strptime(p['tstamp'], dF)).total_seconds()
+                            delta_ifInOctets = int(n['ifInOctets']) - int(p['ifInOctets'])
+                            int_util = (delta_ifInOctets * 800) / (delta_time * int(n[4]) * 10**6)
+                            #disc[n]['util'] = int_util
+                            actualCdnIn += int_util
+            logging.debug("Connected CDN Capacity: %.2f" % connectedCdnIn)
+            logging.debug("Actual CDN Ingress: %.2f" % actualCdnIn)
+            logging.debug("Usable PNI Capacity: %.2f" % usablePniOut)
+            logging.debug("Actual PNI Egress: %.2f" % actualPniOut)
             #print [util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]
             #print min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]])
-            # if actPniOut / aggPniOut * 100 >= self.risk_factor:
+            if actualPniOut / usablePniOut * 100 >= self.risk_factor:
+                logging.info('risk factor hit')
             #   self.acl('block', min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]))
-        elif prv == [] and nxt != []:
+        elif prv == {} and len(nxt) > 0:
             logging.info("New node detected. _process() module will be activated in the next polling cycle")
-        elif prv != [] and len(prv) < len(nxt):
+        elif prv != {} and len(prv) < len(nxt):
             logging.info("New interface discovered.")
-            # PRB FILES ARE REMOVED WHEN A NEW INT IS DISCOVERED, SO THE STATEMENT IS A PLACEHOLDER
-            # REVISIT THIS IN VERSION-2 WHEN PRB PERSISTENCE IS ENABLED
-            # _process() should continue for the old interfaces.
+            # PRB FILES ARE REMOVED WHEN A NEW INT IS DISCOVERED, SO THE STATEMENT IS A PLACEHOLDER.
+            # TO BE REVISITED IN VERSION-2 WHEN PRB PERSISTENCE IS ENABLED, SO THAT _process() CAN CONTINUE
+            # FOR THE EXISTING INTERFACES.
         else:
             logging.warning("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (prv, nxt))
-        """
     def acl(self, decision, interface):
         if decision == 'block':
             logging.warning("%s will now be blocked" % (interface))
@@ -331,6 +312,8 @@ def main(args):
     asctime = tstamp('hr')
     pni_interface_tag = '[CDPautomation:PNI]'
     cdn_interface_tag = '[CDPautomation:CDN]'
+    ipv4_min_prefixes = 0
+    ipv6_min_prefixes = 0
     try:
         with open(args[0][:-3] + ".conf") as pf:
             parameters = [tuple(i.split('=')) for i in
@@ -484,7 +467,8 @@ def main(args):
                 threads = []
                 logging.debug("Initializing subThreads")
                 for n, node in enumerate(inventory):
-                    t = Router(n + 1, node, dswitch, risk_factor, (pni_interface_tag, cdn_interface_tag))
+                    t = Router(n + 1, node, dswitch, risk_factor, (pni_interface_tag, cdn_interface_tag),
+                               (ipv4_min_prefixes, ipv6_min_prefixes))
                     threads.append(t)
                     t.start()
                 for t in threads:
