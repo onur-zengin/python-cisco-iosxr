@@ -29,7 +29,7 @@ oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #0 IF-MIB::ifName
            ".1.3.6.1.2.1.31.1.1.1.15",  #7 ifHighSpeed
            ".1.3.6.1.2.1.31.1.1.1.6",  #8 ifHCInOctets
            ".1.3.6.1.2.1.31.1.1.1.10",  #9 ifHCOutOctets
-           ".1.3.6.1.4.1.9.9.187.1.2.5.1.3" #10 cbgpPeer2State 3active 6established
+           ".1.3.6.1.4.1.9.9.187.1.2.5.1.3", #10 cbgpPeer2State 3active 6established
            ".1.3.6.1.4.1.9.9.187.1.2.8.1.1" #11 cbgpPeer2AcceptedPrefixes
            ]
 
@@ -202,7 +202,6 @@ class Router(threading.Thread):
                 new[interface]['ifInOctets'] = int_status[3]
                 new[interface]['ifOutOctets'] = int_status[4]
                 bgpgetlist = []
-                print self.bgp_oids
                 if disc[interface]['type'] == 'pni' and disc[interface].has_key('cbgpPeer2index'):
                     for n in disc[interface]['cbgpPeer2index']:
                         if len(n.split('.')) == 6:
