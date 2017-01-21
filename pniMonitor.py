@@ -196,7 +196,11 @@ class Router(threading.Thread):
                 int_status = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in
                                                 self.int_oids], cmd='snmpget')
                 new[interface] = {'timestamp': str(self.tstamp)}
-                new[interface]['status'] = int_status
+                new[interface]['adminStatus'] = int_status[0]
+                new[interface]['operStatus'] = int_status[1]
+                new[interface]['ifSpeed'] = int_status[2]
+                new[interface]['ifInOctets'] = int_status[3]
+                new[interface]['ifOutOctets'] = int_status[4]
                 bgpgetlist = []
                 if disc[interface]['type'] == 'pni' and disc[interface].has_key('cbgpPeer2index'):
                     for n in disc[interface]['cbgpPeer2index']:
