@@ -214,17 +214,17 @@ class Router(threading.Thread):
                 nxt[interface]['ifInOctets'] = int_status[3]
                 nxt[interface]['ifOutOctets'] = int_status[4]
                 if disc[interface]['type'] == 'pni':
-                    if disc[interface].has_key('peer_ipv4') or disc[interface].has_key('peer_ipv6'):
-                        for n in disc[interface]['peer_ipv4'] + disc[interface]['peer_ipv6']:
-                            if len(n[0].split('.')) == 4:
-                                peer_status = self.snmp(ipaddr, [self.bgp_oids[0] + '.' + n[1]]
-                                                        + [self.bgp_oids[1] + '.' + n[1] + '.1.1'], cmd='snmpget')
-                                nxt[interface]['peerStatus'] = {n[0]:peer_status}
-                            else:
-                                peer_status = self.snmp(ipaddr, [self.bgp_oids[0] + '.' + n[1]]
-                                                        + [self.bgp_oids[1] + '.' + n[1] + '.2.1'], cmd='snmpget')
-                                nxt[interface]['peerStatus'] = {n[0]: peer_status}
-                    else:
+                    if disc[interface].has_key('peer_ipv4'):
+                        for n in disc[interface]['peer_ipv4']:
+                            peer_status = self.snmp(ipaddr, [self.bgp_oids[0] + '.' + n[1]]
+                                                    + [self.bgp_oids[1] + '.' + n[1] + '.1.1'], cmd='snmpget')
+                            nxt[interface]['peerStatus'] = {n[0]:peer_status}
+                    if disc[interface].has_key('peer_ipv6'):
+                        for n in disc[interface]['peer_ipv6']:
+                            peer_status = self.snmp(ipaddr, [self.bgp_oids[0] + '.' + n[1]]
+                                                    + [self.bgp_oids[1] + '.' + n[1] + '.2.1'], cmd='snmpget')
+                            nxt[interface]['peerStatus'] = {n[0]: peer_status}
+                    if not disc[interface].has_key('peer_ipv4') and not disc[interface].has_key('peer_ipv6'):
                         nxt[interface]['peerStatus'] = None
                         logging.warning("PNI interface %s has no BGP sessions" % interface)
             with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
