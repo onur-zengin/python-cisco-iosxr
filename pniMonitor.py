@@ -10,6 +10,7 @@ import subprocess
 import re
 import resource
 import os
+import paramiko
 from datetime import datetime as dt
 
 def tstamp(format):
