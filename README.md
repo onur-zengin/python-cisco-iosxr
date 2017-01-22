@@ -50,6 +50,9 @@
     its manually overridden bit-limit, even though the region could serve up to a higher throughput under normal
     conditions without being flit-limited, then the cdn_serving_cap must be set to '80'.
 
+    [dryrun]
+
+    Node discovery (SNMPWALK) and probing (SNMPGET) will continue, however all SNMPSET functions will be frozen.
 
 
 2. MULTI-THREADING
@@ -72,8 +75,9 @@ Periodic rotation for *.prb files
 
 PLANNED FOR NEXT RELEASES
 
-- Per-region cdn_serving_cap setting as opposed to Global.
-- Persistence of the previously recorded interface utilization data upon a new node or interface discovery.
+- Per-region cdn_serving_cap setting as opposed to Global
+- Automated discovery of new interfaces
+- Persistence of the previously recorded interface utilization data upon a new node or interface discovery
 - In-flight change to certain runtime parameters
 - Email updates when an interface is blocked / unblocked
 - Replace SNMP with Netconf(?)

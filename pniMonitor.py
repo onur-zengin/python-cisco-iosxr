@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
 import sys
 import getopt
@@ -285,7 +285,7 @@ class Router(threading.Thread):
             # FOR THE EXISTING INTERFACES.
         else:
             logging.warning("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (prv, nxt))
-    def acl(self, decision, interface):
+    def acl(self, decision, interface, dryrun='off'):
         if decision == 'block':
             logging.warning("%s will now be blocked" % (interface))
         else:
