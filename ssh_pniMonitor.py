@@ -4,7 +4,9 @@ import paramiko
 import getpass
 
 un = getpass.getuser()
-print un
+pw = getpass.getpass
+
+print pw
 
 node = 'er10.bllab'
 
