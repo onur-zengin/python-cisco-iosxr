@@ -2,13 +2,19 @@
 
 import paramiko
 import getpass
+import os
 
+hd = os.environ['HOME']
 un = getpass.getuser()
-pw = getpass.getpass('Cauth Password:', stream=None)
+try:
+    pw = getpass.getpass('Enter the cauth password for user %s:' % un, stream=None)
+except getpass.GetPassWarning as pw_warning:
+    print pw_warning
+    raise
 
+print hd
 print pw
 
-"""
 node = 'er10.bllab'
 
 
@@ -21,4 +27,3 @@ type(stdin)
 
 a = stdout.readlines()
 print a
-"""
