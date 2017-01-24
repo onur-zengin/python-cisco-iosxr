@@ -21,9 +21,11 @@ def pw_check():
     try:
         ssh.connect(hn, username=un, password=pw)
     except paramiko.ssh_exception.PasswordRequiredException as pw_required:
+        print "Password required"
         print pw_required
         sys.exit(1)
     except paramiko.ssh_exception.AuthenticationException as auth_failure:
+        print "Auth failed"
         print auth_failure
         sys.exit(1)
     except:
