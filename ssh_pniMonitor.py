@@ -7,7 +7,7 @@ import os
 hd = os.environ['HOME']
 un = getpass.getuser()
 try:
-    pw = getpass.getpass('Enter the cauth password for user %s:' % un, stream=None)
+    pw = getpass.getpass('Enter cauth password for user %s:' % un, stream=None)
 except getpass.GetPassWarning as pw_warning:
     print pw_warning
     raise
@@ -24,4 +24,4 @@ type(stdin)
 
 a = stdout.readlines()
 for i in a:
-    print i
+    print i.strip('\n')
