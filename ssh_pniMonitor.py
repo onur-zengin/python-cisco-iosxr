@@ -9,35 +9,35 @@ import socket
 hn = socket.gethostname()
 hd = os.environ['HOME']
 un = getpass.getuser()
-try:
-    pw = getpass.getpass('Enter cauth password for user %s:' % un, stream=None)
-except getpass.GetPassWarning as pw_warning:
-    print pw_warning
-    raise
 
-def pw_check():
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+
+
+def get_pw():
     try:
-        ssh.connect(hn, username=un, password=pw)
-    except paramiko.ssh_exception.PasswordRequiredException as pw_required:
-        print "Password required"
-        print pw_required
-        sys.exit(1)
-    except paramiko.ssh_exception.AuthenticationException as auth_failure:
-        print "Auth failed"
-        print auth_failure
-        sys.exit(1)
-    except:
-        print 'unexpected error'
-        raise
+        pw = getpass.getpass('Enter cauth password for user %s:' % un, stream=None)
+    except getpass.GetPassWarning as echo_warning:
+        print echo_warning
     else:
-        ssh.close()
-        return True
+        try:
+            ssh.connect(hn, username=un, password=pw, look_for_keys=False)
+        except paramiko.ssh_exception.AuthenticationException as auth_failure:
+            print auth_failure
+            sys.exit(1)
+        except:
+            print 'unexpected error'
+            raise
+        else:
+            ssh.close()
+            return True
 
 
-if pw_check() is True:
+if get_pw():
     print "continue"
+else:
+    print "stop"
 
 node = 'er10.bllab'
 
