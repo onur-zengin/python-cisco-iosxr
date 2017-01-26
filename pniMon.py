@@ -176,7 +176,7 @@ class Router(threading.Thread):
         try:
             ptup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
-            logging.warning("Unexpected error - Popen function probe(): %s" % (str(sys.exc_info()[:2])))
+            logging.warning("Unexpected error - Popen function probe(): %s" % str(sys.exc_info()[:2]))
             sys.exit(3)
         else:
             if ptup[1] == '':
@@ -327,8 +327,8 @@ def get_pw(c=3):
                 print auth_failure
                 c -= 1
             except:
-                print 'Unexpected error'
-                raise
+                print 'Unexpected error: %s' % sys.exc_info()[:2]
+                sys.exit(1)
             else:
                 ssh.close()
                 return True, pw
@@ -342,7 +342,7 @@ def main(args):
     if not bool:
         sys.exit(1)
     else:
-        pass
+        print "Authentication successful"
     asctime = tstamp('hr')
     pni_interface_tag = '[CDPautomation:PNI]'
     cdn_interface_tag = '[CDPautomation:CDN]'

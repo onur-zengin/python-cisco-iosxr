@@ -9,6 +9,7 @@ import socket
 hd = os.environ['HOME']
 un = getpass.getuser()
 
+
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
@@ -26,8 +27,8 @@ def get_pw(c=3):
                 print auth_failure
                 c -= 1
             except:
-                print 'Unexpected error'
-                raise
+                print 'Unexpected error', sys.exc_info()[:2]
+                sys.exit(1)
             else:
                 ssh.close()
                 return True, pw
@@ -35,20 +36,31 @@ def get_pw(c=3):
         print "Too many failed attempts"
         return False, None
 
+
+def _ssh(node, pw, command):
+    output = None
+    try:
+        ssh.connect(node, username=un, password=pw, look_for_keys=False)
+    except:
+        print 'Unexpected error:', sys.exc_info()[:2]
+        sys.exit(1)
+    else:
+        stdin, stdout, stderr = ssh.exec_command("sh version")
+        type(stdin)
+        output = stdout.readlines()
+        ssh.close()
+    return output
+
+
 bool, pw = get_pw()
+
 if bool:
-    print "continue"
-    print pw
+    raw_output = _ssh("er10.bllab", pw, "sh version")
 else:
-    print "stop"
+    sys.exit(1)
 
-node = 'er10.bllab'
 
-"""
-stdin, stdout, stderr = ssh.exec_command("sh version")
-type(stdin)
-
-a = stdout.readlines()
-for i in a:
+for i in raw_output:
     print i.strip('\n')
-"""
+
+
