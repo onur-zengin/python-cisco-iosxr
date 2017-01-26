@@ -6,16 +6,14 @@ import os
 import sys
 import socket
 
-hn = socket.gethostname()
 hd = os.environ['HOME']
 un = getpass.getuser()
 
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-
-
 def get_pw(c=3):
+    hn = socket.gethostname()
     while c > 0:
         try:
             pw = getpass.getpass('Enter cauth password for user %s:' % un, stream=None)
@@ -29,16 +27,17 @@ def get_pw(c=3):
                 c -= 1
             except:
                 print 'Unexpected error'
-                sys.exit(1)
+                raise
             else:
                 ssh.close()
-                return True
+                return True, pw
     else:
         print "Too many failed attempts"
 
-
-if get_pw():
+bool, pw = get_pw()
+if bool:
     print "continue"
+    print pw
 else:
     print "stop"
 
