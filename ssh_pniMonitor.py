@@ -33,6 +33,7 @@ def get_pw(c=3):
                 return True, pw
     else:
         print "Too many failed attempts"
+        return False, None
 
 bool, pw = get_pw()
 if bool:
