@@ -45,7 +45,7 @@ def _ssh(node, pw, command):
         print 'Unexpected error:', sys.exc_info()[:2]
         sys.exit(1)
     else:
-        stdin, stdout, stderr = ssh.exec_command("sh version")
+        stdin, stdout, stderr = ssh.exec_command(command)
         type(stdin)
         output = stdout.readlines()
         ssh.close()
