@@ -9,7 +9,6 @@ import socket
 hd = os.environ['HOME']
 un = getpass.getuser()
 
-
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
@@ -22,7 +21,7 @@ def get_pw(c=3):
             print echo_warning
         finally:
             try:
-                ssh.connect(hn, username=un, password=pw, look_for_keys=False)
+                ssh.connect(hn, username=un, password=pw, look_for_keys=False, allow_agent=False)
             except paramiko.ssh_exception.AuthenticationException as auth_failure:
                 print auth_failure
                 c -= 1
@@ -40,14 +39,16 @@ def get_pw(c=3):
 def _ssh(node, pw, command):
     output = None
     try:
-        ssh.connect(node, username=un, password=pw, look_for_keys=False)
+        ssh.connect(node, username=un, password=pw, look_for_keys=False, allow_agent=False)
     except:
         print 'Unexpected error:', sys.exc_info()[:2]
         sys.exit(1)
     else:
-        stdin, stdout, stderr = ssh.exec_command(command)
-        type(stdin)
-        output = stdout.readlines()
+        session = ssh.invoke_shell()
+        output = session.recv(65535)
+        #stdin, stdout, stderr = ssh.exec_command(command)
+        #type(stdin)
+        #output = stdout.readlines()
         ssh.close()
     return output
 
@@ -56,11 +57,12 @@ bool, pw = get_pw()
 
 if bool:
     raw_output = _ssh("er10.bllab", pw, "sh access-lists CDPautomation_RhmUdpBlock usage pfilter location all")
+    print raw_output
 else:
     sys.exit(1)
 
 
-for i in raw_output:
-    print i.strip('\n')
+#for i in raw_output:
+#    print i.strip('\n')
 
 
