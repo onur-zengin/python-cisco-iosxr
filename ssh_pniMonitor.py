@@ -55,7 +55,7 @@ def _ssh(node, pw, command):
 bool, pw = get_pw()
 
 if bool:
-    raw_output = _ssh("er10.bllab", pw, "sh version")
+    raw_output = _ssh("er10.bllab", pw, "sh access-lists CDPautomation_RhmUdpBlock usage pfilter location all")
 else:
     sys.exit(1)
 
