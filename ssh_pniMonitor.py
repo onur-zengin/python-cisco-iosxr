@@ -61,8 +61,6 @@ def _ssh(node, pw, command):
                     output = session.recv(1024)
                     while session.recv_ready():
                         output += session.recv(1024)
-                else:
-                    print "buffer empty"
             print "closing"
             ssh.close()
     return output
