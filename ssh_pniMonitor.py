@@ -54,14 +54,15 @@ def _ssh(node, pw, command):
             sys.exit(1)
         else:
             print 'shell opened'
-            output = ''
             session.send(command + '\n')
             while not session.exit_status_ready():
-                print "in the loop"
-                while session.recv_ready():
-                    print "recv-ready"
-                    output += session.recv(1024)
-                break
+                if session.recv_ready():
+                    print 'recv-ready'
+                    output = session.recv(1024)
+                    while session.recv_ready():
+                        output += session.recv(1024)
+                else:
+                    print "buffer empty"
             print "closing"
             ssh.close()
     return output
@@ -76,7 +77,7 @@ bool, pw = get_pw()
 if bool:
     #raw_output = _ssh("er10.bllab", pw, "sh access-lists CDPautomation_RhmUdpBlock usage pfilter location all")
     raw_output = _ssh("er10.bllab", pw, "sh version")
-    print raw_output
+    print "output:", raw_output
 else:
     sys.exit(1)
 
