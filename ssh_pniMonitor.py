@@ -60,13 +60,13 @@ def _ssh(node, pw, command):
         else:
             output = ''
             disable_paging(session)
-            session.send(command + '\n')
+            session.send(command)
             while not session.exit_status_ready():
                 while session.recv_ready():
                     output += session.recv(1024)
                     print "added 1024"
                 else:
-                    if output == '':
+                    if node+"#" not in output:
                         time.sleep(1)
                     else:
                         break
@@ -83,7 +83,7 @@ bool, pw = get_pw()
 
 if bool:
     #raw_output = _ssh("er10.bllab", pw, "sh access-lists CDPautomation_RhmUdpBlock usage pfilter location all")
-    raw_output = _ssh("er10.bllab", pw, "sh ip int bri")
+    raw_output = _ssh("er10.bllab", pw, "sh version\n")
     print "output:", raw_output
 else:
     sys.exit(1)
