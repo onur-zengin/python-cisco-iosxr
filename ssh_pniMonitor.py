@@ -5,6 +5,7 @@ import getpass
 import os
 import sys
 import socket
+import time
 
 hd = os.environ['HOME']
 un = getpass.getuser()
@@ -56,9 +57,9 @@ def _ssh(node, pw, command):
             output = ''
             session.send(command + '\n')
             while not session.exit_status_ready():
+                time.sleep(1)
                 while session.recv_ready():
                     output += session.recv(1024)
-                print output
                 break
             print "closing"
             ssh.close()
@@ -73,7 +74,7 @@ bool, pw = get_pw()
 
 if bool:
     #raw_output = _ssh("er10.bllab", pw, "sh access-lists CDPautomation_RhmUdpBlock usage pfilter location all")
-    raw_output = _ssh("er10.bllab", pw, "\n")
+    raw_output = _ssh("er10.bllab", pw, "sh ip int bri")
     print "output:", raw_output
 else:
     sys.exit(1)
