@@ -63,9 +63,8 @@ def _ssh(node, pw, command):
                     print chunk
                  #   state = session.recv_exit_status()
                   #  print state
-                    output += chunk
-                    print "still in the loop"
-                print "out of the recvready loop"
+                break
+            session.close()
             print "out of the exitready loop"
             print "closing"
             ssh.close()
