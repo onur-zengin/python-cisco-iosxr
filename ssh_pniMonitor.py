@@ -84,7 +84,7 @@ bool, pw = get_pw()
 if bool:
     output = _ssh("er10.bllab", pw, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter location all"])
     print output
-    print output.split("\n")
+    print output.split("\r")
 else:
     sys.exit(1)
 
