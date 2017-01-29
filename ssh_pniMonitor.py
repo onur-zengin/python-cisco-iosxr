@@ -41,7 +41,7 @@ def disable_paging(session, command="term len 0\n", delay=1):
     time.sleep(1)
     session.recv(65535)
 
-def _ssh(node, pw, command):
+def _ssh(node, pw, commandlist):
     output = None
     try:
         ssh.connect(node, username=un, password=pw, look_for_keys=False, allow_agent=False)
@@ -58,18 +58,18 @@ def _ssh(node, pw, command):
             print 'Unexpected error in _ssh()', sys.exc_info()[:2]
             sys.exit(1)
         else:
-            output = ''
             disable_paging(session)
-            session.send(command)
-            while not session.exit_status_ready():
-                while session.recv_ready():
-                    output += session.recv(1024)
-                    print "added 1024"
-                else:
-                    if node+"#" not in output:
-                        time.sleep(1)
+            for cmd in commandlist:
+                output = ''
+                session.send(cmd + '\n')
+                while not session.exit_status_ready():
+                    while session.recv_ready():
+                        output += session.recv(1024)
                     else:
-                        break
+                        if output[-11:-1] != node:
+                            time.sleep(1)
+                        else:
+                            break
             print "closing"
             ssh.close()
     return output
@@ -83,7 +83,7 @@ bool, pw = get_pw()
 
 if bool:
     #raw_output = _ssh("er10.bllab", pw, "sh access-lists CDPautomation_RhmUdpBlock usage pfilter location all")
-    raw_output = _ssh("er10.bllab", pw, "sh version\n")
+    raw_output = _ssh("er10.bllab", pw, ["sh version","sh ip int brief","sh platform"])
     print "output:", raw_output
 else:
     sys.exit(1)
