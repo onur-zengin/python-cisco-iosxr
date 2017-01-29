@@ -26,7 +26,7 @@ def get_pw(c=3):
                 print auth_failure
                 c -= 1
             except:
-                print 'Unexpected error', sys.exc_info()[:2]
+                print 'Unexpected error in get_pw()', sys.exc_info()[:2]
                 sys.exit(1)
             else:
                 ssh.close()
@@ -44,12 +44,24 @@ def _ssh(node, pw, command):
         print 'Unexpected error:', sys.exc_info()[:2]
         sys.exit(1)
     else:
-        session = ssh.invoke_shell()
-        output = session.recv(65535)
+        try:
+            session = ssh.invoke_shell()
+        except paramiko.SSHException as sshexc:
+            print sshexc
+            sys.exit(1)
+        except:
+            print 'Unexpected error in _ssh()', sys.exc_info()[:2]
+            sys.exit(1)
+        else:
+            output = ''
+            session.send(command + '\n')
+            while session.recv_ready:
+                output += session.recv(1024)
+            ssh.close()
         #stdin, stdout, stderr = ssh.exec_command(command)
         #type(stdin)
         #output = stdout.readlines()
-        ssh.close()
+        #ssh.close()
     return output
 
 
