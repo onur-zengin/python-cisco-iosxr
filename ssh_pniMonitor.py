@@ -36,7 +36,7 @@ def get_pw(c=3):
         print "Too many failed attempts"
         return False, None
 
-def disable_paging(session, command="term len 0", delay=1):
+def disable_paging(session, command="term len 0\n", delay=1):
     session.send(command)
     time.sleep(1)
     session.recv(65535)
