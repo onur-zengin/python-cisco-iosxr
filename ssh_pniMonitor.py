@@ -61,20 +61,19 @@ def _ssh(node, pw, commandlist):
                     session.send(cmd + '\n')
                 except socket.error as sc_err:
                     print sc_err
-                    sys.exit(1)
+                    #sys.exit(1)
                 else:
                     while not session.exit_status_ready():
                         while session.recv_ready():
                             cmd_output += session.recv(1024)
                         else:
                             if '/CPU0:' + node not in cmd_output:
-                                time.sleep(20)
+                                time.sleep(0.2)
                             else:
                                 break
-                        output += cmd_output
                     else:
                         print "SSH session closed prematurely"
-                    #output += cmd_output
+                    output += cmd_output
             print "closing"
             ssh.close()
     return output
