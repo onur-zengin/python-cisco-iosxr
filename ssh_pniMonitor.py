@@ -63,9 +63,11 @@ def _ssh(node, pw, commandlist):
                         cmd_output += session.recv(1024)
                     else:
                         if '/CPU0:' + node not in cmd_output:
-                            time.sleep(0.2)
+                            time.sleep(20)
                         else:
                             break
+                else:
+                    print "SSH session closed prematurely"
                 output += cmd_output
             print "closing"
             ssh.close()
@@ -75,10 +77,12 @@ def _ssh(node, pw, commandlist):
 bool, pw = get_pw()
 
 if bool:
-    #raw_output = _ssh("er10.bllab", pw, "sh access-lists CDPautomation_RhmUdpBlock usage pfilter location all")
-    output = _ssh("er10.bllab", pw, ["sh run interface bundle-ether212","configure","interface bundle-ether212",
-                                     "ipv4 access-group CDPautomation_RhmUdpBlock egress","commit","end",
-                                     "sh run int bundle-ether212"])
+    output = _ssh("er10.bllab", pw, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter location all",
+                                     "sh version","sh ip int bri","sh platform"])
+    #output = _ssh("er10.bllab", pw, ["sh run interface bundle-ether212","configure","interface bundle-ether212",
+     #                                "ipv4 access-group CDPautomation_RhmUdpBlock egress","commit","end",
+      #                               "sh run int bundle-ether212"])
+
     print output
 else:
     sys.exit(1)
