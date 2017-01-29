@@ -59,8 +59,11 @@ def _ssh(node, pw, command):
             while not session.exit_status_ready():
                 while session.recv_ready():
                     print "recv-ready"
-                    output += session.recv(1024)
-                    print session.recv_exit_status()
+                    chunk = session.recv(1024)
+                    print chunk
+                    state = session.recv_exit_status()
+                    print state
+                    output += chunk
             else:
                 print "closing"
                 ssh.close()
