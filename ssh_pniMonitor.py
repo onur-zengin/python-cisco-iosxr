@@ -53,14 +53,13 @@ def _ssh(node, pw, command):
             print 'Unexpected error in _ssh()', sys.exc_info()[:2]
             sys.exit(1)
         else:
-            print 'shell opened'
+            output = ''
             session.send(command + '\n')
             while not session.exit_status_ready():
-                if session.recv_ready():
-                    print 'recv-ready'
-                    output = session.recv(1024)
-                    while session.recv_ready():
-                        output += session.recv(1024)
+                while session.recv_ready():
+                    output += session.recv(1024)
+                print output
+                break
             print "closing"
             ssh.close()
     return output
@@ -74,7 +73,7 @@ bool, pw = get_pw()
 
 if bool:
     #raw_output = _ssh("er10.bllab", pw, "sh access-lists CDPautomation_RhmUdpBlock usage pfilter location all")
-    raw_output = _ssh("er10.bllab", pw, "sh version")
+    raw_output = _ssh("er10.bllab", pw, "\n")
     print "output:", raw_output
 else:
     sys.exit(1)
