@@ -77,7 +77,7 @@ bool, pw = get_pw()
 
 if bool:
     #raw_output = _ssh("er10.bllab", pw, "sh access-lists CDPautomation_RhmUdpBlock usage pfilter location all")
-    raw_output = _ssh("er10.bllab", pw, "sh version")
+    raw_output = _ssh("er10.bllab", pw, "sh ip int bri")
     print "output:", raw_output
 else:
     sys.exit(1)
