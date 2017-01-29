@@ -59,17 +59,19 @@ def _ssh(node, pw, commandlist):
             sys.exit(1)
         else:
             disable_paging(session)
+            output = ''
             for cmd in commandlist:
-                output = ''
+                cmd_output = ''
                 session.send(cmd + '\n')
                 while not session.exit_status_ready():
                     while session.recv_ready():
-                        output += session.recv(1024)
+                        cmd_output += session.recv(1024)
                     else:
-                        if output[-11:-1] != node:
+                        if cmd_output[-11:-1] != node:
                             time.sleep(1)
                         else:
                             break
+                output += cmd_output
             print "closing"
             ssh.close()
     return output
@@ -83,8 +85,8 @@ bool, pw = get_pw()
 
 if bool:
     #raw_output = _ssh("er10.bllab", pw, "sh access-lists CDPautomation_RhmUdpBlock usage pfilter location all")
-    raw_output = _ssh("er10.bllab", pw, ["sh version","sh ip int brief","sh platform"])
-    print "output:", raw_output
+    output = _ssh("er10.bllab", pw, ["sh version","sh ip int brief","sh platform"])
+    print output
 else:
     sys.exit(1)
 
