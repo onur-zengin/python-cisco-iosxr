@@ -58,7 +58,7 @@ def _ssh(node, pw, commandlist):
             print 'Unexpected error in _ssh()', sys.exc_info()[:2]
             sys.exit(1)
         else:
-            disable_paging(session)
+            #disable_paging(session)
             output = ''
             for cmd in commandlist:
                 cmd_output = ''
@@ -75,10 +75,6 @@ def _ssh(node, pw, commandlist):
             print "closing"
             ssh.close()
     return output
-        #stdin, stdout, stderr = ssh.exec_command(command)
-        #type(stdin)
-        #output = stdout.readlines()
-        #ssh.close()
 
 
 bool, pw = get_pw()
