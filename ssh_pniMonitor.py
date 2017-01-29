@@ -55,6 +55,8 @@ def _ssh(node, pw, command):
             sys.exit(1)
         else:
             output = ''
+            session.send('\n')
+            session.recv(65535)
             session.send(command + '\n')
             while not session.exit_status_ready():
                 while session.recv_ready():
@@ -77,7 +79,7 @@ bool, pw = get_pw()
 
 if bool:
     #raw_output = _ssh("er10.bllab", pw, "sh access-lists CDPautomation_RhmUdpBlock usage pfilter location all")
-    raw_output = _ssh("er10.bllab", pw, "sh ip int bri")
+    raw_output = _ssh("er10.bllab", pw, "sh version")
     print "output:", raw_output
 else:
     sys.exit(1)
