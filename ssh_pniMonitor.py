@@ -56,7 +56,7 @@ def _ssh(node, pw, command):
             print 'shell opened'
             output = ''
             session.send(command + '\n')
-            while not session.recv_exit_status():
+            while not session.recv_exit_status() == 0:
             #while not session.exit_status_ready():
                 while session.recv_ready():
                     print "recv-ready"
