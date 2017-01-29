@@ -36,6 +36,10 @@ def get_pw(c=3):
         print "Too many failed attempts"
         return False, None
 
+def disable_paging(session, command="term len 0", delay=1):
+    session.send(command)
+    time.sleep(1)
+    session.recv(65535)
 
 def _ssh(node, pw, command):
     output = None
@@ -55,8 +59,7 @@ def _ssh(node, pw, command):
             sys.exit(1)
         else:
             output = ''
-            session.send('\n')
-            session.recv(65535)
+            disable_paging(session)
             session.send(command + '\n')
             while not session.exit_status_ready():
                 while session.recv_ready():
