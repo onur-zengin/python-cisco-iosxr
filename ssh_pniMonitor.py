@@ -36,13 +36,8 @@ def get_pw(c=3):
         print "Too many failed attempts"
         return False, None
 
-def disable_paging(session, command="term len 0\n", delay=1):
-    session.send(command)
-    time.sleep(1)
-    session.recv(65535)
 
 def _ssh(node, pw, commandlist):
-    output = None
     try:
         ssh.connect(node, username=un, password=pw, look_for_keys=False, allow_agent=False)
     except:
@@ -58,7 +53,6 @@ def _ssh(node, pw, commandlist):
             print 'Unexpected error in _ssh()', sys.exc_info()[:2]
             sys.exit(1)
         else:
-            #disable_paging(session)
             commandlist.insert(0,'term len 0')
             output = ''
             for cmd in commandlist:
@@ -68,7 +62,7 @@ def _ssh(node, pw, commandlist):
                     while session.recv_ready():
                         cmd_output += session.recv(1024)
                     else:
-                        if cmd_output[-11:-1] != node:
+                        if '/CPU0:' + node not in cmd_output:
                             time.sleep(0.2)
                         else:
                             break
@@ -82,7 +76,9 @@ bool, pw = get_pw()
 
 if bool:
     #raw_output = _ssh("er10.bllab", pw, "sh access-lists CDPautomation_RhmUdpBlock usage pfilter location all")
-    output = _ssh("er10.bllab", pw, ["sh version","sh ip int brief","sh platform"])
+    output = _ssh("er10.bllab", pw, ["sh run interface bundle-ether212","configure","interface bundle-ether212",
+                                     "ipv4 access-group CDPautomation_RhmUdpBlock egress","commit","end",
+                                     "sh run int bundle-ether212"])
     print output
 else:
     sys.exit(1)
