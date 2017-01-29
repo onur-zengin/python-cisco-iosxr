@@ -57,10 +57,13 @@ def _ssh(node, pw, command):
             output = ''
             session.send(command + '\n')
             while not session.exit_status_ready():
-                time.sleep(1)
                 while session.recv_ready():
                     output += session.recv(1024)
-                break
+                else:
+                    if output == '':
+                        time.sleep(1)
+                    else:
+                        break
             print "closing"
             ssh.close()
     return output
