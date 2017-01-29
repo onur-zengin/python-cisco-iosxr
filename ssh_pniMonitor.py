@@ -41,7 +41,7 @@ def _ssh(node, pw, command):
     try:
         ssh.connect(node, username=un, password=pw, look_for_keys=False, allow_agent=False)
     except:
-        print 'Unexpected error:', sys.exc_info()[:2]
+        print 'Unexpected error while connecting to the node:', sys.exc_info()[:2]
         sys.exit(1)
     else:
         try:
@@ -57,20 +57,18 @@ def _ssh(node, pw, command):
             output = ''
             session.send(command + '\n')
             while not session.exit_status_ready():
+                print "in the loop"
                 while session.recv_ready():
                     print "recv-ready"
                     output += session.recv(1024)
-                 #   state = session.recv_exit_status()
-                  #  print state
                 break
-            session.close()
             print "closing"
             ssh.close()
+    return output
         #stdin, stdout, stderr = ssh.exec_command(command)
         #type(stdin)
         #output = stdout.readlines()
         #ssh.close()
-    return output
 
 
 bool, pw = get_pw()
