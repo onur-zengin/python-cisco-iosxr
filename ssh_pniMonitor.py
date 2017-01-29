@@ -59,6 +59,7 @@ def _ssh(node, pw, commandlist):
             sys.exit(1)
         else:
             #disable_paging(session)
+            commandlist.insert(0,'term len 0')
             output = ''
             for cmd in commandlist:
                 cmd_output = ''
@@ -68,7 +69,7 @@ def _ssh(node, pw, commandlist):
                         cmd_output += session.recv(1024)
                     else:
                         if cmd_output[-11:-1] != node:
-                            time.sleep(1)
+                            time.sleep(0.2)
                         else:
                             break
                 output += cmd_output
