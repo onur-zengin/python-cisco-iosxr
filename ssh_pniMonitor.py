@@ -71,9 +71,10 @@ def _ssh(node, pw, commandlist):
                                 time.sleep(20)
                             else:
                                 break
+                        output += cmd_output
                     else:
                         print "SSH session closed prematurely"
-                    output += cmd_output
+                    #output += cmd_output
             print "closing"
             ssh.close()
     return output
