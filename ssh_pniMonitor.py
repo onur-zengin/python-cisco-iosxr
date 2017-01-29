@@ -82,13 +82,9 @@ def _ssh(node, pw, commandlist):
 bool, pw = get_pw()
 
 if bool:
-    output = _ssh("er10.bllab", pw, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter location all",
-                                     "sh version","sh ip int bri","sh platform"])
-    #output = _ssh("er10.bllab", pw, ["sh run interface bundle-ether212","configure","interface bundle-ether212",
-     #                                "ipv4 access-group CDPautomation_RhmUdpBlock egress","commit","end",
-      #                               "sh run int bundle-ether212"])
-
+    output = _ssh("er10.bllab", pw, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter location all"])
     print output
+    print output.split("\n")
 else:
     sys.exit(1)
 

@@ -40,9 +40,10 @@ class Router(threading.Thread):
     int_oids = oidlist[5:10]
     bw_oids = oidlist[7:10]
     bgp_oids = oidlist[10:]
-    def __init__(self, threadID, node, dswitch, risk_factor, cdn_serving_cap, int_identifiers, pfx_thresholds):
+    def __init__(self, threadID, node, pw, dswitch, risk_factor, cdn_serving_cap, int_identifiers, pfx_thresholds):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
+        self.pw = pw
         self.switch = dswitch
         self.risk_factor = risk_factor
         self.pni_identifier, self.cdn_identifier = int_identifiers
@@ -287,11 +288,72 @@ class Router(threading.Thread):
             # FOR THE EXISTING INTERFACES.
         else:
             logging.warning("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (prv, nxt))
+
     def acl(self, decision, interface, dryrun='off'):
-        if decision == 'block':
-            logging.warning("%s will now be blocked" % (interface))
+        if dryrun == 'off':
+            if decision == 'block':
+                logging.warning("%s will now be blocked" % (interface))
+                output = self._ssh("er10.bllab", ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all",
+                                                  "sh run interface " + interface])
+            else:
+                logging.info("%s will now be unblocked" % (interface))
+                output = self._ssh("er10.bllab", ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all",
+                                                  "sh run interface " + interface])
         else:
-            logging.info("%s will now be unblocked" % (interface))
+            output = 'Program operating in simulation mode. No configuration changes has been made on the router'
+            if decision == 'block':
+                logging.warning("%s will now be blocked" % (interface))
+            else:
+                logging.info("%s will now be unblocked" % (interface))
+        return output
+
+        # output = _ssh("er10.bllab", ["sh run interface bundle-ether212","configure","interface bundle-ether212",
+        #                                "ipv4 access-group CDPautomation_RhmUdpBlock egress","commit","end",
+        #                               "sh run int bundle-ether212"])
+
+    def _ssh(self, ipaddr, commandlist):
+        try:
+            ssh.connect(ipaddr, username=un, password=self.pw, look_for_keys=False, allow_agent=False)
+        except:
+            logging.warning('Unexpected error while connecting to the node: %s' % sys.exc_info()[:2])
+            sys.exit(1)
+        else:
+            logging.debug("SSH connection successful")
+            try:
+                session = ssh.invoke_shell()
+            except paramiko.SSHException as ssh_exc:
+                logging.warning(ssh_exc)
+                sys.exit(1)
+            except:
+                logging.warning('Unexpected error while invoking SSH shell: %s' % sys.exc_info()[:2])
+                sys.exit(1)
+            else:
+                logging.debug("SSH shell session successful")
+                commandlist.insert(0, 'term len 0')
+                output = ''
+                for cmd in commandlist:
+                    cmd_output = ''
+                    try:
+                        session.send(cmd + '\n')
+                    except socket.error as sc_err:
+                        logging.warning(sc_err)
+                        # sys.exit(1)
+                    else:
+                        while not session.exit_status_ready():
+                            while session.recv_ready():
+                                cmd_output += session.recv(1024)
+                            else:
+                                if '/CPU0:' + self.node not in cmd_output:
+                                    time.sleep(0.2)
+                                else:
+                                    break
+                        else:
+                            logging.warning("SSH connection closed prematurely")
+                        output += cmd_output
+                logging.debug("SSH connection closed")
+                ssh.close()
+        return output
+
 
 def usage(arg,opt=False):
     if opt is True:
@@ -322,7 +384,7 @@ def get_pw(c=3):
             print echo_warning
         finally:
             try:
-                ssh.connect(hn, username=un, password=pw, look_for_keys=False)
+                ssh.connect(hn, username=un, password=pw, look_for_keys=False, allow_agent=False)
             except paramiko.ssh_exception.AuthenticationException as auth_failure:
                 print auth_failure
                 c -= 1
@@ -502,7 +564,7 @@ def main(args):
                 threads = []
                 logging.debug("Initializing subThreads")
                 for n, node in enumerate(inventory):
-                    t = Router(n + 1, node, dswitch, risk_factor, cdn_serving_cap,
+                    t = Router(n + 1, node, pw, dswitch, risk_factor, cdn_serving_cap,
                                (pni_interface_tag, cdn_interface_tag), (ipv4_min_prefixes, ipv6_min_prefixes))
                     threads.append(t)
                     t.start()
