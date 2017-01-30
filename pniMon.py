@@ -278,6 +278,8 @@ class Router(threading.Thread):
         #                               "sh run int bundle-ether212"])
 
     def _ssh(self, ipaddr, commandlist):
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
             ssh.connect(ipaddr, username=un, password=self.pw, look_for_keys=False, allow_agent=False)
         except:
@@ -393,10 +395,12 @@ def usage(arg,opt=False):
 hd = os.environ['HOME']
 un = getpass.getuser()
 
-ssh = paramiko.SSHClient()
-ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+#ssh = paramiko.SSHClient()
+#ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
 def get_pw(c=3):
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     hn = socket.gethostname()
     while c > 0:
         try:
