@@ -161,9 +161,6 @@ class Router(threading.Thread):
                 sys.exit(3)
         finally:
             raw_acl_status = self._ssh(ipaddr, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
-            print 'rawacl\n'
-            print raw_acl_status
-            print '\nrawacl'
             for interface in sorted(disc):
                 int_status = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in
                                                 self.int_oids], cmd='snmpget')
@@ -560,8 +557,6 @@ def main(args):
         risk_factor = risk_factor
         loglevel = loglevel
         runtime = runtime
-        print "runtime",runtime
-        print "runtime",type(runtime)
     except UnboundLocalError as missing_arg:
         rg = re.search(r'(\'.+\')', str(missing_arg))
         print "%s is a mandatory argument" % rg.group(1)
