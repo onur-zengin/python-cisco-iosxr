@@ -267,19 +267,17 @@ class Router(threading.Thread):
     def acl(self, ipaddr, decision, interface):
         if self.dryrun == 'off':
             if decision == 'block':
-                logging.warning("%s will now be blocked" % (interface))
+                logging.warning("%s will now be blocked" % interface)
                 output = self._ssh(ipaddr, ["configure","interface " + interface,
                                    "ipv4 access-group CDPautomation_RhmUdpBlock egress",
                                    "commit","end"])
-                print output
                 raw_acl_status = self._ssh(ipaddr, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
                 result = self.acl_check(raw_acl_status, interface, self.acl_name)
             else:
-                logging.info("%s will now be unblocked" % (interface))
+                logging.info("%s will now be unblocked" % interface)
                 output = self._ssh(ipaddr, ["configure","interface " + interface,
                                    "no ipv4 access-group CDPautomation_RhmUdpBlock egress",
                                    "commit","end"])
-                print output
                 raw_acl_status = self._ssh(ipaddr, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
                 result = self.acl_check(raw_acl_status, interface, self.acl_name)
         else:
@@ -287,9 +285,11 @@ class Router(threading.Thread):
             if decision == 'block':
                 logging.warning("%s will now be blocked" % (interface))
                 result = 'off'
+                output = None
             else:
                 logging.info("%s will now be unblocked" % (interface))
                 result = 'on'
+                output = None
         return result, output
 
     def _ssh(self, ipaddr, commandlist):
@@ -586,6 +586,7 @@ def main(args):
     else:
         logging.basicConfig(level=logging.getLevelName(loglevel),
                             format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
+        logging.getLogger("paramiko").setLevel(logging.INFO)
         lastChanged = ""
         while True:
             try:
