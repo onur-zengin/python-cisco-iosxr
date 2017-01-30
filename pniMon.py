@@ -416,6 +416,9 @@ def get_pw(c=3):
             pw = getpass.getpass('Enter cauth password for user %s:' % un, stream=None)
         except getpass.GetPassWarning as echo_warning:
             print echo_warning
+        except KeyboardInterrupt as kb_int:
+            print kb_int
+            sys.exit(0)
         finally:
             try:
                 ssh.connect(hn, username=un, password=pw, look_for_keys=False, allow_agent=False)
