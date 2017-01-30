@@ -42,7 +42,7 @@ class Router(threading.Thread):
     bw_oids = oidlist[7:10]
     bgp_oids = oidlist[10:]
     def __init__(self, threadID, node, pw, dswitch, risk_factor, cdn_serving_cap,
-                 acl_name, int_identifiers, pfx_thresholds, dryrun = 'off'):
+                 acl_name, dryrun, int_identifiers, pfx_thresholds):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
         self.pw = pw
@@ -243,8 +243,8 @@ class Router(threading.Thread):
             #print min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]])
             if usablePniOut == 0:
                 for interface in self.cdn_interfaces:
-                    if disc[interface]['aclStatus'] != 'off':
-                        self.acl('block', interface)
+                    if nxt[interface]['aclStatus'] != 'off':
+                        self.acl(ipaddr, 'block', interface)
             elif actualPniOut / usablePniOut * 100 >= self.risk_factor:
                 logging.info('risk factor hit')
             #   self.acl('block', min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]))
@@ -594,13 +594,8 @@ def main(args):
                 threads = []
                 logging.debug("Initializing subThreads")
                 for n, node in enumerate(inventory):
-                    if dryrun == 'off':
-                        t = Router(n + 1, node, pw, dswitch, risk_factor, cdn_serving_cap, acl_name,
-                                   (pni_interface_tag, cdn_interface_tag), (ipv4_min_prefixes, ipv6_min_prefixes))
-                    else:
-                        t = Router(n + 1, node, pw, dswitch, risk_factor, cdn_serving_cap, acl_name,
-                                   (pni_interface_tag, cdn_interface_tag), (ipv4_min_prefixes, ipv6_min_prefixes),
-                                   dryrun='on')
+                    t = Router(n + 1, node, pw, dswitch, risk_factor, cdn_serving_cap, acl_name, dryrun,
+                               (pni_interface_tag, cdn_interface_tag), (ipv4_min_prefixes, ipv6_min_prefixes))
                     threads.append(t)
                     t.start()
                 for t in threads:
