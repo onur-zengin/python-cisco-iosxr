@@ -196,6 +196,7 @@ class Router(threading.Thread):
 
     def acl_check(self, rawinput, interface, acl_name):
         result = 'off'
+        rawinput = rawinput.split('\n')
         for i in rawinput:
             if re.search(r'Interface : (%s)$' % interface, i.strip('\r').strip(' ')) != None:
                 acl = re.search(r'Output ACL : (%s)$' % acl_name, rawinput[rawinput.index(i) + 2].strip('\r').strip(' '))
@@ -559,6 +560,8 @@ def main(args):
         risk_factor = risk_factor
         loglevel = loglevel
         runtime = runtime
+        print "runtime",runtime
+        print "runtime",type(runtime)
     except UnboundLocalError as missing_arg:
         rg = re.search(r'(\'.+\')', str(missing_arg))
         print "%s is a mandatory argument" % rg.group(1)
