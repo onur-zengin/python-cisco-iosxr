@@ -9,6 +9,7 @@ import time
 import subprocess
 import re
 import resource
+import gc
 import os
 import paramiko
 import getpass
@@ -584,9 +585,6 @@ def main(args):
             except OSError as oserr:
                 print oserr
                 sys.exit(1)
-            except KeyboardInterrupt as kint:
-                print kint
-                sys.exit(1)
             else:
                 threads = []
                 logging.debug("Initializing subThreads")
@@ -601,12 +599,15 @@ def main(args):
                 if type(runtime) == int:
                     runtime -= 1
             finally:
+                n = gc.collect()
+                print "unreachable:", n
+                print "garbage:", gc.garbage
                 if runtime == 0:
                     break
                 try:
                     time.sleep(frequency)
-                except KeyboardInterrupt as kint:
-                    print kint
+                except KeyboardInterrupt as kb_int:
+                    print kb_int
                     sys.exit(1)
 
 
