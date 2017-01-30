@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import paramiko
 import getpass
@@ -36,6 +36,7 @@ def get_pw(c=3):
                 c -= 1
             except:
                 print 'Unexpected error in get_pw()', sys.exc_info()[:2]
+                ssh.close()
                 sys.exit(1)
             else:
                 ssh.close()
@@ -50,6 +51,7 @@ def _ssh(node, pw, commandlist):
         ssh.connect(node, username=un, password=pw, look_for_keys=False, allow_agent=False)
     except:
         print 'Unexpected error while connecting to the node:', sys.exc_info()[:2]
+        ssh.close()
         sys.exit(1)
     else:
         try:

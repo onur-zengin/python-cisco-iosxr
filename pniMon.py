@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import sys
 import getopt
@@ -407,6 +407,7 @@ def get_pw(c=3):
             try:
                 ssh.connect(hn, username=un, password=pw, look_for_keys=False, allow_agent=False)
             except paramiko.ssh_exception.AuthenticationException as auth_failure:
+                ssh.close()
                 print auth_failure
                 c -= 1
             except:
