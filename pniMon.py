@@ -282,7 +282,7 @@ class Router(threading.Thread):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
-            ssh.connect(ipaddr, username=un, password=self.pw, look_for_keys=False)
+            ssh.connect(ipaddr, username=un, password=self.pw, look_for_keys=False, allow_agent=False)
         except:
             logging.warning('Unexpected error while connecting to the node: %s' % sys.exc_info()[:2])
             sys.exit(1)
@@ -321,6 +321,7 @@ class Router(threading.Thread):
                         output += cmd_output
                 logging.debug("SSH connection closed")
                 ssh.close()
+        ssh = None
         return output
 
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
@@ -410,7 +411,7 @@ def get_pw(c=3):
             print echo_warning
         finally:
             try:
-                ssh.connect(hn, username=un, password=pw, look_for_keys=False)
+                ssh.connect(hn, username=un, password=pw, look_for_keys=False, allow_agent=False)
             except paramiko.ssh_exception.AuthenticationException as auth_failure:
                 ssh.close()
                 print auth_failure
@@ -599,6 +600,7 @@ def main(args):
                 if type(runtime) == int:
                     runtime -= 1
             finally:
+                ssh = None
                 #n = gc.collect()
                 #print "unreachable:", n
                 if runtime == 0:
