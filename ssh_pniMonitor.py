@@ -32,6 +32,7 @@ def get_pw(c=3):
                 ssh.connect(hn, username=un, password=pw, look_for_keys=False, allow_agent=False)
             except paramiko.ssh_exception.AuthenticationException as auth_failure:
                 print auth_failure
+                ssh.close()
                 c -= 1
             except:
                 print 'Unexpected error in get_pw()', sys.exc_info()[:2]
