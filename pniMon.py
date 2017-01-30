@@ -410,7 +410,7 @@ def get_pw(c=3):
             print echo_warning
         finally:
             try:
-                ssh.connect(hn, username=un, password=pw, look_for_keys=False, allow_agent=False)
+                ssh.connect(hn, username=un, password=pw, look_for_keys=False)
             except paramiko.ssh_exception.AuthenticationException as auth_failure:
                 ssh.close()
                 print auth_failure
