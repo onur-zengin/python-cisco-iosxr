@@ -42,7 +42,7 @@ class Router(threading.Thread):
     bw_oids = oidlist[7:10]
     bgp_oids = oidlist[10:]
     def __init__(self, threadID, node, pw, dswitch, risk_factor, cdn_serving_cap,
-                 acl_name, int_identifiers, pfx_thresholds):
+                 acl_name, int_identifiers, pfx_thresholds, dryrun = 'off'):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
         self.pw = pw
@@ -52,6 +52,7 @@ class Router(threading.Thread):
         self.ipv4_minPfx, self.ipv6_minPfx = pfx_thresholds
         self.serving_cap = cdn_serving_cap
         self.acl_name = acl_name
+        self.dryrun = dryrun
     def run(self):
         logging.debug("Starting")
         self.tstamp = tstamp('mr')
@@ -242,7 +243,8 @@ class Router(threading.Thread):
             #print min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]])
             if usablePniOut == 0:
                 for interface in self.cdn_interfaces:
-                    print self.acl('block', interface)
+                    if disc[interface]['aclStatus'] != 'off':
+                        self.acl('block', interface)
             elif actualPniOut / usablePniOut * 100 >= self.risk_factor:
                 logging.info('risk factor hit')
             #   self.acl('block', min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]))
@@ -256,31 +258,33 @@ class Router(threading.Thread):
         else:
             logging.warning("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (prv, nxt))
 
-    def acl(self, decision, interface, dryrun='off'):
-        if dryrun == 'off':
+    def acl(self, ipaddr, decision, interface):
+        if self.dryrun == 'off':
             if decision == 'block':
                 logging.warning("%s will now be blocked" % (interface))
-                output = self._ssh("er10.bllab", ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all",
-                                                  "sh run interface " + interface])
+                self._ssh(ipaddr, ["configure","interface" + interface,
+                                   "ipv4 access-group CDPautomation_RhmUdpBlock egress",
+                                   "commit","end"])
+                raw_acl_status = self._ssh(ipaddr, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
+                result = self.acl_check(raw_acl_status, interface, self.acl_name)
             else:
                 logging.info("%s will now be unblocked" % (interface))
-                output = self._ssh("er10.bllab", ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all",
-                                                  "sh run interface " + interface])
+                self._ssh(ipaddr, ["configure","interface" + interface,
+                                   "no ipv4 access-group CDPautomation_RhmUdpBlock egress",
+                                   "commit","end"])
+                raw_acl_status = self._ssh(ipaddr, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
+                result = self.acl_check(raw_acl_status, interface, self.acl_name)
         else:
-            output = 'Program operating in simulation mode. No configuration changes has been made on the router'
+            logging.warning('Program operating in simulation mode. No configuration changes will be made on the router')
             if decision == 'block':
                 logging.warning("%s will now be blocked" % (interface))
+                result = 'off'
             else:
                 logging.info("%s will now be unblocked" % (interface))
-        return output
-
-        # output = _ssh("er10.bllab", ["sh run interface bundle-ether212","configure","interface bundle-ether212",
-        #                                "ipv4 access-group CDPautomation_RhmUdpBlock egress","commit","end",
-        #                               "sh run int bundle-ether212"])
+                result = 'on'
+        return result
 
     def _ssh(self, ipaddr, commandlist):
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
             ssh.connect(ipaddr, username=un, password=self.pw, look_for_keys=False, allow_agent=False)
         except:
@@ -321,7 +325,6 @@ class Router(threading.Thread):
                         output += cmd_output
                 logging.debug("SSH connection closed")
                 ssh.close()
-        ssh = None
         return output
 
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
@@ -397,12 +400,10 @@ def usage(arg,opt=False):
 hd = os.environ['HOME']
 un = getpass.getuser()
 
-#ssh = paramiko.SSHClient()
-#ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
 def get_pw(c=3):
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     hn = socket.gethostname()
     while c > 0:
         try:
@@ -440,6 +441,7 @@ def main(args):
     ipv4_min_prefixes = 0
     ipv6_min_prefixes = 50
     cdn_serving_cap = 90
+    dryrun = 'off'
     try:
         with open(args[0][:-3] + ".conf") as pf:
             parameters = [tuple(i.split('=')) for i in
@@ -555,6 +557,8 @@ def main(args):
                     except ValueError:
                         print 'The value of the runtime (-r) argument must be either be "infinite" or an integer'
                         sys.exit(2)
+            elif opt == '--dryrun':
+                dryrun = 'on'
             else:
                 print "Invalid option specified on the command line: %s" % (opt)
                 sys.exit(2)
@@ -590,8 +594,13 @@ def main(args):
                 threads = []
                 logging.debug("Initializing subThreads")
                 for n, node in enumerate(inventory):
-                    t = Router(n + 1, node, pw, dswitch, risk_factor, cdn_serving_cap, acl_name,
-                               (pni_interface_tag, cdn_interface_tag), (ipv4_min_prefixes, ipv6_min_prefixes))
+                    if dryrun == 'off':
+                        t = Router(n + 1, node, pw, dswitch, risk_factor, cdn_serving_cap, acl_name,
+                                   (pni_interface_tag, cdn_interface_tag), (ipv4_min_prefixes, ipv6_min_prefixes))
+                    else:
+                        t = Router(n + 1, node, pw, dswitch, risk_factor, cdn_serving_cap, acl_name,
+                                   (pni_interface_tag, cdn_interface_tag), (ipv4_min_prefixes, ipv6_min_prefixes),
+                                   dryrun='on')
                     threads.append(t)
                     t.start()
                 for t in threads:
@@ -600,7 +609,6 @@ def main(args):
                 if type(runtime) == int:
                     runtime -= 1
             finally:
-                ssh = None
                 #n = gc.collect()
                 #print "unreachable:", n
                 if runtime == 0:
