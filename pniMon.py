@@ -243,8 +243,12 @@ class Router(threading.Thread):
             #print min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]])
             if usablePniOut == 0:
                 for interface in self.cdn_interfaces:
-                    if nxt[interface]['aclStatus'] != 'off':
-                        self.acl(ipaddr, 'block', interface)
+                    if nxt[interface]['aclStatus'] != 'on':
+                        result = self.acl(ipaddr, 'block', interface)
+                        if result == 'off':
+                            logging.warning('Interface %s is now blocked' % interface)
+                    else:
+                        logging.info('Interface %s was already blocked' % interface)
             elif actualPniOut / usablePniOut * 100 >= self.risk_factor:
                 logging.info('risk factor hit')
             #   self.acl('block', min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]))
@@ -262,16 +266,18 @@ class Router(threading.Thread):
         if self.dryrun == 'off':
             if decision == 'block':
                 logging.warning("%s will now be blocked" % (interface))
-                self._ssh(ipaddr, ["configure","interface" + interface,
+                output = self._ssh(ipaddr, ["configure","interface" + interface,
                                    "ipv4 access-group CDPautomation_RhmUdpBlock egress",
                                    "commit","end"])
+                print output
                 raw_acl_status = self._ssh(ipaddr, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
                 result = self.acl_check(raw_acl_status, interface, self.acl_name)
             else:
                 logging.info("%s will now be unblocked" % (interface))
-                self._ssh(ipaddr, ["configure","interface" + interface,
+                output = self._ssh(ipaddr, ["configure","interface" + interface,
                                    "no ipv4 access-group CDPautomation_RhmUdpBlock egress",
                                    "commit","end"])
+                print output
                 raw_acl_status = self._ssh(ipaddr, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
                 result = self.acl_check(raw_acl_status, interface, self.acl_name)
         else:
