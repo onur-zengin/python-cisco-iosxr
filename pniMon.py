@@ -282,7 +282,7 @@ class Router(threading.Thread):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
-            ssh.connect(ipaddr, username=un, password=self.pw, look_for_keys=False, allow_agent=False)
+            ssh.connect(ipaddr, username=un, password=self.pw, look_for_keys=False)
         except:
             logging.warning('Unexpected error while connecting to the node: %s' % sys.exc_info()[:2])
             sys.exit(1)
@@ -599,9 +599,8 @@ def main(args):
                 if type(runtime) == int:
                     runtime -= 1
             finally:
-                n = gc.collect()
-                print "unreachable:", n
-                print "garbage:", gc.garbage
+                #n = gc.collect()
+                #print "unreachable:", n
                 if runtime == 0:
                     break
                 try:
