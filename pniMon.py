@@ -219,7 +219,7 @@ class Router(threading.Thread):
                     if not disc[interface].has_key('peer_ipv4') and not disc[interface].has_key('peer_ipv6'):
                         logging.warning("PNI interface %s has no BGP sessions" % interface)
                 if disc[interface]['type'] == 'cdn':
-                    nxt[interface]['aclStatus'] = {self.acl_check(raw_acl_status, interface, self.acl_name)}
+                    nxt[interface]['aclStatus'] = self.acl_check(raw_acl_status, interface, self.acl_name)
             with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                 pf.write(str(nxt)+'\n')
         return prv, nxt
