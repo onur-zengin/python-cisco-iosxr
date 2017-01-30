@@ -90,39 +90,6 @@ class Router(threading.Thread):
             logging.debug("Unexpected error while resolving hostname: %s" % (str(sys.exc_info()[:2])))
             sys.exit(3)
         return ipaddr
-    def ping(self,ipaddr):
-        try:
-            ptup = subprocess.Popen(['ping', '-i', '0.2', '-w', '2', '-c', '500', ipaddr, '-q'], stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE).communicate()
-        except:
-            logging.warning("Unexpected error during ping test")
-            logging.debug("Unexpected error - Popen function ping(): %s" % (str(sys.exc_info()[:2])))
-            sys.exit(3)
-        else:
-            if ptup[1] == '':
-                n = re.search(r'(\d+)\%\spacket loss', ptup[0])
-                if n is not None:
-                    if int(n.group(1)) == 0:
-                        pingr = 0
-                    elif 0 < int(n.group(1)) < 100:
-                        logging.warning("Operation halted. Packet loss detected")
-                        sys.exit(3)
-                    elif int(n.group(1)) == 100:
-                        logging.warning("Operation halted. Node unreachable")
-                        sys.exit(3)
-                    else:
-                        logging.warning("Unexpected error during ping test")
-                        logging.debug("Unexpected regex error during ping test: ### %s ###" % (str(n)))
-                        sys.exit(3)
-                else:
-                    logging.warning("Unexpected error during ping test")
-                    logging.debug("Unexpected regex error during ping test: ### %s ###" % (str(ptup[0])))
-                    sys.exit(3)
-            else:
-                logging.warning("Unexpected error during ping test")
-                logging.debug("Unexpected error during ping test: ### %s ###" % (str(ptup)))
-                sys.exit(3)
-        return pingr
 
     def discovery(self, ipaddr):
         pni_interfaces = []
@@ -194,6 +161,9 @@ class Router(threading.Thread):
                 sys.exit(3)
         finally:
             raw_acl_status = self._ssh(ipaddr, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
+            print 'rawacl\n'
+            print raw_acl_status
+            print '\nrawacl'
             for interface in sorted(disc):
                 int_status = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in
                                                 self.int_oids], cmd='snmpget')
@@ -234,26 +204,6 @@ class Router(threading.Thread):
                         result = 'on'
         return result
 
-    def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
-        args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
-        if quiet is 'on':
-            args.insert(1, '-Oqv')
-        args += oids
-        try:
-            stup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-        except:
-            logging.warning("Unexpected error during %s operation" % (cmd))
-            logging.debug("Unexpected error - Popen function snmp(): %s" % (str(sys.exc_info()[:2])))
-            sys.exit(3)
-        else:
-            if stup[1] == '':
-                snmpr = stup[0].strip('\n').split('\n')
-                # elif timeout self.ping(self.ipaddr)
-            else:
-                logging.warning("Unexpected error during %s operation" % (cmd))
-                logging.debug("Unexpected error during %s operation: ### %s ###" % (cmd, str(stup)))
-                sys.exit(3)
-        return snmpr
     def _process(self, ipaddr, disc):
         prv, nxt = self.probe(ipaddr, disc)
         logging.debug("prev: %s" % prv)
@@ -371,6 +321,61 @@ class Router(threading.Thread):
                 logging.debug("SSH connection closed")
                 ssh.close()
         return output
+
+    def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
+        args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
+        if quiet is 'on':
+            args.insert(1, '-Oqv')
+        args += oids
+        try:
+            stup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+        except:
+            logging.warning("Unexpected error during %s operation" % (cmd))
+            logging.debug("Unexpected error - Popen function snmp(): %s" % (str(sys.exc_info()[:2])))
+            sys.exit(3)
+        else:
+            if stup[1] == '':
+                snmpr = stup[0].strip('\n').split('\n')
+                # elif timeout self.ping(self.ipaddr)
+            else:
+                logging.warning("Unexpected error during %s operation" % (cmd))
+                logging.debug("Unexpected error during %s operation: ### %s ###" % (cmd, str(stup)))
+                sys.exit(3)
+        return snmpr
+
+    def ping(self,ipaddr):
+        try:
+            ptup = subprocess.Popen(['ping', '-i', '0.2', '-w', '2', '-c', '500', ipaddr, '-q'], stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE).communicate()
+        except:
+            logging.warning("Unexpected error during ping test")
+            logging.debug("Unexpected error - Popen function ping(): %s" % (str(sys.exc_info()[:2])))
+            sys.exit(3)
+        else:
+            if ptup[1] == '':
+                n = re.search(r'(\d+)\%\spacket loss', ptup[0])
+                if n is not None:
+                    if int(n.group(1)) == 0:
+                        pingr = 0
+                    elif 0 < int(n.group(1)) < 100:
+                        logging.warning("Operation halted. Packet loss detected")
+                        sys.exit(3)
+                    elif int(n.group(1)) == 100:
+                        logging.warning("Operation halted. Node unreachable")
+                        sys.exit(3)
+                    else:
+                        logging.warning("Unexpected error during ping test")
+                        logging.debug("Unexpected regex error during ping test: ### %s ###" % (str(n)))
+                        sys.exit(3)
+                else:
+                    logging.warning("Unexpected error during ping test")
+                    logging.debug("Unexpected regex error during ping test: ### %s ###" % (str(ptup[0])))
+                    sys.exit(3)
+            else:
+                logging.warning("Unexpected error during ping test")
+                logging.debug("Unexpected error during ping test: ### %s ###" % (str(ptup)))
+                sys.exit(3)
+        return pingr
 
 
 def usage(arg,opt=False):
