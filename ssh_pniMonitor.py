@@ -7,6 +7,7 @@ import sys
 import socket
 import time
 import re
+import threading
 import logging
 
 loglevel = 'DEBUG'
@@ -31,12 +32,13 @@ def get_pw(c=3):
             try:
                 ssh.connect(hn, username=un, password=pw, look_for_keys=False, allow_agent=False)
             except paramiko.ssh_exception.AuthenticationException as auth_failure:
+                print ssh.get_transport().is_active()
                 print auth_failure
                 ssh.close()
+                #print ssh.get_transport().is_active()
                 c -= 1
             except:
                 print 'Unexpected error in get_pw()', sys.exc_info()[:2]
-                ssh.close()
                 sys.exit(1)
             else:
                 ssh.close()
@@ -113,5 +115,5 @@ def acl_check(rawinput, interface, aclname):
                     result = 'on'
     return result
 
-
+print threading.activeCount()
 print acl_check(raw, 'Bundle-Ether214', 'CDPautomation_RhmUdpBlock')
