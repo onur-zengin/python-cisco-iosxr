@@ -75,11 +75,12 @@ Periodic rotation for *.prb files
 
 PLANNED FOR NEXT RELEASES
 
+- Support multiple ASNs
 - Per-region cdn_serving_cap setting as opposed to Global
 - Automated discovery of new interfaces
 - Persistence of the previously recorded interface utilization data upon a new node or interface discovery
 - In-flight change to certain runtime parameters
 - Email updates when an interface is blocked / unblocked
-- Replace SNMP with Netconf(?)
+- Replace SNMP & SSH with Netconf/RestAPI
 
 

@@ -40,7 +40,8 @@ class Router(threading.Thread):
     int_oids = oidlist[5:10]
     bw_oids = oidlist[7:10]
     bgp_oids = oidlist[10:]
-    def __init__(self, threadID, node, pw, dswitch, risk_factor, cdn_serving_cap, int_identifiers, pfx_thresholds):
+    def __init__(self, threadID, node, pw, dswitch, risk_factor, cdn_serving_cap,
+                 acl_name, int_identifiers, pfx_thresholds):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
         self.pw = pw
@@ -49,6 +50,7 @@ class Router(threading.Thread):
         self.pni_identifier, self.cdn_identifier = int_identifiers
         self.ipv4_minPfx, self.ipv6_minPfx = pfx_thresholds
         self.serving_cap = cdn_serving_cap
+        self.acl_name = acl_name
     def run(self):
         logging.debug("Starting")
         self.tstamp = tstamp('mr')
@@ -76,6 +78,7 @@ class Router(threading.Thread):
         else:
             logging.info("No interfaces eligible for monitoring")
         logging.debug("Completed")
+
     def dns(self,node):
         try:
             ipaddr = socket.gethostbyname(node)
@@ -120,6 +123,7 @@ class Router(threading.Thread):
                 logging.debug("Unexpected error during ping test: ### %s ###" % (str(ptup)))
                 sys.exit(3)
         return pingr
+
     def discovery(self, ipaddr):
         pni_interfaces = []
         cdn_interfaces = []
@@ -171,6 +175,7 @@ class Router(threading.Thread):
         with open('.do_not_modify_'.upper()+self.node+'.dsc', 'w') as tf:
             tf.write(str(disc))
         return disc
+
     def probe(self, ipaddr, disc):
         prv, nxt = {}, {}
         args = ['tail', '-1', '.do_not_modify_'.upper() + self.node + '.prb']
@@ -188,6 +193,7 @@ class Router(threading.Thread):
                 logging.warning("Unexpected output in the probe() function" % (str(ptup)))
                 sys.exit(3)
         finally:
+            raw_acl_status = self._ssh(ipaddr, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
             for interface in sorted(disc):
                 int_status = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in
                                                 self.int_oids], cmd='snmpget')
@@ -213,10 +219,21 @@ class Router(threading.Thread):
                     if not disc[interface].has_key('peer_ipv4') and not disc[interface].has_key('peer_ipv6'):
                         logging.warning("PNI interface %s has no BGP sessions" % interface)
                 if disc[interface]['type'] == 'cdn':
-                    nxt[interface]['aclStatus'] = {}
+                    nxt[interface]['aclStatus'] = {self.acl_check(raw_acl_status, interface, self.acl_name)}
             with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                 pf.write(str(nxt)+'\n')
         return prv, nxt
+
+    def acl_check(self, rawinput, interface, acl_name):
+        result = 'off'
+        for i in rawinput:
+            if re.search(r'Interface : (%s)$' % interface, i.strip('\r').strip(' ')) != None:
+                acl = re.search(r'Output ACL : (%s)$' % acl_name, rawinput[rawinput.index(i) + 2].strip('\r').strip(' '))
+                if acl != None:
+                    if acl.group(1) == acl_name:
+                        result = 'on'
+        return result
+
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
         if quiet is 'on':
@@ -275,7 +292,8 @@ class Router(threading.Thread):
             #print [util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]
             #print min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]])
             if usablePniOut == 0:
-                self.acl('block', self.cdn_interfaces)
+                for interface in self.cdn_interfaces:
+                    print self.acl('block', interface)
             elif actualPniOut / usablePniOut * 100 >= self.risk_factor:
                 logging.info('risk factor hit')
             #   self.acl('block', min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]))
@@ -406,6 +424,7 @@ def main(args):
     else:
         print "Authentication successful"
     asctime = tstamp('hr')
+    acl_name = 'CDPautomation_RhmUdpBlock'
     pni_interface_tag = '[CDPautomation:PNI]'
     cdn_interface_tag = '[CDPautomation:CDN]'
     ipv4_min_prefixes = 0
@@ -564,7 +583,7 @@ def main(args):
                 threads = []
                 logging.debug("Initializing subThreads")
                 for n, node in enumerate(inventory):
-                    t = Router(n + 1, node, pw, dswitch, risk_factor, cdn_serving_cap,
+                    t = Router(n + 1, node, pw, dswitch, risk_factor, cdn_serving_cap, acl_name,
                                (pni_interface_tag, cdn_interface_tag), (ipv4_min_prefixes, ipv6_min_prefixes))
                     threads.append(t)
                     t.start()

@@ -6,7 +6,8 @@ import os
 import sys
 import socket
 import time
-
+import re
+"""
 hd = os.environ['HOME']
 un = getpass.getuser()
 
@@ -81,6 +82,7 @@ def _ssh(node, pw, commandlist):
 
 bool, pw = get_pw()
 
+
 if bool:
     output = _ssh("er10.bllab", pw, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
     print output
@@ -90,5 +92,20 @@ else:
 
 #for i in raw_output:
 #    print i.strip('\n')
+"""
 
 
+
+raw = ['\r', '                    _____\r', '                ___/  |  \\___\r', '             __/      |      \\__\r', '          __/         |         \\__\r', '         /|           |           |\\\r', '        | |           |           | |\r', '        | |           |           | |\r', '       |  |           |           |  |\r', '       |  |        ___|___        |  |\r', '      /   |    ___/  ___  \\___    |   \\\r', '      |   |___/  ___/| |\\___  \\___|   |\r', '      |   /   __/_ \\_| |_/ _\\__   \\   |\r', '     |   |___/\\_  \\_______/  _/\\___|   |\r', '    /   /___/   \\___\\___/___/   \\___\\   \\\r', '   /    |   |       |   |       |   |    \\\r', '  /     |   |_      |   |      _|   |     \\\r', ' |___   |___|_\\   _/|___|\\_   /_|___|   ___|\r', ' |_  \\    |   |\\ /  |___|  \\ /|   |    /  _|\r', ' ||| |    |   | |  _______  | |   |    | |||\r', ' ||| |    |   | |  \\_____/  | |   |    | |||\r', ' ||| |    |   | |    ___    | |   |    | |||\r', ' ||| |    |   | |           | |   |    | |||\r', ' ||| |    |   | |           | |   |    | |||\r', ' ||| |    |   | |           | |   |    | |||\r', ' ||| |    |   |\\|           |/|   |    | |||\r', ' \\||_|____|___|-\\___________/-|___|____|_||/\r', '\r', 'Welcome to your friendly local Megatron Chassis.\r', '         Enjoy your stay.\r', '\r', '\r', '\r', '\r', 'RP/0/RP0/CPU0:er10.bllab#term len 0\r', '\rSun Jan 29 21:10:03.082 GMT\r', 'RP/0/RP0/CPU0:er10.bllab#sh access-lists CDPautomation_RhmUdpBlock usage pfilte\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08$n_RhmUdpBlock usage pfilter                          \x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08 location all\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08sh access-lists CDPautomation_RhmUdpBlock usage pfilt$\x08\x08\x08\x08\r', '\rSun Jan 29 21:10:03.266 GMT\r', 'Interface : Bundle-Ether212 \r', '    Input ACL : N/A\r', '    Output ACL : CDPautomation_RhmUdpBlock \r', 'Interface : Bundle-Ether214 \r', '    Input Common-ACL : N/A  ACL : N/A  \r', '    Output ACL : N/A \r', 'RP/0/RP0/CPU0:er10.bllab#']
+def acl_check(rawinput, interface, aclname):
+    result = 'off'
+    for i in rawinput:
+        if re.search(r'Interface : (%s)$' % interface, i.strip('\r').strip(' ')) != None:
+            acl = re.search(r'Output ACL : (%s)$' % aclname, rawinput[rawinput.index(i)+2].strip('\r').strip(' '))
+            if acl != None:
+                if acl.group(1) == aclname:
+                    result = 'on'
+    return result
+
+
+print acl_check(raw, 'Bundle-Ether2', 'CDPautomation_RhmUdpBlock')
