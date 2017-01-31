@@ -188,7 +188,7 @@ class Router(threading.Thread):
                     if not disc[interface].has_key('peer_ipv4') and not disc[interface].has_key('peer_ipv6'):
                         logging.warning("PNI interface %s has no BGP sessions" % interface)
                 if disc[interface]['type'] == 'cdn':
-                    nxt[interface]['aclStatus'] = self.acl_check(raw_acl_status, interface, self.acl_name)
+                    nxt[interface]['aclStatus'] = self.acl_check(raw_acl_status[-1], interface, self.acl_name)
             with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                 pf.write(str(nxt)+'\n')
         return prv, nxt
@@ -243,23 +243,21 @@ class Router(threading.Thread):
             #print min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]])
             if usablePniOut == 0:
                 logging.warning('No usable PNI capacity available')
-                for interface in self.cdn_interfaces:
-                    if nxt[interface]['aclStatus'] == 'off':
-                        result, output = self.acl(ipaddr, 'block', interface)
-                        if result == 'on':
-                            logging.info('Interface %s is now blocked' % interface)
-                        else:
-                            logging.warning('Interface blocking attempt failed:\n%s' % output)
+                unblocked = [interface for interface in self.cdn_interfaces if nxt[interface]['aclStatus'] == 'off']
+                blocked = [interface for interface in self.cdn_interfaces if nxt[interface]['aclStatus'] == 'on']
+                results, output = self._acl(ipaddr, 'block', unblocked)
+                if results == ['on' for i in range(len(unblocked))]:
+                    for interface in unblocked:
+                        logging.info('Interface %s is now blocked' % interface)
                     else:
-                        logging.info('Interface %s was already blocked' % interface)
+                        logging.warning('Interface blocking attempt failed:\n%s' % output)
+                for interface in blocked:
+                    logging.info('Interface %s was already blocked' % interface)
             # We can't use actualCDNIn while calculating the risk_factor because it won't include P2P traffic and / or
             # the CDN overflow from the other site.
             elif actualPniOut / usablePniOut * 100 >= self.risk_factor:
                 logging.warning('The ratio of actual CDN ingress traffic to available PNI egress capacity is equal to'
                                 ' or greater than the pre-defined Risk Factor')
-                for interface in self.cdn_interfaces:
-                    if nxt[interface]['aclStatus'] == 'off':
-                        result, output = self.acl(ipaddr, 'block', interface)
         elif prv == {} and len(nxt) > 0:
             logging.info("New node detected. _process() module will be activated in the next polling cycle")
         elif prv != {} and len(prv) < len(nxt):
@@ -270,36 +268,39 @@ class Router(threading.Thread):
         else:
             logging.warning("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (prv, nxt))
 
-    def acl(self, ipaddr, decision, interfaces):
+    def _acl(self, ipaddr, decision, interfaces):
+        results = []
+        commands = ["configure", "commit", "end", "sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"]
         if self.dryrun == 'off':
             if decision == 'block':
-                commands = ["configure", "commit", "end",
-                            "sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"]
                 for interface in interfaces:
                     commands[1:1] = ["interface " + interface, "ipv4 access-group CDPautomation_RhmUdpBlock egress",
                                      "exit"]
                     logging.warning("%s will be blocked" % interface)
                 output = self._ssh(ipaddr, commands)
                 for interface in interfaces:
-                    result = self.acl_check(output, interface, self.acl_name)
+                    results.append(self.acl_check(output[-1], interface, self.acl_name))
             else:
-                logging.info("%s will be unblocked" % interface)
-                output = self._ssh(ipaddr, ["configure","interface " + interface,
-                                   "no ipv4 access-group CDPautomation_RhmUdpBlock egress",
-                                   "commit","end"])
-                raw_acl_status = self._ssh(ipaddr, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
-                result = self.acl_check(raw_acl_status, interface, self.acl_name)
+                for interface in interfaces:
+                    commands[1:1] = ["interface " + interface, "no ipv4 access-group CDPautomation_RhmUdpBlock egress",
+                                     "exit"]
+                    logging.info("%s will be unblocked" % interface)
+                output = self._ssh(ipaddr, commands)
+                for interface in interfaces:
+                    results.append(self.acl_check(output[-1], interface, self.acl_name))
         else:
-            logging.warning('Program operating in simulation mode. No configuration changes will be made on the router')
+            logging.warning('Program operating in simulation mode. No configuration changes will be made to the router')
             if decision == 'block':
-                logging.warning("%s will be blocked" % (interface))
-                result = 'off'
+                for interface in interfaces:
+                    logging.warning("%s will be blocked" % interface)
+                    results = ['on' for x in range(len(interfaces))]
                 output = None
             else:
-                logging.info("%s will be unblocked" % (interface))
-                result = 'on'
+                for interface in interfaces:
+                    logging.warning("%s will be blocked" % interface)
+                    results = ['off' for x in range(len(interfaces))]
                 output = None
-        return result, output
+        return results, output
 
     def _ssh(self, ipaddr, commandlist):
         try:
@@ -320,7 +321,7 @@ class Router(threading.Thread):
             else:
                 logging.debug("SSH shell session successful")
                 commandlist.insert(0, 'term len 0')
-                output = ''
+                output = []
                 for cmd in commandlist:
                     cmd_output = ''
                     try:
@@ -339,7 +340,7 @@ class Router(threading.Thread):
                                     break
                         else:
                             logging.warning("SSH connection closed prematurely")
-                        output += cmd_output
+                        output.append(cmd_output)
                 logging.debug("SSH connection closed")
                 ssh.close()
         return output
@@ -593,9 +594,11 @@ def main(args):
         print "%s is a mandatory argument" % rg.group(1)
         sys.exit(2)
     else:
-        main_logger = logging.getLogger(__name__)
-        main_logger.setLevel(logging.getLevelName(loglevel))
-        logging.basicConfig(format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
+        logging.basicConfig(level=logging.getLevelName(loglevel),
+                            format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
+        #main_logger = logging.getLogger(__name__)
+        #main_logger.setLevel(logging.getLevelName(loglevel))
+        #logging.basicConfig(format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
         #paramiko_logger = logging.getLogger('paramiko')
         #paramiko_logger.setLevel(logging.INFO)
         lastChanged = ""
