@@ -97,6 +97,7 @@ bool, pw = get_pw()
 if bool:
     raw = _ssh("er10.bllab", pw, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
     print raw
+    print type(raw)
 else:
     sys.exit(1)
 
@@ -115,5 +116,4 @@ def acl_check(rawinput, interface, aclname):
                     result = 'on'
     return result
 
-print threading.activeCount()
 print acl_check(raw, 'Bundle-Ether214', 'CDPautomation_RhmUdpBlock')
