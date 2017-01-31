@@ -242,6 +242,7 @@ class Router(threading.Thread):
             #print [util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]
             #print min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]])
             if usablePniOut == 0:
+                logging.warning('No usable PNI capacity available')
                 for interface in self.cdn_interfaces:
                     if nxt[interface]['aclStatus'] == 'off':
                         result, output = self.acl(ipaddr, 'block', interface)
@@ -251,9 +252,14 @@ class Router(threading.Thread):
                             logging.warning('Interface blocking attempt failed:\n%s' % output)
                     else:
                         logging.info('Interface %s was already blocked' % interface)
+            # We can't use actualCDNIn while calculating the risk_factor because it won't include P2P traffic and / or
+            # the CDN overflow from the other site.
             elif actualPniOut / usablePniOut * 100 >= self.risk_factor:
-                logging.info('risk factor hit')
-            #   self.acl('block', min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]))
+                logging.warning('The ratio of actual CDN ingress traffic to available PNI egress capacity is equal to'
+                                ' or greater than the pre-defined Risk Factor')
+                for interface in self.cdn_interfaces:
+                    if nxt[interface]['aclStatus'] == 'off':
+                        result, output = self.acl(ipaddr, 'block', interface)
         elif prv == {} and len(nxt) > 0:
             logging.info("New node detected. _process() module will be activated in the next polling cycle")
         elif prv != {} and len(prv) < len(nxt):
@@ -264,17 +270,20 @@ class Router(threading.Thread):
         else:
             logging.warning("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (prv, nxt))
 
-    def acl(self, ipaddr, decision, interface):
+    def acl(self, ipaddr, decision, interfaces):
         if self.dryrun == 'off':
             if decision == 'block':
-                logging.warning("%s will now be blocked" % interface)
-                output = self._ssh(ipaddr, ["configure","interface " + interface,
-                                   "ipv4 access-group CDPautomation_RhmUdpBlock egress",
-                                   "commit","end"])
-                raw_acl_status = self._ssh(ipaddr, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
-                result = self.acl_check(raw_acl_status, interface, self.acl_name)
+                commands = ["configure", "commit", "end",
+                            "sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"]
+                for interface in interfaces:
+                    commands[1:1] = ["interface " + interface, "ipv4 access-group CDPautomation_RhmUdpBlock egress",
+                                     "exit"]
+                    logging.warning("%s will be blocked" % interface)
+                output = self._ssh(ipaddr, commands)
+                for interface in interfaces:
+                    result = self.acl_check(output, interface, self.acl_name)
             else:
-                logging.info("%s will now be unblocked" % interface)
+                logging.info("%s will be unblocked" % interface)
                 output = self._ssh(ipaddr, ["configure","interface " + interface,
                                    "no ipv4 access-group CDPautomation_RhmUdpBlock egress",
                                    "commit","end"])
@@ -283,11 +292,11 @@ class Router(threading.Thread):
         else:
             logging.warning('Program operating in simulation mode. No configuration changes will be made on the router')
             if decision == 'block':
-                logging.warning("%s will now be blocked" % (interface))
+                logging.warning("%s will be blocked" % (interface))
                 result = 'off'
                 output = None
             else:
-                logging.info("%s will now be unblocked" % (interface))
+                logging.info("%s will be unblocked" % (interface))
                 result = 'on'
                 output = None
         return result, output
@@ -586,7 +595,7 @@ def main(args):
     else:
         main_logger = logging.getLogger(__name__)
         main_logger.setLevel(logging.getLevelName(loglevel))
-        logging.basicConfig(level=loglevel, format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
+        logging.basicConfig(format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
         #paramiko_logger = logging.getLogger('paramiko')
         #paramiko_logger.setLevel(logging.INFO)
         lastChanged = ""

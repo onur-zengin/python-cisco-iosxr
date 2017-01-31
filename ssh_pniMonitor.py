@@ -66,7 +66,7 @@ def _ssh(node, pw, commandlist):
             sys.exit(1)
         else:
             commandlist.insert(0,'term len 0')
-            output = ''
+            output = []
             for cmd in commandlist:
                 cmd_output = ''
                 try:
@@ -85,7 +85,7 @@ def _ssh(node, pw, commandlist):
                                 break
                     else:
                         print "SSH session closed prematurely"
-                    output += cmd_output
+                    output.append(cmd_output)
             print "closing"
             ssh.close()
     return output
