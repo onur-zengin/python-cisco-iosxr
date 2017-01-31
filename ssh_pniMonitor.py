@@ -88,7 +88,7 @@ def _ssh(node, pw, commandlist):
                     output.append(cmd_output)
             print "closing"
             ssh.close()
-    return output
+    return output[1:]
 
 
 bool, pw = get_pw()
