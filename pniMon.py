@@ -584,9 +584,11 @@ def main(args):
         print "%s is a mandatory argument" % rg.group(1)
         sys.exit(2)
     else:
-        logging.basicConfig(level=logging.getLevelName(loglevel),
-                            format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
-        logging.getLogger("paramiko").setLevel(logging.INFO)
+        logging.basicConfig(format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
+        main_logger = logging.getLogger(__name__)
+        main_logger.setLevel(logging.getLevelName(loglevel))
+        paramiko_logger = logging.getLogger('paramiko')
+        paramiko_logger.setLevel(logging.INFO)
         lastChanged = ""
         while True:
             try:
