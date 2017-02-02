@@ -106,7 +106,7 @@ class Router(threading.Thread):
                 disc[j[3]] = {'ifIndex': j[0].split('.')[1]}
                 disc[j[3]]['type'] = 'pni'
             elif 'no-mon' not in (' ').join(i[3:]) and self.cdn_identifier in (' ').join(i[3:]) \
-                    and 'Bundle-Ether' in j[3] or 'HundredGigE' in j[3]:
+                    and ('Bundle-Ether' in j[3] or 'HundredGigE' in j[3]):
                 cdn_interfaces.append(j[3])
                 disc[j[3]] = {'ifIndex': j[0].split('.')[1]}
                 disc[j[3]]['type'] = 'cdn'
