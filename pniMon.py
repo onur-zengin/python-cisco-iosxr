@@ -100,11 +100,13 @@ class Router(threading.Thread):
         ifNameTable, ifDescrTable, ipTable, peerTable = tuple([i.split(' ') for i in n] for n in
                                             map(lambda oid: self.snmp(ipaddr, [oid], quiet='off'), self.dsc_oids))
         for i, j in zip(ifDescrTable, ifNameTable):
-            if 'no-mon' not in (' ').join(i[3:]) and self.pni_identifier in (' ').join(i[3:]) and 'Bundle-Ether' in j[3]:
+            if 'no-mon' not in (' ').join(i[3:]) and self.pni_identifier in (' ').join(i[3:]) \
+                    and 'Bundle-Ether' in j[3]:
                 pni_interfaces.append(j[3])
                 disc[j[3]] = {'ifIndex': j[0].split('.')[1]}
                 disc[j[3]]['type'] = 'pni'
-            elif 'no-mon' not in (' ').join(i[3:]) and self.cdn_identifier in (' ').join(i[3:]) and 'Bundle-Ether' in j[3]:
+            elif 'no-mon' not in (' ').join(i[3:]) and self.cdn_identifier in (' ').join(i[3:]) \
+                    and 'Bundle-Ether' in j[3] or 'HundredGigE' in j[3]:
                 cdn_interfaces.append(j[3])
                 disc[j[3]] = {'ifIndex': j[0].split('.')[1]}
                 disc[j[3]]['type'] = 'cdn'
@@ -208,7 +210,8 @@ class Router(threading.Thread):
         prv, nxt = self.probe(ipaddr, disc)
         logging.debug("prev: %s" % prv)
         logging.debug("next: %s" % nxt)
-        actualCdnIn, physicalCdnIn, servingCdnIn, actualPniOut, usablePniOut = 0, 0, 0, 0, 0
+        actualCdnIn, physicalCdnIn, maxCdnIn, unblocked_maxCdnIn, actualPniOut, usablePniOut = 0, 0, 0, 0, 0, 0
+        unblocked, blocked = [], []
         dF = "%Y-%m-%d %H:%M:%S.%f"
         if prv != {} and len(prv) == len(nxt):
             for p , n in zip(sorted(prv), sorted(nxt)):
@@ -227,43 +230,86 @@ class Router(threading.Thread):
                 elif n in self.cdn_interfaces:
                     if nxt[n]['operStatus'] == 'up':
                         physicalCdnIn += int(nxt[n]['ifSpeed'])
-                        servingCdnIn += int(nxt[n]['ifSpeed']) * self.serving_cap / 100
+                        maxCdnIn += int(nxt[n]['ifSpeed']) * self.serving_cap / 100
                         if prv[p]['operStatus'] == 'up':
                             delta_time = (dt.strptime(nxt[n]['ts'], dF) - dt.strptime(prv[p]['ts'], dF)).total_seconds()
                             delta_ifInOctets = int(nxt[n]['ifInOctets']) - int(prv[p]['ifInOctets'])
                             int_util = (delta_ifInOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
-                            #disc[n]['util'] = int_util
+                            disc[n]['util'] = int_util
                             actualCdnIn += int_util
+                        if nxt[n]['aclStatus'] == 'off':
+                            unblocked.append(n)
+                            unblocked_maxCdnIn += int(nxt[n]['ifSpeed']) * self.serving_cap / 100
+                        elif nxt[n]['aclStatus'] == 'on':
+                            blocked.append(n)
             logging.debug("Physical CDN Capacity: %.2f" % physicalCdnIn)
-            logging.debug("Serving CDN Capacity: %.2f" % servingCdnIn)
+            logging.debug("Serving CDN Capacity: %.2f" % maxCdnIn)
             logging.debug("Actual CDN Ingress: %.2f" % actualCdnIn)
             logging.debug("Usable PNI Capacity: %.2f" % usablePniOut)
             logging.debug("Actual PNI Egress: %.2f" % actualPniOut)
-            #print [util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]]
-            #print min([util for util in [disc[interface]['util'] for interface in self.cdn_interfaces]])
             if usablePniOut == 0:
-                logging.warning('No usable PNI capacity available')
-                unblocked = [interface for interface in self.cdn_interfaces if nxt[interface]['aclStatus'] == 'off']
-                blocked = [interface for interface in self.cdn_interfaces if nxt[interface]['aclStatus'] == 'on']
-                results, output = self._acl(ipaddr, 'block', unblocked)
-                if results == ['on' for i in range(len(unblocked))]:
-                    for interface in unblocked:
-                        logging.info('Interface %s is now blocked' % interface)
+                if unblocked != []:
+                    logging.warning('No usable PNI capacity available. Disabling all CDN interfaces')
+                    results, output = self._acl(ipaddr, 'block', unblocked)
+                    if results == ['on' for i in range(len(unblocked))]:
+                        for interface in unblocked:
+                            logging.info('Interface %s is now blocked' % interface)
                     else:
                         logging.warning('Interface blocking attempt failed:\n%s' % output)
-                for interface in blocked:
-                    logging.info('Interface %s was already blocked' % interface)
-            # We can't use actualCDNIn while calculating the risk_factor because it won't include P2P traffic and / or
-            # the CDN overflow from the other site.
+                        # SEND THIS TO NETCOOL
+                    for interface in blocked:
+                        logging.info('Interface %s was already blocked' % interface)
+                else:
+                    logging.debug('No usable PNI capacity available. But all CDN interfaces blocked already, '
+                                  'there is nothing more to be done')
+            # We can't use actualCDNIn while calculating the risk_factor because it won't include P2P traffic
+            # and / or the CDN overflow from the other site. It is worth revisiting for Sky Germany though.
             elif actualPniOut / usablePniOut * 100 >= self.risk_factor:
-                logging.warning('The ratio of actual CDN ingress traffic to available PNI egress capacity is equal to'
-                                ' or greater than the pre-defined Risk Factor')
+                if unblocked != []:
+                    logging.warning('The ratio of actual PNI egress traffic to available egress capacity is equal to'
+                                    ' or greater than the pre-defined Risk Factor')
+                    results, output = self._acl(ipaddr, 'block', unblocked)
+                    if results == ['on' for i in range(len(unblocked))]:
+                        for interface in unblocked:
+                            logging.info('Interface %s is now blocked' % interface)
+                    else:
+                        logging.warning('Interface blocking attempt failed:\n%s' % output)
+                    for interface in blocked:
+                        logging.info('Interface %s was already blocked' % interface)
+                else:
+                    logging.debug('Risk Factor hit. But all CDN interfaces blocked already, '
+                                  'there is nothing more to be done')
+            elif blocked != [] and actualPniOut / usablePniOut * 100 < self.risk_factor:
+                if maxCdnIn + actualPniOut < usablePniOut:
+                    logging.info('Risk mitigated. Re-enabling all CDN interfaces')
+                    results, output = self._acl(ipaddr, 'unblock', blocked)
+                    if results == ['off' for i in range(len(blocked))]:
+                        for interface in blocked:
+                            logging.info('Interface %s is now unblocked' % interface)
+                    else:
+                        logging.warning('Interface unblocking attempt failed:\n%s' % output)
+                    for interface in unblocked:
+                        logging.info('Interface %s was already unblocked' % interface)
+                else:
+                    for value in sorted([util for util in [disc[interface]['util'] for interface in disc]], reverse=True):
+                        candidate_interface = filter(lambda interface: disc[interface]['util'] == value, disc)[0]
+                        self_maxCdnIn = nxt[candidate_interface]['ifSpeed'] * self.serving_cap / 100
+                        if actualPniOut - actualCdnIn + unblocked_maxCdnIn + self_maxCdnIn < usablePniOut:
+                            logging.info('Risk partially mitigated. Re-enabling one interface: %s' % candidate_interface)
+                            results, output = self._acl(ipaddr, 'unblock', [candidate_interface])
+                            if results == ['off']:
+                                logging.info('Interface %s is now unblocked' % candidate_interface)
+                            else:
+                                logging.warning('Interface unblocking attempt failed:\n%s' % output)
+                            break
+            else:
+                logging.debug('_process() completed. No action taken nor was necessary.')
         elif prv == {} and len(nxt) > 0:
             logging.info("New node detected. _process() module will be activated in the next polling cycle")
         elif prv != {} and len(prv) < len(nxt):
             logging.info("New interface discovered.")
             # PRB FILES ARE REMOVED WHEN A NEW INT IS DISCOVERED, SO THE STATEMENT IS A PLACEHOLDER.
-            # TO BE REVISITED IN VERSION-2 WHEN PRB PERSISTENCE IS ENABLED, SO THAT _process() CAN CONTINUE
+            # WILL BE REVISITED IN VERSION-2 WHEN PRB PERSISTENCE IS ENABLED, SO THAT _process() CAN CONTINUE
             # FOR THE EXISTING INTERFACES.
         else:
             logging.warning("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (prv, nxt))
@@ -343,7 +389,7 @@ class Router(threading.Thread):
                         output.append(cmd_output)
                 logging.debug("SSH connection closed")
                 ssh.close()
-        return output
+        return output[1:]
 
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
         args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
@@ -595,7 +641,7 @@ def main(args):
         sys.exit(2)
     else:
         logging.basicConfig(level=logging.getLevelName(loglevel),
-                            format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
+                            format='%(asctime)-15s [%(levelname)s] %(relativeCreated)6d %(threadName)-10s: %(message)s')
         #main_logger = logging.getLogger(__name__)
         #main_logger.setLevel(logging.getLevelName(loglevel))
         #logging.basicConfig(format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')

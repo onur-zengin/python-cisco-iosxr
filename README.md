@@ -66,12 +66,42 @@ delay is unknown.
 
 3. DISCOVERY
 
-The program has a built-in discovery function which
+The program has a built-in discovery function which will be auto-triggered either during the first run or any time
+the inventory file is updated.
 
-TODO
-Compare int util. formula against RFC2819 (obsoletes RFC1757)
-Check mem util. after long run
-Periodic rotation for *.prb files
+The first release of the code do not have persistence enabled. And any time the discovery function is triggered to run,
+which must not be too frequent, it will cause the existing data to be lost.
+
+
+4. OPERATION
+
+The entire decision making logic resides in a function called _process(). The main program will constantly run in the
+background (as a deamon-like process) and will recalculate the following parameters in a specific polling frequency
+as pre-defined in the configuration file, and from each router found in the inventory file simultaneously;
+
+    actualCdnIn:
+    physicalCdnIn:
+    maxCdnIn:
+    actualPniOut:
+    usablePniOut:
+
+    4.1. SCENARIOS
+
+    NO USABLE PNI CAPACITY LEFT
+
+    THE RATIO OF ACTUAL PNI EGRESS TO USABLE PNI CAPACITY IS EQUAL OR GREATER THAN THE RISK FACTOR
+
+    4.2. UNBLOCK
+
+    4.3. NO ACTION
+
+
+TO BE COMPLETED BEFORE THE FIRST RELEASE
+
+- Compare int util. formula against RFC2819 (obsoletes RFC1757)
+- Check mem util. after long run
+- Periodic rotation for *.prb files
+- Revise the main() function (--dryrun doesn't work)
 
 PLANNED FOR NEXT RELEASES
 
