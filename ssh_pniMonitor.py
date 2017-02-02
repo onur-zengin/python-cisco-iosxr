@@ -11,6 +11,7 @@ import threading
 import logging
 
 loglevel = 'DEBUG'
+ssh_loglevel = 'INFO'
 
 formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
 ch = logging.StreamHandler()
@@ -19,7 +20,7 @@ ch.setFormatter(formatter)
 main_logger = logging.getLogger(__name__)
 main_logger.setLevel(logging.getLevelName(loglevel))
 paramiko_logger = logging.getLogger('paramiko')
-paramiko_logger.setLevel(logging.INFO)
+paramiko_logger.setLevel(logging.getLevelName(ssh_loglevel))
 
 main_logger.addHandler(ch)
 paramiko_logger.addHandler(ch)
