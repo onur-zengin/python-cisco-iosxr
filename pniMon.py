@@ -509,6 +509,7 @@ def main(args):
     ipv6_min_prefixes = 50
     cdn_serving_cap = 90
     dryrun = 'off'
+    ssh_loglevel = 'warning'
     try:
         with open(args[0][:-3] + ".conf") as pf:
             parameters = [tuple(i.split('=')) for i in
@@ -640,13 +641,15 @@ def main(args):
         print "%s is a mandatory argument" % rg.group(1)
         sys.exit(2)
     else:
-        logging.basicConfig(level=logging.getLevelName(loglevel),
-                            format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
-        #main_logger = logging.getLogger(__name__)
-        #main_logger.setLevel(logging.getLevelName(loglevel))
-        #logging.basicConfig(format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
-        #paramiko_logger = logging.getLogger('paramiko')
-        #paramiko_logger.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
+        ch = logging.StreamHandler()
+        ch.setFormatter(formatter)
+        main_logger = logging.getLogger(__name__)
+        main_logger.setLevel(logging.getLevelName(loglevel))
+        paramiko_logger = logging.getLogger('paramiko')
+        paramiko_logger.setLevel(logging.getLevelName(ssh_loglevel))
+        main_logger.addHandler(ch)
+        paramiko_logger.addHandler(ch)
         lastChanged = ""
         while True:
             try:

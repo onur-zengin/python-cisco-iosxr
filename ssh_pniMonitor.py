@@ -11,7 +11,7 @@ import threading
 import logging
 
 loglevel = 'DEBUG'
-ssh_loglevel = 'INFO'
+ssh_loglevel = 'WARNING'
 
 formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
 ch = logging.StreamHandler()
