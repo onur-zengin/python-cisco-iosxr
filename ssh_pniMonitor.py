@@ -12,8 +12,14 @@ import logging
 
 loglevel = 'DEBUG'
 
-logging.basicConfig(level=logging.getLevelName(loglevel),
-                            format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
+logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
+
+main_logger = logging.getLogger(__name__)
+main_logger.setLevel(logging.getLevelName(loglevel))
+paramiko_logger = logging.getLogger('paramiko')
+paramiko_logger.setLevel(logging.INFO)
+
+
 
 hd = os.environ['HOME']
 un = getpass.getuser()
@@ -45,6 +51,7 @@ def get_pw(c=3):
                 return True, pw
     else:
         print "Too many failed attempts"
+        main_logger.debug("Too many failed attempts")
         return False, None
 
 
@@ -86,7 +93,7 @@ def _ssh(node, pw, commandlist):
                     else:
                         print "SSH session closed prematurely"
                     output.append(cmd_output)
-            print "closing"
+            main_logger.debug("closing")
             ssh.close()
     return output[1:]
 

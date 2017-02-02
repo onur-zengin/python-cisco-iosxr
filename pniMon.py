@@ -260,7 +260,7 @@ class Router(threading.Thread):
                     for interface in blocked:
                         logging.info('Interface %s was already blocked' % interface)
                 else:
-                    logging.debug('No usable PNI capacity available. But all CDN interfaces blocked already, '
+                    logging.debug('No usable PNI egress capacity available. But all CDN interfaces blocked already, '
                                   'there is nothing more to be done')
             # We can't use actualCDNIn while calculating the risk_factor because it won't include P2P traffic
             # and / or the CDN overflow from the other site. It is worth revisiting for Sky Germany though.
@@ -641,7 +641,7 @@ def main(args):
         sys.exit(2)
     else:
         logging.basicConfig(level=logging.getLevelName(loglevel),
-                            format='%(asctime)-15s [%(levelname)s] %(relativeCreated)6d %(threadName)-10s: %(message)s')
+                            format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
         #main_logger = logging.getLogger(__name__)
         #main_logger.setLevel(logging.getLevelName(loglevel))
         #logging.basicConfig(format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
