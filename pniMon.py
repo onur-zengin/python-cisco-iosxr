@@ -509,7 +509,7 @@ def main(args):
     ipv6_min_prefixes = 50
     cdn_serving_cap = 90
     dryrun = 'off'
-    ssh_loglevel = 'warning'
+    ssh_loglevel = 'WARNING'
     try:
         with open(args[0][:-3] + ".conf") as pf:
             parameters = [tuple(i.split('=')) for i in
