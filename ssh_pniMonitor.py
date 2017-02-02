@@ -97,7 +97,7 @@ def _ssh(node, pw, commandlist):
             ssh.close()
     return output[1:]
 
-
+main_logger.debug("starting")
 bool, pw = get_pw()
 
 
