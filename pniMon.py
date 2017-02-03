@@ -659,7 +659,7 @@ def main(args):
                 sys.exit(1)
             else:
                 threads = []
-                main_logger.debug("Initializing subThreads")
+                logging.debug("Initializing subThreads")
                 for n, node in enumerate(inventory):
                     t = Router(n + 1, node, pw, dswitch, risk_factor, cdn_serving_cap, acl_name, dryrun,
                                (pni_interface_tag, cdn_interface_tag), (ipv4_min_prefixes, ipv6_min_prefixes))
