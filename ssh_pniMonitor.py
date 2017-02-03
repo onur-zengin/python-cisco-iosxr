@@ -11,21 +11,7 @@ import threading
 import logging
 
 loglevel = 'DEBUG'
-ssh_loglevel = 'WARNING'
-
-formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
-ch = logging.StreamHandler()
-ch.setFormatter(formatter)
-
-main_logger = logging.getLogger(__name__)
-main_logger.setLevel(logging.getLevelName(loglevel))
-paramiko_logger = logging.getLogger('paramiko')
-paramiko_logger.setLevel(logging.getLevelName(ssh_loglevel))
-
-main_logger.addHandler(ch)
-paramiko_logger.addHandler(ch)
-
-
+ssh_loglevel = 'DEBUG'
 
 
 hd = os.environ['HOME']
@@ -45,7 +31,6 @@ def get_pw(c=3):
             try:
                 ssh.connect(hn, username=un, password=pw, look_for_keys=False, allow_agent=False)
             except paramiko.ssh_exception.AuthenticationException as auth_failure:
-                print ssh.get_transport().is_active()
                 print auth_failure
                 ssh.close()
                 #print ssh.get_transport().is_active()
@@ -57,8 +42,8 @@ def get_pw(c=3):
                 ssh.close()
                 return True, pw
     else:
-        print "Too many failed attempts"
-        main_logger.debug("Too many failed attempts")
+        #main_logger.debug("Too many failed attempts")
+        logging.debug("3 failed attempts")
         return False, None
 
 
@@ -100,27 +85,35 @@ def _ssh(node, pw, commandlist):
                     else:
                         print "SSH session closed prematurely"
                     output.append(cmd_output)
-            main_logger.debug("closing")
+            logging.debug("closing")
             ssh.close()
     return output[1:]
 
-main_logger.debug("starting")
-bool, pw = get_pw()
 
+def main():
+    formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
+    ch = logging.StreamHandler()
+    ch.setFormatter(formatter)
 
-if bool:
-    raw = _ssh("er10.bllab", pw, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
-    print raw
-    print len(raw)
-    for r in raw:
-        print r
-else:
-    sys.exit(1)
+    main_logger = logging.getLogger(__name__)
+    main_logger.setLevel(logging.getLevelName(loglevel))
+    paramiko_logger = logging.getLogger('paramiko')
+    paramiko_logger.setLevel(logging.getLevelName(ssh_loglevel))
 
+    main_logger.addHandler(ch)
+    paramiko_logger.addHandler(ch)
+    main_logger.debug("starting")
+    bool, pw = get_pw()
+    if bool:
+        raw = _ssh("er10.bllab", pw, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
+        print raw
+        print len(raw)
+        for r in raw:
+            print r
+        print acl_check(raw, 'Bundle-Ether214', 'CDPautomation_RhmUdpBlock')
+    else:
+        sys.exit(1)
 
-#for i in raw_output:
-#    print i.strip('\n')
-#raw = ['\r', '                    _____\r', '                ___/  |  \\___\r', '             __/      |      \\__\r', '          __/         |         \\__\r', '         /|           |           |\\\r', '        | |           |           | |\r', '        | |           |           | |\r', '       |  |           |           |  |\r', '       |  |        ___|___        |  |\r', '      /   |    ___/  ___  \\___    |   \\\r', '      |   |___/  ___/| |\\___  \\___|   |\r', '      |   /   __/_ \\_| |_/ _\\__   \\   |\r', '     |   |___/\\_  \\_______/  _/\\___|   |\r', '    /   /___/   \\___\\___/___/   \\___\\   \\\r', '   /    |   |       |   |       |   |    \\\r', '  /     |   |_      |   |      _|   |     \\\r', ' |___   |___|_\\   _/|___|\\_   /_|___|   ___|\r', ' |_  \\    |   |\\ /  |___|  \\ /|   |    /  _|\r', ' ||| |    |   | |  _______  | |   |    | |||\r', ' ||| |    |   | |  \\_____/  | |   |    | |||\r', ' ||| |    |   | |    ___    | |   |    | |||\r', ' ||| |    |   | |           | |   |    | |||\r', ' ||| |    |   | |           | |   |    | |||\r', ' ||| |    |   | |           | |   |    | |||\r', ' ||| |    |   |\\|           |/|   |    | |||\r', ' \\||_|____|___|-\\___________/-|___|____|_||/\r', '\r', 'Welcome to your friendly local Megatron Chassis.\r', '         Enjoy your stay.\r', '\r', '\r', '\r', '\r', 'RP/0/RP0/CPU0:er10.bllab#term len 0\r', '\rSun Jan 29 21:10:03.082 GMT\r', 'RP/0/RP0/CPU0:er10.bllab#sh access-lists CDPautomation_RhmUdpBlock usage pfilte\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08$n_RhmUdpBlock usage pfilter                          \x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08 location all\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08\x08sh access-lists CDPautomation_RhmUdpBlock usage pfilt$\x08\x08\x08\x08\r', '\rSun Jan 29 21:10:03.266 GMT\r', 'Interface : Bundle-Ether212 \r', '    Input ACL : N/A\r', '    Output ACL : CDPautomation_RhmUdpBlock \r', 'Interface : Bundle-Ether214 \r', '    Input Common-ACL : N/A  ACL : N/A  \r', '    Output ACL : N/A \r', 'RP/0/RP0/CPU0:er10.bllab#']
 
 def acl_check(rawinput, interface, aclname):
     result = 'off'
@@ -132,4 +125,6 @@ def acl_check(rawinput, interface, aclname):
                     result = 'on'
     return result
 
-print acl_check(raw, 'Bundle-Ether214', 'CDPautomation_RhmUdpBlock')
+
+if __name__ == '__main__':
+    main()

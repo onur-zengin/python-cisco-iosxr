@@ -21,6 +21,12 @@ def tstamp(format):
     elif format == 'mr':
         return dt.now()
 
+hd = os.environ['HOME']
+un = getpass.getuser()
+
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
 oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #0 IF-MIB::ifName
            '.1.3.6.1.2.1.31.1.1.1.18', #1 IF-MIB::ifDescr
            '.1.3.6.1.2.1.4.34.1.3',  #2 IP-MIB::ipAddressIfIndex
@@ -461,12 +467,6 @@ def usage(arg,opt=False):
           '\n\t\t\t[--risk_factor <value>] [-l <info|warning|debug>] [--loglevel <info|warning|debug>]' % (arg)
 
 
-hd = os.environ['HOME']
-un = getpass.getuser()
-
-ssh = paramiko.SSHClient()
-ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
 def get_pw(c=3):
     hn = socket.gethostname()
     while c > 0:
@@ -641,15 +641,7 @@ def main(args):
         print "%s is a mandatory argument" % rg.group(1)
         sys.exit(2)
     else:
-        formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
-        ch = logging.StreamHandler()
-        ch.setFormatter(formatter)
-        main_logger = logging.getLogger(__name__)
-        main_logger.setLevel(logging.getLevelName(loglevel))
-        paramiko_logger = logging.getLogger('paramiko')
-        paramiko_logger.setLevel(logging.getLevelName(ssh_loglevel))
-        main_logger.addHandler(ch)
-        paramiko_logger.addHandler(ch)
+        logging.basicConfig(format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
         lastChanged = ""
         while True:
             try:
@@ -667,7 +659,7 @@ def main(args):
                 sys.exit(1)
             else:
                 threads = []
-                logging.debug("Initializing subThreads")
+                main_logger.debug("Initializing subThreads")
                 for n, node in enumerate(inventory):
                     t = Router(n + 1, node, pw, dswitch, risk_factor, cdn_serving_cap, acl_name, dryrun,
                                (pni_interface_tag, cdn_interface_tag), (ipv4_min_prefixes, ipv6_min_prefixes))
