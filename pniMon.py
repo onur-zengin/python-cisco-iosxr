@@ -636,6 +636,7 @@ def main(args):
         risk_factor = risk_factor
         loglevel = loglevel
         runtime = runtime
+        print loglevel
     except UnboundLocalError as missing_arg:
         rg = re.search(r'(\'.+\')', str(missing_arg))
         print "%s is a mandatory argument" % rg.group(1)
