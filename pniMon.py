@@ -641,7 +641,8 @@ def main(args):
         print "%s is a mandatory argument" % rg.group(1)
         sys.exit(2)
     else:
-        logging.basicConfig(format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
+        logging.basicConfig(level=logging.getLevelName(loglevel),
+                            format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
         lastChanged = ""
         while True:
             try:
