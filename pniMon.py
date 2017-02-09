@@ -15,6 +15,20 @@ import paramiko
 import getpass
 from datetime import datetime as dt
 
+ssh_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s]: %(message)s')
+ssh_ch = logging.StreamHandler()
+ssh_ch.setFormatter(ssh_formatter)
+ssh_logger = logging.getLogger('paramiko')
+ssh_logger.addHandler(ssh_ch)
+ssh_logger.setLevel(logging.WARNING)
+
+main_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
+main_ch = logging.StreamHandler()
+main_ch.setFormatter(main_formatter)
+main_logger = logging.getLogger(__name__)
+main_logger.addHandler(main_ch)
+main_logger.setLevel(logging.INFO)
+
 def tstamp(format):
     if format == 'hr':
         return time.asctime()
@@ -60,11 +74,11 @@ class Router(threading.Thread):
         self.acl_name = acl_name
         self.dryrun = dryrun
     def run(self):
-        logging.debug("Starting")
+        main_logger.debug("Starting")
         self.tstamp = tstamp('mr')
         self.ipaddr = self.dns(self.node)
         if self.switch is True:
-            logging.info("Inventory updated. Initializing node discovery")
+            main_logger.info("Inventory updated. Initializing node discovery")
             for f in os.listdir('.'):
                 if self.node+'.dsc' in f or self.node+'.prb' in f:
                     os.remove(f)
@@ -74,28 +88,28 @@ class Router(threading.Thread):
                 with open('.do_not_modify_'.upper() + self.node + '.dsc') as tf:
                     disc = eval(tf.read())
             except IOError:
-                logging.info("Discovery file(s) could not be located. Initializing node discovery")
+                main_logger.info("Discovery file(s) could not be located. Initializing node discovery")
                 disc = self.discovery(self.ipaddr)
-        logging.debug("DISC successfully loaded: %s" % disc)
+        main_logger.debug("DISC successfully loaded: %s" % disc)
         self.pni_interfaces = [int for int in disc if disc[int]['type'] == 'pni']
         self.cdn_interfaces = [int for int in disc if disc[int]['type'] == 'cdn']
         self.interfaces = self.pni_interfaces + self.cdn_interfaces
         if self.interfaces != []:
-            logging.debug("Discovered interfaces: %s" % str(self.interfaces))
+            main_logger.debug("Discovered interfaces: %s" % str(self.interfaces))
             self._process(self.ipaddr, disc)
         else:
-            logging.info("No interfaces eligible for monitoring")
-        logging.debug("Completed")
+            main_logger.info("No interfaces eligible for monitoring")
+        main_logger.debug("Completed")
 
     def dns(self,node):
         try:
             ipaddr = socket.gethostbyname(node)
         except socket.gaierror as gaierr:
-            logging.warning("Operation halted: %s" % (str(gaierr)))
+            main_logger.warning("Operation halted: %s" % (str(gaierr)))
             sys.exit(3)
         except:
-            logging.warning("Unexpected error while resolving hostname")
-            logging.debug("Unexpected error while resolving hostname: %s" % (str(sys.exc_info()[:2])))
+            main_logger.warning("Unexpected error while resolving hostname")
+            main_logger.debug("Unexpected error while resolving hostname: %s\t%s" % sys.exc_info()[:2])
             sys.exit(3)
         return ipaddr
 
@@ -116,7 +130,7 @@ class Router(threading.Thread):
                 cdn_interfaces.append(j[3])
                 disc[j[3]] = {'ifIndex': j[0].split('.')[1]}
                 disc[j[3]]['type'] = 'cdn'
-        #logging.debug("ipTable %s" % ipTable)
+        main_logger.debug("ipTable %s" % ipTable)
         for interface in pni_interfaces:
             for i in ipTable:
                 if disc[interface]['ifIndex'] == i[3]:
@@ -126,7 +140,7 @@ class Router(threading.Thread):
                             disc[interface]['local_' + type] = [i[0].split('"')[1]]
                         else:
                             disc[interface]['local_' + type] += [i[0].split('"')[1]]
-        #logging.debug("peerTable %s" % peerTable)
+        main_logger.debug("peerTable %s" % peerTable)
         for interface in pni_interfaces:
             for i in peerTable:
                 if len(i) == 8:
@@ -159,15 +173,15 @@ class Router(threading.Thread):
         try:
             ptup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
-            logging.warning("Unexpected error - Popen function probe(): %s" % str(sys.exc_info()[:2]))
+            main_logger.warning("Unexpected error - Popen function probe(): %s\t%s" % sys.exc_info()[:2])
             sys.exit(3)
         else:
             if ptup[1] == '':
                 prv = eval(ptup[0])
             elif "No such file or directory" in ptup[1]:
-                logging.info("New Node")
+                main_logger.info("New Node")
             else:
-                logging.warning("Unexpected output in the probe() function" % (str(ptup)))
+                main_logger.warning("Unexpected output in the probe() function" % (str(ptup)))
                 sys.exit(3)
         finally:
             raw_acl_status = self._ssh(ipaddr, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
@@ -194,7 +208,7 @@ class Router(threading.Thread):
                                                     + [self.bgp_oids[1] + '.' + n[1] + '.2.1'], cmd='snmpget')
                             nxt[interface]['peerStatus_ipv6'][n[0]] = peer_status
                     if not disc[interface].has_key('peer_ipv4') and not disc[interface].has_key('peer_ipv6'):
-                        logging.warning("PNI interface %s has no BGP sessions" % interface)
+                        main_logger.warning("PNI interface %s has no BGP sessions" % interface)
                 if disc[interface]['type'] == 'cdn':
                     nxt[interface]['aclStatus'] = self.acl_check(raw_acl_status[-1], interface, self.acl_name)
             with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
@@ -214,8 +228,8 @@ class Router(threading.Thread):
 
     def _process(self, ipaddr, disc):
         prv, nxt = self.probe(ipaddr, disc)
-        logging.debug("prev: %s" % prv)
-        logging.debug("next: %s" % nxt)
+        main_logger.debug("prev: %s" % prv)
+        main_logger.debug("next: %s" % nxt)
         actualCdnIn, physicalCdnIn, maxCdnIn, unblocked_maxCdnIn, actualPniOut, usablePniOut = 0, 0, 0, 0, 0, 0
         unblocked, blocked = [], []
         dF = "%Y-%m-%d %H:%M:%S.%f"
@@ -248,77 +262,78 @@ class Router(threading.Thread):
                             unblocked_maxCdnIn += int(nxt[n]['ifSpeed']) * self.serving_cap / 100
                         elif nxt[n]['aclStatus'] == 'on':
                             blocked.append(n)
-            logging.debug("Physical CDN Capacity: %.2f" % physicalCdnIn)
-            logging.debug("Serving CDN Capacity: %.2f" % maxCdnIn)
-            logging.debug("Actual CDN Ingress: %.2f" % actualCdnIn)
-            logging.debug("Usable PNI Capacity: %.2f" % usablePniOut)
-            logging.debug("Actual PNI Egress: %.2f" % actualPniOut)
+            main_logger.debug("Physical CDN Capacity: %.2f" % physicalCdnIn)
+            main_logger.debug("Serving CDN Capacity: %.2f" % maxCdnIn)
+            main_logger.debug("Actual CDN Ingress: %.2f" % actualCdnIn)
+            main_logger.debug("Usable PNI Capacity: %.2f" % usablePniOut)
+            main_logger.debug("Actual PNI Egress: %.2f" % actualPniOut)
             if usablePniOut == 0:
                 if unblocked != []:
-                    logging.warning('No usable PNI capacity available. Disabling all CDN interfaces')
+                    main_logger.warning('No usable PNI capacity available. Disabling all CDN interfaces')
                     results, output = self._acl(ipaddr, 'block', unblocked)
                     if results == ['on' for i in range(len(unblocked))]:
                         for interface in unblocked:
-                            logging.info('Interface %s is now blocked' % interface)
+                            main_logger.info('Interface %s is now blocked' % interface)
                     else:
-                        logging.warning('Interface blocking attempt failed:\n%s' % output)
+                        main_logger.critical('Interface blocking attempt failed:\n%s' % output)
                         # SEND THIS TO NETCOOL
                     for interface in blocked:
-                        logging.info('Interface %s was already blocked' % interface)
+                        main_logger.info('Interface %s was already blocked' % interface)
                 else:
-                    logging.debug('No usable PNI egress capacity available. But all CDN interfaces blocked already, '
+                    main_logger.debug('No usable PNI egress capacity available. But all CDN interfaces blocked already, '
                                   'there is nothing more to be done')
             # We can't use actualCDNIn while calculating the risk_factor because it won't include P2P traffic
             # and / or the CDN overflow from the other site. It is worth revisiting for Sky Germany though.
             elif actualPniOut / usablePniOut * 100 >= self.risk_factor:
                 if unblocked != []:
-                    logging.warning('The ratio of actual PNI egress traffic to available egress capacity is equal to'
+                    main_logger.warning('The ratio of actual PNI egress traffic to available egress capacity is equal to'
                                     ' or greater than the pre-defined Risk Factor')
                     results, output = self._acl(ipaddr, 'block', unblocked)
                     if results == ['on' for i in range(len(unblocked))]:
                         for interface in unblocked:
-                            logging.info('Interface %s is now blocked' % interface)
+                            main_logger.info('Interface %s is now blocked' % interface)
                     else:
-                        logging.warning('Interface blocking attempt failed:\n%s' % output)
+                        main_logger.warning('Interface blocking attempt failed:\n%s' % output)
                     for interface in blocked:
-                        logging.info('Interface %s was already blocked' % interface)
+                        main_logger.info('Interface %s was already blocked' % interface)
                 else:
-                    logging.debug('Risk Factor hit. But all CDN interfaces blocked already, '
+                    main_logger.debug('Risk Factor hit. But all CDN interfaces blocked already, '
                                   'there is nothing more to be done')
             elif blocked != [] and actualPniOut / usablePniOut * 100 < self.risk_factor:
                 if maxCdnIn + actualPniOut < usablePniOut:
-                    logging.info('Risk mitigated. Re-enabling all CDN interfaces')
+                    main_logger.info('Risk mitigated. Re-enabling all CDN interfaces')
                     results, output = self._acl(ipaddr, 'unblock', blocked)
                     if results == ['off' for i in range(len(blocked))]:
                         for interface in blocked:
-                            logging.info('Interface %s is now unblocked' % interface)
+                            main_logger.info('Interface %s is now unblocked' % interface)
                     else:
-                        logging.warning('Interface unblocking attempt failed:\n%s' % output)
+                        main_logger.warning('Interface unblocking attempt failed:\n%s' % output)
                     for interface in unblocked:
-                        logging.info('Interface %s was already unblocked' % interface)
+                        main_logger.info('Interface %s was already unblocked' % interface)
                 else:
                     for value in sorted([util for util in [disc[interface]['util'] for interface in disc]], reverse=True):
                         candidate_interface = filter(lambda interface: disc[interface]['util'] == value, disc)[0]
                         self_maxCdnIn = nxt[candidate_interface]['ifSpeed'] * self.serving_cap / 100
                         if actualPniOut - actualCdnIn + unblocked_maxCdnIn + self_maxCdnIn < usablePniOut:
-                            logging.info('Risk partially mitigated. Re-enabling one interface: %s' % candidate_interface)
+                            main_logger.info('Risk partially mitigated. Re-enabling one interface: %s' % candidate_interface)
                             results, output = self._acl(ipaddr, 'unblock', [candidate_interface])
                             if results == ['off']:
-                                logging.info('Interface %s is now unblocked' % candidate_interface)
+                                main_logger.info('Interface %s is now unblocked' % candidate_interface)
                             else:
-                                logging.warning('Interface unblocking attempt failed:\n%s' % output)
+                                main_logger.warning('Interface unblocking attempt failed:\n%s' % output)
                             break
             else:
-                logging.debug('_process() completed. No action taken nor was necessary.')
+                main_logger.debug('_process() completed. No action taken nor was necessary.')
         elif prv == {} and len(nxt) > 0:
-            logging.info("New node detected. _process() module will be activated in the next polling cycle")
+            main_logger.info("New node detected. _process() module will be activated in the next polling cycle")
         elif prv != {} and len(prv) < len(nxt):
-            logging.info("New interface discovered.")
-            # PRB FILES ARE REMOVED WHEN A NEW INT IS DISCOVERED, SO THE STATEMENT IS A PLACEHOLDER.
-            # WILL BE REVISITED IN VERSION-2 WHEN PRB PERSISTENCE IS ENABLED, SO THAT _process() CAN CONTINUE
-            # FOR THE EXISTING INTERFACES.
+            main_logger.info("New interface discovered.")
+            # There is no persistence in this release (*.prb files are removed whene a new interface is discovered)
+            # So the elif statement is a placeholder.
+            # This will be revisited in version-2 when persistence is enabled, so that _process() function can
+            # continue running for the already existing interfaces.
         else:
-            logging.warning("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (prv, nxt))
+            main_logger.warning("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (prv, nxt))
 
     def _acl(self, ipaddr, decision, interfaces):
         results = []
@@ -328,7 +343,7 @@ class Router(threading.Thread):
                 for interface in interfaces:
                     commands[1:1] = ["interface " + interface, "ipv4 access-group CDPautomation_RhmUdpBlock egress",
                                      "exit"]
-                    logging.warning("%s will be blocked" % interface)
+                    main_logger.warning("%s will be blocked" % interface)
                 output = self._ssh(ipaddr, commands)
                 for interface in interfaces:
                     results.append(self.acl_check(output[-1], interface, self.acl_name))
@@ -336,20 +351,20 @@ class Router(threading.Thread):
                 for interface in interfaces:
                     commands[1:1] = ["interface " + interface, "no ipv4 access-group CDPautomation_RhmUdpBlock egress",
                                      "exit"]
-                    logging.info("%s will be unblocked" % interface)
+                    main_logger.info("%s will be unblocked" % interface)
                 output = self._ssh(ipaddr, commands)
                 for interface in interfaces:
                     results.append(self.acl_check(output[-1], interface, self.acl_name))
         else:
-            logging.warning('Program operating in simulation mode. No configuration changes will be made to the router')
+            main_logger.warning('Program operating in simulation mode. No configuration changes will be made to the router')
             if decision == 'block':
                 for interface in interfaces:
-                    logging.warning("%s will be blocked" % interface)
+                    main_logger.warning("%s will be blocked" % interface)
                     results = ['on' for x in range(len(interfaces))]
                 output = None
             else:
                 for interface in interfaces:
-                    logging.warning("%s will be blocked" % interface)
+                    main_logger.warning("%s will be blocked" % interface)
                     results = ['off' for x in range(len(interfaces))]
                 output = None
         return results, output
@@ -358,20 +373,20 @@ class Router(threading.Thread):
         try:
             ssh.connect(ipaddr, username=un, password=self.pw, look_for_keys=False, allow_agent=False)
         except:
-            logging.warning('Unexpected error while connecting to the node: %s' % sys.exc_info()[:2])
+            main_logger.warning('Unexpected error while connecting to the node: %s\t%s' % sys.exc_info()[:2])
             sys.exit(1)
         else:
-            logging.debug("SSH connection successful")
+            main_logger.debug("SSH connection successful")
             try:
                 session = ssh.invoke_shell()
             except paramiko.SSHException as ssh_exc:
-                logging.warning(ssh_exc)
+                main_logger.warning(ssh_exc)
                 sys.exit(1)
             except:
-                logging.warning('Unexpected error while invoking SSH shell: %s' % sys.exc_info()[:2])
+                main_logger.warning('Unexpected error while invoking SSH shell: %s\t%s' % sys.exc_info()[:2])
                 sys.exit(1)
             else:
-                logging.debug("SSH shell session successful")
+                main_logger.debug("SSH shell session successful")
                 commandlist.insert(0, 'term len 0')
                 output = []
                 for cmd in commandlist:
@@ -379,7 +394,7 @@ class Router(threading.Thread):
                     try:
                         session.send(cmd + '\n')
                     except socket.error as sc_err:
-                        logging.warning(sc_err)
+                        main_logger.warning(sc_err)
                         # sys.exit(1)
                     else:
                         while not session.exit_status_ready():
@@ -391,9 +406,9 @@ class Router(threading.Thread):
                                 else:
                                     break
                         else:
-                            logging.warning("SSH connection closed prematurely")
+                            main_logger.warning("SSH connection closed prematurely")
                         output.append(cmd_output)
-                logging.debug("SSH connection closed")
+                main_logger.debug("SSH connection closed")
                 ssh.close()
         return output[1:]
 
@@ -405,16 +420,16 @@ class Router(threading.Thread):
         try:
             stup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
-            logging.warning("Unexpected error during %s operation" % (cmd))
-            logging.debug("Unexpected error - Popen function snmp(): %s" % (str(sys.exc_info()[:2])))
+            main_logger.warning("Unexpected error during %s operation" % (cmd))
+            main_logger.debug("Unexpected error - Popen function snmp(): %s\t%s" % sys.exc_info()[:2])
             sys.exit(3)
         else:
             if stup[1] == '':
                 snmpr = stup[0].strip('\n').split('\n')
                 # elif timeout self.ping(self.ipaddr)
             else:
-                logging.warning("Unexpected error during %s operation" % (cmd))
-                logging.debug("Unexpected error during %s operation: ### %s ###" % (cmd, str(stup)))
+                main_logger.warning("Unexpected error during %s operation" % (cmd))
+                main_logger.debug("Unexpected error during %s operation: ### %s ###" % (cmd, str(stup)))
                 sys.exit(3)
         return snmpr
 
@@ -424,7 +439,7 @@ class Router(threading.Thread):
                                     stderr=subprocess.PIPE).communicate()
         except:
             logging.warning("Unexpected error during ping test")
-            logging.debug("Unexpected error - Popen function ping(): %s" % (str(sys.exc_info()[:2])))
+            logging.debug("Unexpected error - Popen function ping(): %s\t%s" % sys.exc_info()[:2])
             sys.exit(3)
         else:
             if ptup[1] == '':
@@ -453,7 +468,7 @@ class Router(threading.Thread):
         return pingr
 
 
-def usage(arg,opt=False):
+def usage(arg, opt=False):
     if opt is True:
         try:
             with open("README.md") as readme_file:
@@ -463,8 +478,8 @@ def usage(arg,opt=False):
             usage(arg)
             sys.exit(2)
     else:
-        print 'USAGE:\n\t%s\t[-i <filename>] [--inputfile <filename>] [-f <value>] [--frequency <value>] [-r <value>]' \
-          '\n\t\t\t[--risk_factor <value>] [-l <info|warning|debug>] [--loglevel <info|warning|debug>]' % (arg)
+        print 'USAGE:\n\t%s\t[-h] [--help] [--documentation]' \
+          '\n\t\t\t[--simulation] [-r <value>]' % (arg)
 
 
 def get_pw(c=3):
@@ -472,20 +487,31 @@ def get_pw(c=3):
     while c > 0:
         try:
             pw = getpass.getpass('Enter cauth password for user %s:' % un, stream=None)
+        except KeyboardInterrupt:
+            main_logger.info("Keyboard Interrupt")
+            sys.exit(0)
         except getpass.GetPassWarning as echo_warning:
             print echo_warning
-        except KeyboardInterrupt as kb_int:
-            print kb_int
-            sys.exit(0)
-        finally:
+        else:
             try:
-                ssh.connect(hn, username=un, password=pw, look_for_keys=False, allow_agent=False)
+                ssh.connect(hn, 2281, username=un, password=pw, timeout=1, look_for_keys=False, allow_agent=False)
+            except KeyboardInterrupt:
+                main_logger.info("Keyboard Interrupt")
+                sys.exit(0)
             except paramiko.ssh_exception.AuthenticationException as auth_failure:
                 ssh.close()
-                print auth_failure
+                main_logger.warning(auth_failure)
                 c -= 1
+            except paramiko.ssh_exception.NoValidConnectionsError as conn_failure:
+                ssh.close()
+                main_logger.warning(conn_failure)
+                sys.exit(1)
+            except paramiko.ssh_exception.SSHException as sshexc:
+                ssh.close()
+                main_logger.warning('SSH connection timeout %s' % sshexc)
+                sys.exit(1)
             except:
-                print 'Unexpected error: %s' % sys.exc_info()[:2]
+                main_logger.warning('Unexpected error: %s\t%s' % sys.exc_info()[:2])
                 sys.exit(1)
             else:
                 ssh.close()
@@ -496,172 +522,224 @@ def get_pw(c=3):
 
 
 def main(args):
-    bool, pw = get_pw()
-    if not bool:
-        sys.exit(1)
-    else:
-        print "Authentication successful"
-    asctime = tstamp('hr')
-    acl_name = 'CDPautomation_RhmUdpBlock'
-    pni_interface_tag = '[CDPautomation:PNI]'
-    cdn_interface_tag = '[CDPautomation:CDN]'
+    #asctime = tstamp('hr')
+    inventory_file = 'inventory.txt'
+    frequency = 20
+    risk_factor = 97
+    loglevel = 'WARNING'
+    acl_name = 'CDPautomation:RhmUdpBlock'
+    pni_interface_tag = 'CDPautomation:PNI'
+    cdn_interface_tag = 'CDPautomation:CDN'
     ipv4_min_prefixes = 0
     ipv6_min_prefixes = 50
     cdn_serving_cap = 90
-    dryrun = 'off'
-    ssh_loglevel = 'WARNING'
+    dryrun = False
+    runtime = 'infinite'
     try:
-        with open(args[0][:-3] + ".conf") as pf:
-            parameters = [tuple(i.split('=')) for i in
-                            filter(lambda line: line[0] != '#', [n.strip('\n') for n in pf.readlines()])]
-    except IOError as ioerr:
-        try:
-            options, remainder = getopt.getopt(args[1:], "i:hl:r:f:", ["inputfile=", "help", "loglevel=",
-                                                                       "risk_factor=", "frequency=", "runtime="])
-        except getopt.GetoptError as err:
-            print err
-            usage(sys.argv[0])
-            sys.exit(2)
-        else:
-            rg = re.search(r'(\'.+\')', str(ioerr))
-            if options == []:
-                print "'%s could not be located and no command line arguments provided.\nUse '%s --help' " \
-                      "to see usage instructions \n" % (rg.group(1)[3:], args[0])
-                sys.exit(2)
-            elif '-h' in str(options) or '--help' in str(options):
-                usage(args[0], opt=True)
-                sys.exit(1)
-            else:
-                print "%s could not be located. The program will try to run with command line arguments.." \
-                      % rg.group(1)
+        options, remainder = getopt.getopt(args[1:], "hmr:s", ["help", "manual", "runtime=", "simulation"])
+    except getopt.GetoptError as getopterr:
+        print getopterr
+        sys.exit(2)
     else:
-        try:
-            for opt, arg in parameters:
-                if opt == 'inputfile':
-                    inputfile = arg
-                elif opt == 'loglevel':
-                    if arg.lower() in ('info', 'warning', 'debug'):
-                        loglevel = arg.upper()
-                    else:
-                        print 'Invalid value specified for loglevel, program will continue with its default ' \
-                              'setting: "info"'
-                        loglevel = 'info'
-                elif opt == 'risk_factor':
-                    try:
-                        risk_factor = int(arg)
-                    except ValueError:
-                        print 'The value of the risk_factor argument must be an integer'
-                        sys.exit(2)
-                    else:
-                        if not 0 <= risk_factor and risk_factor <= 100:
-                            print 'The value of the risk_factor argument must be an integer between 0 and 100'
-                            sys.exit(2)
-                elif opt == 'frequency':
-                    try:
-                        frequency = int(arg)
-                    except ValueError:
-                        print 'The value of the frequency argument must be an integer'
-                        sys.exit(2)
-                elif opt == 'runtime':
-                    if arg.lower() == 'infinite':
-                        runtime = 'infinite'
-                    else:
-                        try:
-                            runtime = int(arg)
-                        except ValueError:
-                            print 'The value of the runtime argument must be either be "infinite" or an integer'
-                            sys.exit(2)
-                elif opt.lower() == 'pni_interface_tag':
-                    pni_interface_tag = str(arg)
-                elif opt.lower() == 'cdn_interface_tag':
-                    cdn_interface_tag = str(arg)
-                else:
-                    print "Invalid parameter found in the configuration file: %s" % (opt)
-                    sys.exit(2)
-        except ValueError:
-            print "Configuration parameters must be provided in key value pairs separated by an equal sign (=)" \
-                  "\nUse '%s --help' for more details" % (args[0])
-            sys.exit(2)
-    finally:
-        try:
-            options, remainder = getopt.getopt(args[1:], "i:hl:r:f:", ["inputfile=", "help", "loglevel=",
-                                                                       "risk_factor=", "frequency=", "runtime="])
-        except getopt.GetoptError:
-            sys.exit(2)
         for opt, arg in options:
             if opt in ('-h', '--help'):
-                pass
-            elif opt in ('-i', '--inputfile'):
-                inputfile = arg
-            elif opt in ('-l', '--loglevel'):
-                if arg.lower() in ('info', 'warning', 'debug'):
-                    loglevel = arg.upper()
-                else:
-                    print 'Invalid value specified for loglevel, program will continue with its default ' \
-                          'setting: "info"'
-                    loglevel = 'INFO'
-            elif opt in ('-r', '--risk_factor'):
-                try:
-                    risk_factor = int(arg)
-                except ValueError:
-                    print 'The value of the risk_factor argument must be an integer'
-                    sys.exit(2)
-                else:
-                    if not 0 <= int(risk_factor) and int(risk_factor) <= 100:
-                        print 'The value of the risk_factor argument must be an integer between 0 and 100'
-                        sys.exit(2)
-            elif opt in ('-f', '--frequency'):
-                try:
-                    frequency = int(arg)
-                except ValueError:
-                    print 'The value of the frequency (-f) argument must be an integer'
-                    sys.exit(2)
-            elif opt == '--runtime':
-                if arg.lower() == 'infinite':
-                    runtime = 'infinite'
-                else:
-                    try:
-                        runtime = int(arg)
-                    except ValueError:
-                        print 'The value of the runtime (-r) argument must be either be "infinite" or an integer'
-                        sys.exit(2)
-            elif opt == '--dryrun':
-                dryrun = 'on'
+                usage(args[0])
+                sys.exit(0)
+            elif opt in ('-m', '--manual'):
+                usage(args[0], opt=True)
+                sys.exit(0)
             else:
                 print "Invalid option specified on the command line: %s" % (opt)
                 sys.exit(2)
-    try:
-        inputfile = inputfile
-        frequency = frequency
-        risk_factor = risk_factor
-        loglevel = loglevel
-        runtime = runtime
-        print loglevel
-    except UnboundLocalError as missing_arg:
-        rg = re.search(r'(\'.+\')', str(missing_arg))
-        print "%s is a mandatory argument" % rg.group(1)
-        sys.exit(2)
-    else:
-        logging.basicConfig(level=logging.getLevelName(loglevel),
-                            format='%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
-        lastChanged = ""
-        while True:
+        bool, pw = get_pw()
+        if not bool:
+            sys.exit(1)
+        else:
+            main_logger.info("Authentication successful")
+    lastChanged = ""
+    while True:
+        try:
+            with open(args[0][:-3] + ".conf") as pf:
+                parameters = [tuple(i.split('=')) for i in
+                              filter(lambda line: line[0] != '#', [n.strip('\n')
+                                                                   for n in pf.readlines() if n != '\n'])]
+        except KeyboardInterrupt:
+            main_logger.info("Keyboard Interrupt")
+            sys.exit(0)
+        except IOError as ioerr:
+            rg = re.search(r'(\'.+\')', str(ioerr))
+            if lastChanged == "":
+                main_logger.info("'%s could not be located. The program will continue with its default settings."
+                                 "\nUse '%s -m or %s --manual to see detailed usage instructions."
+                                 % (rg.group(1)[3:], args[0], args[0]))
+            else:
+                main_logger.info("'%s could not be located. The program will continue with the last known good "
+                                 "configuration.\nUse '%s -m or %s --manual to see detailed usage instructions."
+                                 % (rg.group(1)[3:], args[0], args[0]))
+        else:
             try:
-                with open(inputfile) as sf:
+                for opt, arg in parameters:
+                    if opt == 'inventory_file':
+                        if inventory_file != arg:
+                            main_logger.info('Inventory file has been updated')
+                        inventory_file = arg
+                    elif opt == 'loglevel':
+                        if arg.lower() in ('info', 'warning', 'debug', 'critical'):
+                            if loglevel != arg.upper():
+                                main_logger.info('Log level has been updated: %s' % loglevel.upper())
+                            loglevel = arg.upper()
+                        else:
+                            if lastChanged == "":
+                                main_logger.info('Invalid value specified for loglevel. Resetting to default'
+                                                 'setting: %s' % loglevel)
+                            else:
+                                main_logger.info('Invalid value specified for loglevel. Resetting to last known good '
+                                                 'setting: %s' % loglevel)
+                    elif opt == 'risk_factor':
+                        try:
+                            arg = int(arg)
+                        except ValueError:
+                            if lastChanged == "":
+                                main_logger.info('The value of the risk_factor argument must be an integer. Resetting '
+                                                 'to default setting: %s' % risk_factor)
+                            else:
+                                main_logger.info('The value of the risk_factor argument must be an integer. Resetting '
+                                                 'to last known good setting: %s' % risk_factor)
+                        else:
+                            if arg >= 0 and arg <= 100:
+                                if risk_factor != arg:
+                                    main_logger.info('Risk Factor has been updated: %s' % arg)
+                                risk_factor = arg
+                            else:
+                                if lastChanged == "":
+                                    main_logger.info('The value of the risk_factor argument must be an integer between '
+                                                     '0 and 100. Resetting to default setting: %s' % risk_factor)
+                                else:
+                                    main_logger.info('The value of the risk_factor argument must be an integer between '
+                                                     '0 and 100. Resetting to last known good setting: %s' % risk_factor)
+                    elif opt == 'frequency':
+                        try:
+                            arg = int(arg)
+                        except ValueError:
+                            if lastChanged == "":
+                                main_logger.info('The value of the frequency argument must be an integer. Resetting '
+                                                 'to default setting: %s' % frequency)
+                            else:
+                                main_logger.info('The value of the frequency argument must be an integer. Resetting '
+                                                 'to last known good setting: %s' % frequency)
+                        else:
+                            if arg >= 5:
+                                if frequency != arg:
+                                    main_logger.info('Running frequency has been updated: %s' % arg)
+                                frequency = arg
+                            else:
+                                if lastChanged == "":
+                                    main_logger.info('The running frequency can not be shorter than 5 seconds. '
+                                                     'Resetting to default setting: %s' % frequency)
+                                else:
+                                    main_logger.info('The running frequency can not be shorter than 5 seconds.'
+                                                     'Resetting to last known good setting: %s' % frequency)
+                    elif opt == 'runtime':
+                        if arg.lower() == 'infinite':
+                            if runtime != arg.lower():
+                                main_logger.info('Runtime has been updated: "infinite"')
+                            runtime = 'infinite'
+                        else:
+                            try:
+                                arg = int(arg)
+                            except ValueError:
+                                main_logger.info('The value of the runtime argument must be either be "infinite" or '
+                                                 'an integer')
+                            else:
+                                if runtime != arg:
+                                    main_logger.info('Runtime has been updated: %s' % arg)
+                                runtime = arg
+                    elif opt.lower() == 'pni_interface_tag':
+                        if pni_interface_tag != arg:
+                            main_logger.info('pni_interface_tag has been updated')
+                        pni_interface_tag = str(arg)
+                    elif opt.lower() == 'cdn_interface_tag':
+                        if cdn_interface_tag != arg:
+                            main_logger.info('cdn_interface_tag has been updated')
+                        cdn_interface_tag = str(arg)
+                    elif opt.lower() == 'acl_name':
+                        if acl_name != arg:
+                            main_logger.info('acl_name has been updated')
+                        acl_name = str(arg)
+                    elif opt.lower() == 'ipv4_min_prefixes':
+                        try:
+                            arg = int(arg)
+                        except ValueError:
+                            if lastChanged == "":
+                                main_logger.info('The value of the ipv4_min_prefixes must be an integer. Resetting '
+                                                 'to default setting: %s' % ipv4_min_prefixes)
+                            else:
+                                main_logger.info('The value of the ipv4_min_prefixes must be an integer. Resetting '
+                                                 'to last known good setting: %s' % ipv4_min_prefixes)
+                        else:
+                            if ipv4_min_prefixes != arg:
+                                main_logger.info('ipv4_min_prefix count has been updated: %s' % arg)
+                            ipv4_min_prefixes = arg
+                    elif opt.lower() == 'ipv6_min_prefixes':
+                        try:
+                            arg = int(arg)
+                        except ValueError:
+                            if lastChanged == "":
+                                main_logger.info('The value of the ipv6_min_prefixes must be an integer. Resetting '
+                                                 'to default setting: %s' % ipv6_min_prefixes)
+                            else:
+                                main_logger.info('The value of the ipv6_min_prefixes must be an integer. Resetting '
+                                                 'to last known good setting: %s' % ipv6_min_prefixes)
+                        else:
+                            if ipv6_min_prefixes != arg:
+                                main_logger.info('ipv6_min_prefix count has been updated: %s' % arg)
+                            ipv6_min_prefixes = arg
+                    elif opt == 'simulation_mode':
+                        if arg.lower() == 'on':
+                            dryrun = True
+                            main_logger.info('Program running in simulation mode')
+                        elif arg.lower() == 'off':
+                            if dryrun != False:
+                                main_logger.info('Simulation mode turned off')
+                            dryrun = False
+                        else:
+                            main_logger.info('The simulation parameter takes only two arguments: "on" or "off"')
+                    else:
+                        if lastChanged == "":
+                            main_logger.info("Invalid parameter found in the configuration file: (%s). The program "
+                                             "will continue with its default settings. Use '%s -m' or '%s --manual' "
+                                             "to see detailed usage instructions." % (opt, args[0], args[0]))
+                        else:
+                            main_logger.info("Invalid parameter found in the configuration file: (%s). The program "
+                                             "will continue with the last known good configuration. Use '%s -m' or '%s "
+                                             "--manual' to see detailed usage instructions." % (opt, args[0], args[0]))
+            except ValueError:
+                main_logger.info("Invalid configuration line detected and ignored. All configuration parameters must "
+                                 "be provided in key value pairs separated by an equal sign (=). Use '%s -m' or '%s "
+                                 "--manual' for more details." % (args[0], args[0]))
+        finally:
+            main_logger.setLevel(logging.getLevelName(loglevel))
+            main_logger.debug("\n\tInventory File: %s\n\tFrequency: %s\n\tRisk Factor: %s\n\tACL Name: %s\n\t"
+                              "PNI Interface Tag: %s\n\tCDN Interface Tag: %s\n\tCDN Serving Cap: %s\n\t"
+                              "IPv4 Min Prefixes: %s\n\tIPv6 Min Prefixes: %s\n\tLog Level: %s\n\tSimulation Mode: %s"
+                              % (inventory_file, frequency, risk_factor, acl_name, pni_interface_tag, cdn_interface_tag,
+                                 cdn_serving_cap, ipv4_min_prefixes, ipv6_min_prefixes, loglevel, dryrun))
+            try:
+                with open(inventory_file) as sf:
                     inventory = filter(lambda line: line[0] != '#', [n.strip('\n') for n in sf.readlines()])
-                if lastChanged != os.stat(inputfile).st_mtime:
+                if lastChanged != os.stat(inventory_file).st_mtime:
                     dswitch = True
                 else:
                     dswitch = False
             except IOError as ioerr:
-                print ioerr
+                main_logger.critical('%s %s. Exiting.' % ioerr)
                 sys.exit(1)
             except OSError as oserr:
-                print oserr
+                main_logger.critical('%s. Exiting.' % oserr)
                 sys.exit(1)
             else:
                 threads = []
-                logging.debug("Initializing subThreads")
+                main_logger.info("Initializing subThreads")
                 for n, node in enumerate(inventory):
                     t = Router(n + 1, node, pw, dswitch, risk_factor, cdn_serving_cap, acl_name, dryrun,
                                (pni_interface_tag, cdn_interface_tag), (ipv4_min_prefixes, ipv6_min_prefixes))
@@ -669,7 +747,7 @@ def main(args):
                     t.start()
                 for t in threads:
                     t.join()
-                lastChanged = os.stat(inputfile).st_mtime
+                lastChanged = os.stat(inventory_file).st_mtime
                 if type(runtime) == int:
                     runtime -= 1
             finally:
@@ -679,9 +757,9 @@ def main(args):
                     break
                 try:
                     time.sleep(frequency)
-                except KeyboardInterrupt as kb_int:
-                    print kb_int
-                    sys.exit(1)
+                except KeyboardInterrupt:
+                    main_logger.info("Keyboard Interrupt")
+                    sys.exit(0)
 
 
 if __name__ == '__main__':
