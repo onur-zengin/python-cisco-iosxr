@@ -494,7 +494,7 @@ def get_pw(c=3):
             print echo_warning
         else:
             try:
-                ssh.connect(hn, 2281, username=un, password=pw, timeout=1, look_for_keys=False, allow_agent=False)
+                ssh.connect(hn, username=un, password=pw, timeout=1, look_for_keys=False, allow_agent=False)
             except KeyboardInterrupt:
                 main_logger.info("Keyboard Interrupt")
                 sys.exit(0)
