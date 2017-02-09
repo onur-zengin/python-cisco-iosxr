@@ -371,7 +371,22 @@ class Router(threading.Thread):
 
     def _ssh(self, ipaddr, commandlist):
         try:
-            ssh.connect(ipaddr, username=un, password=self.pw, look_for_keys=False, allow_agent=False)
+            ssh.connect(ipaddr, username=un, password=self.pw, timeout=1, look_for_keys=False, allow_agent=False)
+        except KeyboardInterrupt:
+            main_logger.info("Keyboard Interrupt")
+            sys.exit(0)
+        except paramiko.ssh_exception.AuthenticationException as auth_failure:
+            ssh.close()
+            main_logger.warning(auth_failure)
+            sys.exit(1)
+        except paramiko.ssh_exception.NoValidConnectionsError as conn_failure:
+            ssh.close()
+            main_logger.warning(conn_failure)
+            sys.exit(1)
+        except paramiko.ssh_exception.SSHException as sshexc:
+            ssh.close()
+            main_logger.warning('SSH connection timeout %s' % sshexc)
+            sys.exit(1)
         except:
             main_logger.warning('Unexpected error while connecting to the node: %s\t%s' % sys.exc_info()[:2])
             sys.exit(1)
@@ -527,16 +542,16 @@ def main(args):
     frequency = 20
     risk_factor = 97
     loglevel = 'WARNING'
-    acl_name = 'CDPautomation:RhmUdpBlock'
-    pni_interface_tag = 'CDPautomation:PNI'
-    cdn_interface_tag = 'CDPautomation:CDN'
+    acl_name = 'CDPautomation_RhmUdpBlock'
+    pni_interface_tag = 'CDPautomation_PNI'
+    cdn_interface_tag = 'CDPautomation_CDN'
     ipv4_min_prefixes = 0
     ipv6_min_prefixes = 50
     cdn_serving_cap = 90
     dryrun = False
     runtime = 'infinite'
     try:
-        options, remainder = getopt.getopt(args[1:], "hmr:s", ["help", "manual", "runtime=", "simulation"])
+        options, remainder = getopt.getopt(args[1:], "hm", ["help", "manual"])
     except getopt.GetoptError as getopterr:
         print getopterr
         sys.exit(2)
