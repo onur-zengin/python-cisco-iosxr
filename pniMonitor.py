@@ -179,7 +179,7 @@ class Router(threading.Thread):
             if ptup[1] == '':
                 prv = eval(ptup[0])
             elif "No such file or directory" in ptup[1]:
-                main_logger.info("New Node")
+                main_logger.info("New node detected")
             else:
                 main_logger.warning("Unexpected output in the probe() function" % (str(ptup)))
                 sys.exit(3)
@@ -383,14 +383,14 @@ class Router(threading.Thread):
             sys.exit(1)
         except paramiko.ssh_exception.NoValidConnectionsError as conn_failure:
             ssh.close()
-            main_logger.warning(conn_failure)
+            main_logger.critical(conn_failure)
             sys.exit(1)
         except paramiko.ssh_exception.SSHException as sshexc:
             ssh.close()
-            main_logger.warning('SSH connection timeout %s' % sshexc)
+            main_logger.critical('SSH connection timeout %s' % sshexc)
             sys.exit(1)
         except:
-            main_logger.warning('Unexpected error while connecting to the node: %s\t%s' % sys.exc_info()[:2])
+            main_logger.critical('Unexpected error while connecting to the node: %s\t%s' % sys.exc_info()[:2])
             sys.exit(1)
         else:
             main_logger.debug("SSH connection successful")
