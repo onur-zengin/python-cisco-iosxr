@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 
 import sys
 import getopt
@@ -130,7 +130,7 @@ class Router(threading.Thread):
                 cdn_interfaces.append(j[3])
                 disc[j[3]] = {'ifIndex': j[0].split('.')[1]}
                 disc[j[3]]['type'] = 'cdn'
-        main_logger.debug("ipTable %s" % ipTable)
+        #main_logger.debug("ipTable %s" % ipTable)
         for interface in pni_interfaces:
             for i in ipTable:
                 if disc[interface]['ifIndex'] == i[3]:
@@ -140,7 +140,7 @@ class Router(threading.Thread):
                             disc[interface]['local_' + type] = [i[0].split('"')[1]]
                         else:
                             disc[interface]['local_' + type] += [i[0].split('"')[1]]
-        main_logger.debug("peerTable %s" % peerTable)
+        #main_logger.debug("peerTable %s" % peerTable)
         for interface in pni_interfaces:
             for i in peerTable:
                 if len(i) == 8:
