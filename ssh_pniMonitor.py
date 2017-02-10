@@ -105,7 +105,7 @@ def main():
     main_logger.debug("starting")
     bool, pw = get_pw()
     if bool:
-        raw = _ssh("er10.bllab", pw, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
+        raw = _ssh("er10.bllab", pw, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all", "\n"])
         print raw
         print len(raw)
         for r in raw:
@@ -124,6 +124,8 @@ def acl_check(rawinput, interface, aclname):
                 if acl.group(1) == aclname:
                     result = 'on'
     return result
+
+
 
 
 if __name__ == '__main__':
