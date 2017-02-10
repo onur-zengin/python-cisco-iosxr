@@ -105,7 +105,7 @@ def main():
     main_logger.debug("starting")
     bool, pw = get_pw()
     if bool:
-        raw = _ssh("er10.bllab", pw, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all", "\n"])
+        raw = _ssh("er10.bllab", pw, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all", "exit"])
         print raw
         print len(raw)
         for r in raw:
