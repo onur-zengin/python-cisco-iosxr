@@ -424,6 +424,10 @@ class Router(threading.Thread):
                         else:
                             main_logger.warning("SSH connection closed prematurely")
                         output.append(cmd_output)
+                try:
+                    session.send('exit\n')
+                except socket.error as sc_err:
+                    main_logger.warning(sc_err)
                 main_logger.debug("SSH connection closed")
                 ssh.close()
         return output[1:]
