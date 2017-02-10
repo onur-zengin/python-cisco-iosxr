@@ -646,17 +646,19 @@ def main(args):
                                 main_logger.warning('The value of the frequency argument must be an integer. Resetting '
                                                  'to last known good configuration: %s' % frequency)
                         else:
-                            if arg >= 5:
+                            if arg >= 30 and arg <= 120:
                                 if frequency != arg:
                                     main_logger.info('Running frequency has been updated: %s' % arg)
                                 frequency = arg
                             else:
                                 if lastChanged == "":
-                                    main_logger.warning('The running frequency can not be shorter than 5 seconds. '
-                                                     'Resetting to default setting: %s' % frequency)
+                                    main_logger.warning('The running frequency can not be shorter than 30 or longer '
+                                                        'than 120 seconds. Resetting to default setting: %s'
+                                                        % frequency)
                                 else:
-                                    main_logger.warning('The running frequency can not be shorter than 5 seconds.'
-                                                     'Resetting to last known good configuration: %s' % frequency)
+                                    main_logger.warning('The running frequency can not be shorter than 30 or longer '
+                                                        'than 120 seconds. Resetting to last known good configuration: '
+                                                        '%s' % frequency)
                     elif opt == 'runtime':
                         if arg.lower() == 'infinite':
                             if runtime != arg.lower():
@@ -672,18 +674,6 @@ def main(args):
                                 if runtime != arg:
                                     main_logger.info('Runtime has been updated: %s' % arg)
                                 runtime = arg
-                    elif opt.lower() == 'pni_interface_tag':
-                        if pni_interface_tag != arg:
-                            main_logger.info('pni_interface_tag has been updated')
-                        pni_interface_tag = str(arg)
-                    elif opt.lower() == 'cdn_interface_tag':
-                        if cdn_interface_tag != arg:
-                            main_logger.info('cdn_interface_tag has been updated')
-                        cdn_interface_tag = str(arg)
-                    elif opt.lower() == 'acl_name':
-                        if acl_name != arg:
-                            main_logger.info('acl_name has been updated')
-                        acl_name = str(arg)
                     elif opt.lower() == 'ipv4_min_prefixes':
                         try:
                             arg = int(arg)
