@@ -338,7 +338,7 @@ class Router(threading.Thread):
     def _acl(self, ipaddr, decision, interfaces):
         results = []
         commands = ["configure", "commit", "end", "sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"]
-        if self.dryrun == 'off':
+        if self.dryrun == False:
             if decision == 'block':
                 for interface in interfaces:
                     commands[1:1] = ["interface " + interface, "ipv4 access-group CDPautomation_RhmUdpBlock egress",
@@ -355,7 +355,7 @@ class Router(threading.Thread):
                 output = self._ssh(ipaddr, commands)
                 for interface in interfaces:
                     results.append(self.acl_check(output[-1], interface, self.acl_name))
-        else:
+        elif self.dryrun == True:
             main_logger.warning('Program operating in simulation mode. No configuration changes will be made to the router')
             if decision == 'block':
                 for interface in interfaces:
