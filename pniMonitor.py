@@ -607,21 +607,21 @@ def main(args):
                             loglevel = arg.upper()
                         else:
                             if lastChanged == "":
-                                main_logger.warning('Invalid value specified for loglevel. Resetting to default'
-                                                 'setting: %s' % loglevel)
+                                main_logger.warning('Invalid value specified for loglevel. Resetting to default '
+                                                    'setting: %s' % loglevel)
                             else:
-                                main_logger.warning('Invalid value specified for loglevel. Resetting to last known good '
-                                                 'setting: %s' % loglevel)
+                                main_logger.warning('Invalid value specified for loglevel. Resetting to last known '
+                                                    'good configuration: %s' % loglevel)
                     elif opt == 'risk_factor':
                         try:
                             arg = int(arg)
                         except ValueError:
                             if lastChanged == "":
-                                main_logger.warning('The value of the risk_factor argument must be an integer. Resetting '
-                                                 'to default setting: %s' % risk_factor)
+                                main_logger.warning('The value of the risk_factor argument must be an integer. '
+                                                    'Resetting to default setting: %s' % risk_factor)
                             else:
-                                main_logger.warning('The value of the risk_factor argument must be an integer. Resetting '
-                                                 'to last known good setting: %s' % risk_factor)
+                                main_logger.warning('The value of the risk_factor argument must be an integer. '
+                                                    'Resetting to last known good configuration: %s' % risk_factor)
                         else:
                             if arg >= 0 and arg <= 100:
                                 if risk_factor != arg:
@@ -629,11 +629,13 @@ def main(args):
                                 risk_factor = arg
                             else:
                                 if lastChanged == "":
-                                    main_logger.warning('The value of the risk_factor argument must be an integer between '
-                                                     '0 and 100. Resetting to default setting: %s' % risk_factor)
+                                    main_logger.warning('The value of the risk_factor argument must be an integer '
+                                                        'between 0 and 100. Resetting to default setting: %s'
+                                                        % risk_factor)
                                 else:
-                                    main_logger.warning('The value of the risk_factor argument must be an integer between '
-                                                     '0 and 100. Resetting to last known good setting: %s' % risk_factor)
+                                    main_logger.warning('The value of the risk_factor argument must be an integer '
+                                                        'between 0 and 100. Resetting to last known good configuration: '
+                                                        '%s' % risk_factor)
                     elif opt == 'frequency':
                         try:
                             arg = int(arg)
@@ -643,7 +645,7 @@ def main(args):
                                                  'to default setting: %s' % frequency)
                             else:
                                 main_logger.warning('The value of the frequency argument must be an integer. Resetting '
-                                                 'to last known good setting: %s' % frequency)
+                                                 'to last known good configuration: %s' % frequency)
                         else:
                             if arg >= 5:
                                 if frequency != arg:
@@ -655,7 +657,7 @@ def main(args):
                                                      'Resetting to default setting: %s' % frequency)
                                 else:
                                     main_logger.warning('The running frequency can not be shorter than 5 seconds.'
-                                                     'Resetting to last known good setting: %s' % frequency)
+                                                     'Resetting to last known good configuration: %s' % frequency)
                     elif opt == 'runtime':
                         if arg.lower() == 'infinite':
                             if runtime != arg.lower():
@@ -692,7 +694,7 @@ def main(args):
                                                  'to default setting: %s' % ipv4_min_prefixes)
                             else:
                                 main_logger.warning('The value of the ipv4_min_prefixes must be an integer. Resetting '
-                                                 'to last known good setting: %s' % ipv4_min_prefixes)
+                                                 'to last known good configuration: %s' % ipv4_min_prefixes)
                         else:
                             if ipv4_min_prefixes != arg:
                                 main_logger.info('ipv4_min_prefix count has been updated: %s' % arg)
@@ -706,7 +708,7 @@ def main(args):
                                                  'to default setting: %s' % ipv6_min_prefixes)
                             else:
                                 main_logger.warning('The value of the ipv6_min_prefixes must be an integer. Resetting '
-                                                 'to last known good setting: %s' % ipv6_min_prefixes)
+                                                 'to last known good configuration: %s' % ipv6_min_prefixes)
                         else:
                             if ipv6_min_prefixes != arg:
                                 main_logger.info('ipv6_min_prefix count has been updated: %s' % arg)
