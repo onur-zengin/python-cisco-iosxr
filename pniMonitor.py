@@ -184,7 +184,7 @@ class Router(threading.Thread):
                 main_logger.warning("Unexpected output in the probe() function" % (str(ptup)))
                 sys.exit(3)
         finally:
-            raw_acl_status = self._ssh(ipaddr, ["sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"])
+            raw_acl_status = self._ssh(ipaddr, ["sh access-lists %s usage pfilter loc all" % self.acl_name])
             for interface in sorted(disc):
                 int_status = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in
                                                 self.int_oids], cmd='snmpget')
@@ -339,26 +339,25 @@ class Router(threading.Thread):
 
     def _acl(self, ipaddr, decision, interfaces):
         results = []
-        commands = ["configure", "commit", "end", "sh access-lists CDPautomation_RhmUdpBlock usage pfilter loc all"]
+        commands = ["configure", "commit", "end", "sh access-lists %s usage pfilter loc all" % self.acl_name]
         if self.dryrun == False:
             if decision == 'block':
                 for interface in interfaces:
-                    commands[1:1] = ["interface " + interface, "ipv4 access-group CDPautomation_RhmUdpBlock egress",
-                                     "exit"]
+                    commands[1:1] = ["interface " + interface, "ipv4 access-group %s egress" % self.acl_name, "exit"]
                     main_logger.warning("%s will be blocked" % interface)
                 output = self._ssh(ipaddr, commands)
                 for interface in interfaces:
                     results.append(self.acl_check(output[-1], interface, self.acl_name))
             else:
                 for interface in interfaces:
-                    commands[1:1] = ["interface " + interface, "no ipv4 access-group CDPautomation_RhmUdpBlock egress",
-                                     "exit"]
+                    commands[1:1] = ["interface " + interface, "no ipv4 access-group %s egress" % self.acl_name, "exit"]
                     main_logger.info("%s will be unblocked" % interface)
                 output = self._ssh(ipaddr, commands)
                 for interface in interfaces:
                     results.append(self.acl_check(output[-1], interface, self.acl_name))
         elif self.dryrun == True:
-            main_logger.warning('Program operating in simulation mode. No configuration changes will be made to the router')
+            main_logger.warning('Program operating in simulation mode. No configuration changes will be made to the '
+                                'router')
             if decision == 'block':
                 for interface in interfaces:
                     main_logger.warning("%s will be blocked" % interface)
@@ -373,7 +372,7 @@ class Router(threading.Thread):
 
     def _ssh(self, ipaddr, commandlist):
         try:
-            ssh.connect(ipaddr, username=un, password=self.pw, timeout=1, look_for_keys=False, allow_agent=False)
+            ssh.connect(ipaddr, username=un, password=self.pw, timeout=3, look_for_keys=False, allow_agent=False)
         except KeyboardInterrupt:
             main_logger.info("Keyboard Interrupt")
             sys.exit(0)
