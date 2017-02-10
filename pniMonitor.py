@@ -237,10 +237,12 @@ class Router(threading.Thread):
             for p , n in zip(sorted(prv), sorted(nxt)):
                 if n in self.pni_interfaces:
                     if nxt[n]['operStatus'] == 'up' \
-                            and reduce(lambda x, y: x[1] + y[1],
-                                       filter(lambda x: x[0] == '6', nxt[n]['peerStatus_ipv4']), 0) > self.ipv4_minPfx \
-                            or reduce(lambda x, y: x[1] + y[1],
-                                      filter(lambda x: x[0] == '6', nxt[n]['peerStatus_ipv6']), 0) > self.ipv6_minPfx :
+                            and reduce(lambda x, y: int(x) + int(y),
+                                       [nxt[n]['peerStatus_ipv4'][x][1] for x in nxt[n]['peerStatus_ipv4']
+                                        if nxt[n]['peerStatus_ipv4'][x][0] == '6'], 0) > self.ipv4_minPfx \
+                            or reduce(lambda x, y: int(x) + int(y),
+                                      [nxt[n]['peerStatus_ipv6'][x][1] for x in nxt[n]['peerStatus_ipv6']
+                                       if nxt[n]['peerStatus_ipv6'][x][0] == '6'], 0) > self.ipv6_minPfx:
                         usablePniOut += int(nxt[n]['ifSpeed'])
                         if prv[p]['operStatus'] == 'up':
                             delta_time = (dt.strptime(nxt[n]['ts'], dF) - dt.strptime(prv[p]['ts'], dF)).total_seconds()
