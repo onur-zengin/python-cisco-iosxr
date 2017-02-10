@@ -295,7 +295,7 @@ class Router(threading.Thread):
                         for interface in unblocked:
                             main_logger.info('Interface %s is now blocked' % interface)
                     else:
-                        main_logger.warning('Interface blocking attempt failed:\n%s' % output)
+                        main_logger.critical('Interface blocking attempt failed:\n%s' % output)
                     for interface in blocked:
                         main_logger.info('Interface %s was already blocked' % interface)
                 else:
@@ -309,7 +309,7 @@ class Router(threading.Thread):
                         for interface in blocked:
                             main_logger.info('Interface %s is now unblocked' % interface)
                     else:
-                        main_logger.warning('Interface unblocking attempt failed:\n%s' % output)
+                        main_logger.critical('Interface unblocking attempt failed:\n%s' % output)
                     for interface in unblocked:
                         main_logger.info('Interface %s was already unblocked' % interface)
                 else:
@@ -322,10 +322,10 @@ class Router(threading.Thread):
                             if results == ['off']:
                                 main_logger.info('Interface %s is now unblocked' % candidate_interface)
                             else:
-                                main_logger.warning('Interface unblocking attempt failed:\n%s' % output)
+                                main_logger.critical('Interface unblocking attempt failed:\n%s' % output)
                             break
             else:
-                main_logger.debug('_process() completed. No action taken nor was necessary.')
+                main_logger.info('_process() completed. No action taken nor was necessary.')
         elif prv == {} and len(nxt) > 0:
             main_logger.info("New node detected. _process() module will be activated in the next polling cycle")
         elif prv != {} and len(prv) < len(nxt):
@@ -335,7 +335,7 @@ class Router(threading.Thread):
             # This will be revisited in version-2 when persistence is enabled, so that _process() function can
             # continue running for the already existing interfaces.
         else:
-            main_logger.warning("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (prv, nxt))
+            main_logger.critical("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (prv, nxt))
 
     def _acl(self, ipaddr, decision, interfaces):
         results = []
@@ -586,11 +586,11 @@ def main(args):
         except IOError as ioerr:
             rg = re.search(r'(\'.+\')', str(ioerr))
             if lastChanged == "":
-                main_logger.info("'%s could not be located. The program will continue with its default settings."
+                main_logger.warning("'%s could not be located. The program will continue with its default settings."
                                  "\nUse '%s -m or %s --manual to see detailed usage instructions."
                                  % (rg.group(1)[3:], args[0], args[0]))
             else:
-                main_logger.info("'%s could not be located. The program will continue with the last known good "
+                main_logger.warning("'%s could not be located. The program will continue with the last known good "
                                  "configuration.\nUse '%s -m or %s --manual to see detailed usage instructions."
                                  % (rg.group(1)[3:], args[0], args[0]))
         else:
@@ -607,20 +607,20 @@ def main(args):
                             loglevel = arg.upper()
                         else:
                             if lastChanged == "":
-                                main_logger.info('Invalid value specified for loglevel. Resetting to default'
+                                main_logger.warning('Invalid value specified for loglevel. Resetting to default'
                                                  'setting: %s' % loglevel)
                             else:
-                                main_logger.info('Invalid value specified for loglevel. Resetting to last known good '
+                                main_logger.warning('Invalid value specified for loglevel. Resetting to last known good '
                                                  'setting: %s' % loglevel)
                     elif opt == 'risk_factor':
                         try:
                             arg = int(arg)
                         except ValueError:
                             if lastChanged == "":
-                                main_logger.info('The value of the risk_factor argument must be an integer. Resetting '
+                                main_logger.warning('The value of the risk_factor argument must be an integer. Resetting '
                                                  'to default setting: %s' % risk_factor)
                             else:
-                                main_logger.info('The value of the risk_factor argument must be an integer. Resetting '
+                                main_logger.warning('The value of the risk_factor argument must be an integer. Resetting '
                                                  'to last known good setting: %s' % risk_factor)
                         else:
                             if arg >= 0 and arg <= 100:
@@ -629,20 +629,20 @@ def main(args):
                                 risk_factor = arg
                             else:
                                 if lastChanged == "":
-                                    main_logger.info('The value of the risk_factor argument must be an integer between '
+                                    main_logger.warning('The value of the risk_factor argument must be an integer between '
                                                      '0 and 100. Resetting to default setting: %s' % risk_factor)
                                 else:
-                                    main_logger.info('The value of the risk_factor argument must be an integer between '
+                                    main_logger.warning('The value of the risk_factor argument must be an integer between '
                                                      '0 and 100. Resetting to last known good setting: %s' % risk_factor)
                     elif opt == 'frequency':
                         try:
                             arg = int(arg)
                         except ValueError:
                             if lastChanged == "":
-                                main_logger.info('The value of the frequency argument must be an integer. Resetting '
+                                main_logger.warning('The value of the frequency argument must be an integer. Resetting '
                                                  'to default setting: %s' % frequency)
                             else:
-                                main_logger.info('The value of the frequency argument must be an integer. Resetting '
+                                main_logger.warning('The value of the frequency argument must be an integer. Resetting '
                                                  'to last known good setting: %s' % frequency)
                         else:
                             if arg >= 5:
@@ -651,10 +651,10 @@ def main(args):
                                 frequency = arg
                             else:
                                 if lastChanged == "":
-                                    main_logger.info('The running frequency can not be shorter than 5 seconds. '
+                                    main_logger.warning('The running frequency can not be shorter than 5 seconds. '
                                                      'Resetting to default setting: %s' % frequency)
                                 else:
-                                    main_logger.info('The running frequency can not be shorter than 5 seconds.'
+                                    main_logger.warning('The running frequency can not be shorter than 5 seconds.'
                                                      'Resetting to last known good setting: %s' % frequency)
                     elif opt == 'runtime':
                         if arg.lower() == 'infinite':
@@ -665,7 +665,7 @@ def main(args):
                             try:
                                 arg = int(arg)
                             except ValueError:
-                                main_logger.info('The value of the runtime argument must be either be "infinite" or '
+                                main_logger.warning('The value of the runtime argument must be either be "infinite" or '
                                                  'an integer')
                             else:
                                 if runtime != arg:
@@ -688,10 +688,10 @@ def main(args):
                             arg = int(arg)
                         except ValueError:
                             if lastChanged == "":
-                                main_logger.info('The value of the ipv4_min_prefixes must be an integer. Resetting '
+                                main_logger.warning('The value of the ipv4_min_prefixes must be an integer. Resetting '
                                                  'to default setting: %s' % ipv4_min_prefixes)
                             else:
-                                main_logger.info('The value of the ipv4_min_prefixes must be an integer. Resetting '
+                                main_logger.warning('The value of the ipv4_min_prefixes must be an integer. Resetting '
                                                  'to last known good setting: %s' % ipv4_min_prefixes)
                         else:
                             if ipv4_min_prefixes != arg:
@@ -702,10 +702,10 @@ def main(args):
                             arg = int(arg)
                         except ValueError:
                             if lastChanged == "":
-                                main_logger.info('The value of the ipv6_min_prefixes must be an integer. Resetting '
+                                main_logger.warning('The value of the ipv6_min_prefixes must be an integer. Resetting '
                                                  'to default setting: %s' % ipv6_min_prefixes)
                             else:
-                                main_logger.info('The value of the ipv6_min_prefixes must be an integer. Resetting '
+                                main_logger.warning('The value of the ipv6_min_prefixes must be an integer. Resetting '
                                                  'to last known good setting: %s' % ipv6_min_prefixes)
                         else:
                             if ipv6_min_prefixes != arg:
@@ -720,18 +720,18 @@ def main(args):
                                 main_logger.info('Simulation mode turned off')
                             dryrun = False
                         else:
-                            main_logger.info('The simulation parameter takes only two arguments: "on" or "off"')
+                            main_logger.warning('The simulation parameter takes only two arguments: "on" or "off"')
                     else:
                         if lastChanged == "":
-                            main_logger.info("Invalid parameter found in the configuration file: (%s). The program "
+                            main_logger.warning("Invalid parameter found in the configuration file: (%s). The program "
                                              "will continue with its default settings. Use '%s -m' or '%s --manual' "
                                              "to see detailed usage instructions." % (opt, args[0], args[0]))
                         else:
-                            main_logger.info("Invalid parameter found in the configuration file: (%s). The program "
+                            main_logger.warning("Invalid parameter found in the configuration file: (%s). The program "
                                              "will continue with the last known good configuration. Use '%s -m' or '%s "
                                              "--manual' to see detailed usage instructions." % (opt, args[0], args[0]))
             except ValueError:
-                main_logger.info("Invalid configuration line detected and ignored. All configuration parameters must "
+                main_logger.warning("Invalid configuration line detected and ignored. All configuration parameters must "
                                  "be provided in key value pairs separated by an equal sign (=). Use '%s -m' or '%s "
                                  "--manual' for more details." % (args[0], args[0]))
         finally:
