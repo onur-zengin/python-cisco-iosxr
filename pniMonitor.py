@@ -74,7 +74,7 @@ class Router(threading.Thread):
         self.acl_name = acl_name
         self.dryrun = dryrun
     def run(self):
-        main_logger.debug("Starting")
+        main_logger.info("Starting")
         self.tstamp = tstamp('mr')
         self.ipaddr = self.dns(self.node)
         if self.switch is True:
@@ -95,11 +95,11 @@ class Router(threading.Thread):
         self.cdn_interfaces = [int for int in disc if disc[int]['type'] == 'cdn']
         self.interfaces = self.pni_interfaces + self.cdn_interfaces
         if self.interfaces != []:
-            main_logger.debug("Discovered interfaces: %s" % str(self.interfaces))
+            main_logger.debug("Discovered interfaces: PNI %s\tCDN %s" % (self.pni_interfaces, self.cdn_interfaces))
             self._process(self.ipaddr, disc)
         else:
-            main_logger.info("No interfaces eligible for monitoring")
-        main_logger.debug("Completed")
+            main_logger.warning("No interfaces eligible for monitoring")
+        main_logger.info("Completed")
 
     def dns(self,node):
         try:
