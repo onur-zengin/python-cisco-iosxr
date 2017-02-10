@@ -603,7 +603,7 @@ def main(args):
                     elif opt == 'loglevel':
                         if arg.lower() in ('info', 'warning', 'debug', 'critical'):
                             if loglevel != arg.upper():
-                                main_logger.info('Log level has been updated: %s' % loglevel.upper())
+                                main_logger.info('Log level has been updated: %s' % arg.upper())
                             loglevel = arg.upper()
                         else:
                             if lastChanged == "":
