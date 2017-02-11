@@ -425,11 +425,14 @@ class Router(threading.Thread):
                             main_logger.warning("SSH connection closed prematurely")
                         output.append(cmd_output)
                 try:
+                    
                     session.send('exit\n')
                 except socket.error as sc_err:
                     main_logger.warning(sc_err)
-                main_logger.debug("SSH connection closed")
-                ssh.close()
+                    ssh.close()
+                else:
+                    #ssh.close()
+                    main_logger.debug("SSH connection closed")
         return output[1:]
 
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
