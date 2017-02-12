@@ -14,6 +14,7 @@ import os
 import paramiko
 import getpass
 from datetime import datetime as dt
+from logging import handlers
 
 ssh_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s]: %(message)s')
 ssh_ch = logging.StreamHandler()
@@ -25,8 +26,11 @@ ssh_logger.setLevel(logging.WARNING)
 main_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
 main_ch = logging.FileHandler('pniMonitor.log')
 main_ch.setFormatter(main_formatter)
+main_eh = logging.handlers.SMTPHandler('localhost','noreply@automation.skycdp.com','onur.zengin@sky.uk','pniMonitor')
+main_eh.setFormatter(main_formatter)
 main_logger = logging.getLogger(__name__)
 main_logger.addHandler(main_ch)
+main_logger.addHandler(main_eh)
 main_logger.setLevel(logging.INFO)
 
 def tstamp(format):
