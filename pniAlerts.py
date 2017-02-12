@@ -17,6 +17,7 @@ def _tail():
         pass
         #main_logger.warning("Unexpected error - Popen function _tail(): %s\t%s" % sys.exc_info()[:2])
     else:
+        print tup
         p = select.poll()
         p.register(tup.stdout)
         print p
