@@ -411,7 +411,7 @@ class Router(threading.Thread):
                         session.send(cmd + '\n')
                     except socket.error as sc_err:
                         main_logger.warning(sc_err)
-                        # sys.exit(1)
+                        sys.exit(1)
                     else:
                         while not session.exit_status_ready():
                             while session.recv_ready():
@@ -425,7 +425,6 @@ class Router(threading.Thread):
                             main_logger.warning("SSH connection closed prematurely")
                         output.append(cmd_output)
                 try:
-                    
                     session.send('exit\n')
                 except socket.error as sc_err:
                     main_logger.warning(sc_err)
