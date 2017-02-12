@@ -9,31 +9,15 @@ import sys
 import select
 
 
-def _tail():
-    args = ['tail', '-F', 'pniMonitor.log']
-    try:
-        tup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-    except:
-        pass
-        #main_logger.warning("Unexpected error - Popen function _tail(): %s\t%s" % sys.exc_info()[:2])
-    else:
-        print tup
-        p = select.poll()
-        p.register(tup.stdout)
-        print p
-        if tup[1] == '':
-            pass
-        elif "No such file or directory" in tup[1]:
-            pass
-            #send alert email
-            #main_logger.info("")
-        else:
-            pass
-            #send alert email
-            #main_logger.warning("Unexpected output in the probe() function" % (str(ptup)))
-    return p
+if __name__ == '__main__':
+    f = subprocess.Popen(['tail','-F','pniMonitor.log'], stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    p = select.poll()
+    p.register(f.stdout)
+    while True:
+        if p.poll(1):
+             print f.stdout.readline()
+        time.sleep(1)
 
-print _tail()
 """
 class _sendemail(object):
     sen = 'PNI Monitor <no-reply@automation.skycdp.com>'
@@ -51,11 +35,7 @@ class _sendemail(object):
                 attachment += i+'\n'
         return attachment
 
-if __name__ == '__main__':
-    email = _sendemail()
-    print email.frmttr()
-"""
-"""
+
     def mssg(self): #"type:'mixed' / 'alternative' / 'related'"
         message = MIMEMultipart('mixed')
         message['From'] = self.sen

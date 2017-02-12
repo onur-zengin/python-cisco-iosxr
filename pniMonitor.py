@@ -23,7 +23,7 @@ ssh_logger.addHandler(ssh_ch)
 ssh_logger.setLevel(logging.WARNING)
 
 main_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
-main_ch = logging.StreamHandler()
+main_ch = logging.FileHandler('pniMonitor.log')
 main_ch.setFormatter(main_formatter)
 main_logger = logging.getLogger(__name__)
 main_logger.addHandler(main_ch)
