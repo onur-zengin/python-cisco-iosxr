@@ -23,12 +23,13 @@ ssh_logger = logging.getLogger('paramiko')
 ssh_logger.addHandler(ssh_ch)
 ssh_logger.setLevel(logging.WARNING)
 
+main_logger = logging.getLogger(__name__)
 main_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
 main_fh = handlers.TimedRotatingFileHandler('pniMonitor.log', when='midnight', backupCount=30)
 main_fh.setFormatter(main_formatter)
-main_logger = logging.getLogger(__name__)
+main_fh.setLevel(logging.INFO)
 main_logger.addHandler(main_fh)
-main_logger.setLevel(logging.INFO)
+
 
 def tstamp(format):
     if format == 'hr':
@@ -56,6 +57,7 @@ oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #0 IF-MIB::ifName
            ".1.3.6.1.4.1.9.9.187.1.2.8.1.1", #11 cbgpPeer2AcceptedPrefixes
            ".1.3.6.1.4.1.9.9.808.1.1.4" #12 caAclAccessGroupCfgTable
            ]
+
 
 class Router(threading.Thread):
     dsc_oids = oidlist[:4]
@@ -549,7 +551,8 @@ def main(args):
     inventory_file = 'inventory.txt'
     frequency = 20
     risk_factor = 97
-    loglevel = 'WARNING'
+    loglevel = 'INFO'
+    email_alert_severity = 'WARNING'
     acl_name = 'CDPautomation_RhmUdpBlock'
     pni_interface_tag = 'CDPautomation_PNI'
     cdn_interface_tag = 'CDPautomation_CDN'
@@ -558,7 +561,7 @@ def main(args):
     cdn_serving_cap = 90
     dryrun = False
     runtime = 'infinite'
-    recipients = []
+    email_recipient_list = ['onur.zengin@sky.uk']
     try:
         options, remainder = getopt.getopt(args[1:], "hm", ["help", "manual"])
     except getopt.GetoptError as getopterr:
@@ -610,7 +613,7 @@ def main(args):
                     elif opt == 'loglevel':
                         if arg.lower() in ('info', 'warning', 'debug', 'critical'):
                             if loglevel != arg.upper():
-                                main_logger.info('Log level has been updated: %s' % arg.upper())
+                                main_logger.info('Loglevel has been updated: %s' % arg.upper())
                             loglevel = arg.upper()
                         else:
                             if lastChanged == "":
@@ -619,6 +622,18 @@ def main(args):
                             else:
                                 main_logger.warning('Invalid value specified for loglevel. Resetting to last known '
                                                     'good configuration: %s' % loglevel)
+                    elif opt == 'email_alert_severity':
+                        if arg.lower() in ('info', 'warning', 'critical'):
+                            if email_alert_severity != arg.upper():
+                                main_logger.info('Email alert severity has been updated: %s' % arg.upper())
+                            email_alert_severity = arg.upper()
+                        else:
+                            if lastChanged == "":
+                                main_logger.warning('Invalid severity specified for email alerts. Resetting to default '
+                                                    'setting: %s' % email_alert_severity)
+                            else:
+                                main_logger.warning('Invalid severity specified for email alerts. Resetting to last '
+                                                    'known good configuration: %s' % email_alert_severity)
                     elif opt == 'risk_factor':
                         try:
                             arg = int(arg)
@@ -710,8 +725,23 @@ def main(args):
                             if ipv6_min_prefixes != arg:
                                 main_logger.info('ipv6_min_prefix count has been updated: %s' % arg)
                             ipv6_min_prefixes = arg
-                    elif opt == 'recipients':
-                        recipients = arg.split(',')
+                    elif opt == 'email_recipient_list':
+                        split_lst = arg.split(',')
+                        try:
+                            for email in split_lst:
+                                match = re.search(r"[\w.-]+@(sky.uk|bskyb.com)", email)
+                                match.group()
+                        except AttributeError:
+                            if lastChanged == "":
+                                main_logger.warning('Invalid email address found in the recipient list. Resetting '
+                                                    'to default setting: %s' % email_recipient_list)
+                            else:
+                                main_logger.warning('Invalid email address found in the recipient list. Resetting '
+                                                    'to last known good configuration: %s' % email_recipient_list)
+                        else:
+                            if email_recipient_list != split_lst:
+                                main_logger.info('Email recipient list has been updated: %s' % split_lst)
+                            email_recipient_list = split_lst
                     elif opt == 'simulation_mode':
                         if arg.lower() == 'on':
                             dryrun = True
@@ -722,6 +752,8 @@ def main(args):
                             dryrun = False
                         else:
                             main_logger.warning('The simulation parameter takes only two arguments: "on" or "off"')
+                    elif opt.lower() in ('pni_interface_tag', 'cdn_interface_tag', 'ssh_loglevel', 'acl_name'):
+                        pass
                     else:
                         if lastChanged == "":
                             main_logger.warning("Invalid parameter found in the configuration file: (%s). The program "
@@ -737,10 +769,10 @@ def main(args):
                                  "--manual' for more details." % (args[0], args[0]))
         finally:
             main_fh.setLevel(logging.getLevelName(loglevel))
-            main_eh = handlers.SMTPHandler('localhost', 'no-reply@automation.skycdp.com', recipients, '%(asctime)s : %(message)s')
-            main_eh.getSubject(record=loglevel)
+            main_eh = handlers.SMTPHandler('localhost', 'no-reply@automation.skycdp.com', recipients,
+                                           'Virgin Media PNI Monitor')
             main_eh.setFormatter(main_formatter)
-            main_eh.setLevel(logging.WARNING)
+            main_eh.setLevel(logging.getLevelName(email_alert_severity))
             main_logger.addHandler(main_eh)
             main_logger.debug("\n\tInventory File: %s\n\tFrequency: %s\n\tRisk Factor: %s\n\tACL Name: %s\n\t"
                               "PNI Interface Tag: %s\n\tCDN Interface Tag: %s\n\tCDN Serving Cap: %s\n\t"
@@ -755,7 +787,7 @@ def main(args):
                 else:
                     dswitch = False
             except IOError as ioerr:
-                main_logger.critical('%s %s. Exiting.' % ioerr)
+                main_logger.critical('%s. Exiting.' % ioerr)
                 sys.exit(1)
             except OSError as oserr:
                 main_logger.critical('%s. Exiting.' % oserr)
