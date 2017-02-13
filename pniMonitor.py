@@ -27,7 +27,7 @@ main_logger = logging.getLogger(__name__)
 main_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
 main_fh = handlers.TimedRotatingFileHandler('pniMonitor.log', when='midnight', backupCount=30)
 main_fh.setFormatter(main_formatter)
-main_fh.setLevel(logging.INFO)
+main_logger.setLevel(logging.INFO)
 main_logger.addHandler(main_fh)
 
 
