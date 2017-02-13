@@ -774,7 +774,8 @@ def main(args):
             main_eh = handlers.SMTPHandler('localhost', 'no-reply@automation.skycdp.com', email_recipient_list,
                                            'Virgin Media PNI Monitor')
             main_eh.setFormatter(main_formatter)
-            main_eh.setLevel(logging.getLevelName(email_alert_severity))
+            #main_eh.setLevel(logging.getLevelName(email_alert_severity))
+            main_eh.setLevel(logging.WARNING)
             main_logger.addHandler(main_eh)
             main_logger.debug("\n\tInventory File: %s\n\tFrequency: %s\n\tRisk Factor: %s\n\tACL Name: %s\n\t"
                               "PNI Interface Tag: %s\n\tCDN Interface Tag: %s\n\tCDN Serving Cap: %s\n\t"
