@@ -24,14 +24,14 @@ ssh_logger.addHandler(ssh_ch)
 ssh_logger.setLevel(logging.WARNING)
 
 main_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
-main_fh = handlers.TimedRotatingFileHandler('pniMonitor.log', when='m', backupCount=2, utc=True)
+main_fh = handlers.TimedRotatingFileHandler('pniMonitor.log', when='midnight', backupCount=30)
 main_fh.setFormatter(main_formatter)
-main_eh = handlers.SMTPHandler('localhost','noreply@automation.skycdp.com','onur.zengin@sky.uk','VM PNImonitor %s')
-main_eh.setFormatter(main_formatter)
-main_eh.setLevel(logging.WARNING)
+#main_eh = handlers.SMTPHandler('localhost','noreply@automation.skycdp.com','onur.zengin@sky.uk','VM PNImonitor %s')
+#main_eh.setFormatter(main_formatter)
+#main_eh.setLevel(logging.WARNING)
 main_logger = logging.getLogger(__name__)
 main_logger.addHandler(main_fh)
-main_logger.addHandler(main_eh)
+#main_logger.addHandler(main_eh)
 main_logger.setLevel(logging.INFO)
 
 def tstamp(format):
@@ -562,6 +562,7 @@ def main(args):
     cdn_serving_cap = 90
     dryrun = False
     runtime = 'infinite'
+    recipients = []
     try:
         options, remainder = getopt.getopt(args[1:], "hm", ["help", "manual"])
     except getopt.GetoptError as getopterr:
@@ -713,6 +714,8 @@ def main(args):
                             if ipv6_min_prefixes != arg:
                                 main_logger.info('ipv6_min_prefix count has been updated: %s' % arg)
                             ipv6_min_prefixes = arg
+                    elif opt == 'recipients':
+                        recipients = arg.split(',')
                     elif opt == 'simulation_mode':
                         if arg.lower() == 'on':
                             dryrun = True
@@ -738,6 +741,11 @@ def main(args):
                                  "--manual' for more details." % (args[0], args[0]))
         finally:
             main_logger.setLevel(logging.getLevelName(loglevel))
+            main_eh = handlers.SMTPHandler('localhost', 'no-reply@automation.skycdp.com', recipients,
+                                           'VM PNI monitor | %s' % loglevel)
+            main_eh.setFormatter(main_formatter)
+            main_eh.setLevel(logging.WARNING)
+            main_logger.addHandler(main_eh)
             main_logger.debug("\n\tInventory File: %s\n\tFrequency: %s\n\tRisk Factor: %s\n\tACL Name: %s\n\t"
                               "PNI Interface Tag: %s\n\tCDN Interface Tag: %s\n\tCDN Serving Cap: %s\n\t"
                               "IPv4 Min Prefixes: %s\n\tIPv6 Min Prefixes: %s\n\tLog Level: %s\n\tSimulation Mode: %s"
