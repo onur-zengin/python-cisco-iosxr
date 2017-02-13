@@ -525,6 +525,7 @@ def get_pw(c=3):
                 sys.exit(0)
             except paramiko.ssh_exception.AuthenticationException as auth_failure:
                 ssh.close()
+                print 'Authentication Failure'
                 main_logger.warning(auth_failure)
                 c -= 1
             except paramiko.ssh_exception.NoValidConnectionsError as conn_failure:
@@ -542,6 +543,7 @@ def get_pw(c=3):
                 ssh.close()
                 return True, pw
     else:
+        main_logger.warning('Too many failed attempts')
         print "Too many failed attempts"
         return False, None
 
@@ -769,7 +771,7 @@ def main(args):
                                  "--manual' for more details." % (args[0], args[0]))
         finally:
             main_fh.setLevel(logging.getLevelName(loglevel))
-            main_eh = handlers.SMTPHandler('localhost', 'no-reply@automation.skycdp.com', recipients,
+            main_eh = handlers.SMTPHandler('localhost', 'no-reply@automation.skycdp.com', email_recipient_list,
                                            'Virgin Media PNI Monitor')
             main_eh.setFormatter(main_formatter)
             main_eh.setLevel(logging.getLevelName(email_alert_severity))
