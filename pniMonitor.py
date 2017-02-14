@@ -537,7 +537,7 @@ def get_pw(c=3):
                 main_logger.warning('SSH connection timeout %s' % sshexc)
                 sys.exit(1)
             except:
-                main_logger.warning('Unexpected error: %s\t%s' % sys.exc_info()[:2])
+                main_logger.error('Unexpected error: %s\t%s' % sys.exc_info()[:2])
                 sys.exit(1)
             else:
                 ssh.close()
@@ -552,7 +552,7 @@ def main(args):
     #asctime = tstamp('hr')
     inventory_file = 'inventory.txt'
     frequency = 20
-    risk_factor = 97
+    risk_factor = 95
     loglevel = 'INFO'
     email_alert_severity = 'WARNING'
     acl_name = 'CDPautomation_RhmUdpBlock'
@@ -613,7 +613,7 @@ def main(args):
                             main_logger.info('Inventory file has been updated')
                         inventory_file = arg
                     elif opt == 'loglevel':
-                        if arg.lower() in ('info', 'warning', 'debug', 'critical'):
+                        if arg.lower() in ('info', 'warning', 'debug', 'critical', 'error'):
                             if loglevel != arg.upper():
                                 main_logger.info('Loglevel has been updated: %s' % arg.upper())
                             loglevel = arg.upper()
@@ -625,7 +625,7 @@ def main(args):
                                 main_logger.warning('Invalid value specified for loglevel. Resetting to last known '
                                                     'good configuration: %s' % loglevel)
                     elif opt == 'email_alert_severity':
-                        if arg.lower() in ('info', 'warning', 'critical'):
+                        if arg.lower() in ('warning', 'critical', 'error'):
                             if email_alert_severity != arg.upper():
                                 main_logger.info('Email alert severity has been updated: %s' % arg.upper())
                             email_alert_severity = arg.upper()
@@ -775,7 +775,6 @@ def main(args):
                                            'Virgin Media PNI Monitor')
             main_eh.setFormatter(main_formatter)
             main_eh.setLevel(logging.getLevelName(email_alert_severity))
-            #main_eh.setLevel(logging.WARNING)
             main_logger.addHandler(main_eh)
             main_logger.debug("\n\tInventory File: %s\n\tFrequency: %s\n\tRisk Factor: %s\n\tACL Name: %s\n\t"
                               "PNI Interface Tag: %s\n\tCDN Interface Tag: %s\n\tCDN Serving Cap: %s\n\t"
@@ -790,10 +789,10 @@ def main(args):
                 else:
                     dswitch = False
             except IOError as ioerr:
-                main_logger.critical('%s. Exiting.' % ioerr)
+                main_logger.error('%s. Exiting.' % ioerr)
                 sys.exit(1)
             except OSError as oserr:
-                main_logger.critical('%s. Exiting.' % oserr)
+                main_logger.error('%s. Exiting.' % oserr)
                 sys.exit(1)
             else:
                 threads = []
