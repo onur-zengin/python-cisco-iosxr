@@ -181,17 +181,15 @@ class Router(threading.Thread):
             with open(args[2]) as sf:
                 lines = sf.readlines()
         except IOError:
-            main_logger.warning('No File')
             pass
         else:
-            if len(lines) > 12:
-                main_logger.debug('File rotation starting')
+            if len(lines) > 60:
                 with open(args[2],'w') as pf:
                     for line in lines[1:]:
                         pf.write(line)
                 main_logger.debug('File rotation completed')
-            else:
-                main_logger.debug("No need for file rotation")
+            #.prb data will be preserved for upto 60 reads max, which provides 30 min worth of int utilisation data
+            # while running in 30 sec polling frequency
             lines = None
         try:
             ptup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
@@ -784,6 +782,10 @@ def main(args):
                                  "--manual' for more details." % (args[0], args[0]))
         finally:
             main_logger.setLevel(logging.getLevelName(loglevel))
+            try:
+                main_logger.removeHandler(main_eh)
+            except NameError:
+                pass
             main_eh = handlers.SMTPHandler('localhost', 'no-reply@automation.skycdp.com', email_recipient_list,
                                            'Virgin Media PNI Monitor')
             main_eh.setFormatter(main_formatter)

@@ -22,6 +22,23 @@ if __name__ == '__main__':
 
 """
 
+main_logger = logging.getLogger(__name__)
+main_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
+
+try:
+    main_logger.removeHandler(main_eh)
+except NameError:
+    pass
+
+main_fh = handlers.TimedRotatingFileHandler('pniMonitor.log', when='midnight', backupCount=7)
+main_fh.setFormatter(main_formatter)
+main_logger.setLevel(logging.INFO)
+
+
+
+main_logger.addHandler(main_fh)
+main_logger.addHandler(main_fh)
+
 
 main_logger = logging.getLogger(__name__)
 main_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
