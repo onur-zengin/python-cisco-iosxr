@@ -181,16 +181,18 @@ class Router(threading.Thread):
             with open(args[2]) as sf:
                 lines = sf.readlines()
         except IOError:
+            main_logger.warning('No File')
             pass
         else:
             if len(lines) > 12:
-                logging.debug('File rotation starting')
+                main_logger.debug('File rotation starting')
                 with open(args[2],'w') as pf:
                     for line in lines[1:]:
                         pf.write(line)
-                logging.debug('File rotation completed')
+                main_logger.debug('File rotation completed')
             else:
-                logging.debug("No need for file rotation")
+                main_logger.debug("No need for file rotation")
+            lines = None
         try:
             ptup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
