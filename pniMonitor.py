@@ -25,7 +25,7 @@ ssh_logger.setLevel(logging.WARNING)
 
 main_logger = logging.getLogger(__name__)
 main_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
-main_fh = handlers.TimedRotatingFileHandler('pniMonitor.log', when='midnight', backupCount=30)
+main_fh = handlers.TimedRotatingFileHandler('pniMonitor.log', when='midnight', backupCount=7)
 main_fh.setFormatter(main_formatter)
 main_logger.setLevel(logging.INFO)
 main_logger.addHandler(main_fh)
@@ -76,6 +76,7 @@ class Router(threading.Thread):
         self.serving_cap = cdn_serving_cap
         self.acl_name = acl_name
         self.dryrun = dryrun
+
     def run(self):
         main_logger.info("Starting")
         self.tstamp = tstamp('mr')
@@ -110,7 +111,7 @@ class Router(threading.Thread):
             ipaddr = socket.gethostbyname(node)
         except socket.gaierror as gaierr:
             if 'Name or service not known' in gaierr:
-                main_logger.error("Operation halted. Unknown host: %s" % gaierr)
+                main_logger.error("Operation halted. Unknown host: %s" % node)
             else:
                 main_logger.error("Operation halted: %s" % gaierr)
             sys.exit(3)
@@ -176,6 +177,20 @@ class Router(threading.Thread):
     def probe(self, ipaddr, disc):
         prv, nxt = {}, {}
         args = ['tail', '-1', '.do_not_modify_'.upper() + self.node + '.prb']
+        try:
+            with open(args[2]) as sf:
+                lines = sf.readlines()
+        except IOError:
+            pass
+        else:
+            if len(lines) > 12:
+                logging.debug('File rotation starting')
+                with open(args[2],'w') as pf:
+                    for line in lines[1:]:
+                        pf.write(line)
+                logging.debug('File rotation completed')
+            else:
+                logging.debug("No need for file rotation")
         try:
             ptup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
@@ -344,7 +359,7 @@ class Router(threading.Thread):
             main_logger.critical("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (prv, nxt))
 
     def _acl(self, ipaddr, decision, interfaces):
-        results = []
+        results, output = [], []
         commands = ["configure", "commit", "end", "sh access-lists %s usage pfilter loc all" % self.acl_name]
         if self.dryrun == False:
             if decision == 'block':
@@ -362,18 +377,16 @@ class Router(threading.Thread):
                 for interface in interfaces:
                     results.append(self.acl_check(output[-1], interface, self.acl_name))
         elif self.dryrun == True:
-            main_logger.warning('Program operating in simulation mode. No configuration changes will be made to the '
+            main_logger.info('Program operating in simulation mode. No configuration changes will be made to the '
                                 'router')
             if decision == 'block':
                 for interface in interfaces:
-                    main_logger.warning("%s will be blocked" % interface)
+                    main_logger.warning("%s will be blocked (simulation mode)" % interface)
                     results = ['on' for x in range(len(interfaces))]
-                output = None
             else:
                 for interface in interfaces:
-                    main_logger.warning("%s will be blocked" % interface)
+                    main_logger.info("%s will be unblocked (simulation mode)" % interface)
                     results = ['off' for x in range(len(interfaces))]
-                output = None
         return results, output
 
     def _ssh(self, ipaddr, commandlist):
@@ -448,16 +461,14 @@ class Router(threading.Thread):
         try:
             stup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
-            main_logger.warning("Unexpected error during %s operation" % (cmd))
-            main_logger.debug("Unexpected error - Popen function snmp(): %s\t%s" % sys.exc_info()[:2])
+            main_logger.error("Unexpected error during %s operation: %s\t%s" % (cmd, sys.exc_info()[:2]))
             sys.exit(3)
         else:
             if stup[1] == '':
                 snmpr = stup[0].strip('\n').split('\n')
                 # elif timeout self.ping(self.ipaddr)
             else:
-                main_logger.warning("Unexpected error during %s operation" % (cmd))
-                main_logger.debug("Unexpected error during %s operation: ### %s ###" % (cmd, str(stup)))
+                main_logger.error("Unexpected error during %s operation: %s" % (cmd, str(stup)))
                 sys.exit(3)
         return snmpr
 
@@ -466,8 +477,7 @@ class Router(threading.Thread):
             ptup = subprocess.Popen(['ping', '-i', '0.2', '-w', '2', '-c', '500', ipaddr, '-q'], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE).communicate()
         except:
-            logging.warning("Unexpected error during ping test")
-            logging.debug("Unexpected error - Popen function ping(): %s\t%s" % sys.exc_info()[:2])
+            logging.error("Unexpected error during ping test [Err no.1]: %s\t%s" % sys.exc_info()[:2])
             sys.exit(3)
         else:
             if ptup[1] == '':
@@ -476,22 +486,19 @@ class Router(threading.Thread):
                     if int(n.group(1)) == 0:
                         pingr = 0
                     elif 0 < int(n.group(1)) < 100:
-                        logging.warning("Operation halted. Packet loss detected")
-                        sys.exit(3)
+                        logging.error("Operation halted. Packet loss detected")
+                        sys.exit(1)
                     elif int(n.group(1)) == 100:
-                        logging.warning("Operation halted. Node unreachable")
-                        sys.exit(3)
+                        logging.error("Operation halted. Node unreachable")
+                        sys.exit(1)
                     else:
-                        logging.warning("Unexpected error during ping test")
-                        logging.debug("Unexpected regex error during ping test: ### %s ###" % (str(n)))
+                        logging.error("Unexpected error during ping test [Err no.2]: %s" % (str(n)))
                         sys.exit(3)
                 else:
-                    logging.warning("Unexpected error during ping test")
-                    logging.debug("Unexpected regex error during ping test: ### %s ###" % (str(ptup[0])))
+                    logging.error("Unexpected error during ping test [Err no.3]: %s" % (str(ptup[0])))
                     sys.exit(3)
             else:
-                logging.warning("Unexpected error during ping test")
-                logging.debug("Unexpected error during ping test: ### %s ###" % (str(ptup)))
+                logging.debug("Unexpected error during ping test [Err no.4]: %s" % (str(ptup)))
                 sys.exit(3)
         return pingr
 
@@ -540,7 +547,7 @@ def get_pw(c=3):
                 main_logger.warning('SSH connection timeout %s' % sshexc)
                 sys.exit(1)
             except:
-                main_logger.error('Unexpected error: %s\t%s' % sys.exc_info()[:2])
+                main_logger.error('Unexpected error while verifying user password: %s\t%s' % sys.exc_info()[:2])
                 sys.exit(1)
             else:
                 ssh.close()
@@ -587,6 +594,7 @@ def main(args):
         if not bool:
             sys.exit(1)
         else:
+            print "Authentication successful"
             main_logger.info("Authentication successful")
     lastChanged = ""
     while True:
