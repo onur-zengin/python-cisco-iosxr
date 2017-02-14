@@ -7,8 +7,10 @@ import time
 import subprocess
 import sys
 import select
+import logging
+from logging import handlers
 
-
+"""
 if __name__ == '__main__':
     f = subprocess.Popen(['tail','-F','pniMonitor.log'], stdout=subprocess.PIPE,stderr=subprocess.PIPE)
     p = select.poll()
@@ -19,47 +21,22 @@ if __name__ == '__main__':
         time.sleep(1)
 
 """
-class _sendemail(object):
-    sen = 'PNI Monitor <no-reply@automation.skycdp.com>'
-    # rec = ['DL-ContentDeliveryPlatform@sky.uk']
-    rec = ['onur.zengin@bskyb.com']
-
-    def frmttr(self, format='txt'): #format: 'html' / 'txt'
-        with open('pniMonitor.log') as logs:
-            loglines = [line.strip('\n') for line in logs.readlines()]
-        attachment = ''
-        if format == 'html':
-            attachment = 'attachment.html'
-        elif format == 'txt':
-            for i in loglines:
-                attachment += i+'\n'
-        return attachment
 
 
-    def mssg(self): #"type:'mixed' / 'alternative' / 'related'"
-        message = MIMEMultipart('mixed')
-        message['From'] = self.sen
-        message['To'] = ",".join(self.rec)
-        message['Subject'] = 'PNI Monitor | %s | %s' % (severity, log_message)
-        with open(self.frmttr('html'),"r") as f:
-            p1 = MIMEText(f.read(),'html')
-        #with open(self.frmttr('txt'),"r") as f:
-            # #	p2 = MIMEText(f.read(),'plain')
-        message.attach(p1)
-        message.attach(p1)
-        return message
+main_logger = logging.getLogger(__name__)
+main_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
+main_fh = logging.StreamHandler()
+#main_fh = handlers.TimedRotatingFileHandler('pniMonitor.log', when='midnight', backupCount=30)
 
-    def send(self):
-        message = self.mssg()
-        try:
-            smtpObj = smtplib.SMTP('localhost')
-            smtpObj.sendmail(self.sen,self.rec,message.as_string())
-            smtpObj.quit()
-            print "Done."
-        except:
-            print "Failed."
+main_logger.setLevel(logging.CRITICAL)
+main_logger.addHandler(main_fh)
+
+
 
 if __name__ == '__main__':
-    email = Sendemail()
-    message = email.send()
-"""
+    main_logger.info('This is info')
+    main_logger.debug('This is debug')
+    main_logger.warning('this is warning')
+    main_logger.error('this is error')
+    main_logger.critical('this is critical')
+

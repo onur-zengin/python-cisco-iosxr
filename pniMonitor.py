@@ -93,6 +93,7 @@ class Router(threading.Thread):
             except IOError:
                 main_logger.info("Discovery file(s) could not be located. Initializing node discovery")
                 disc = self.discovery(self.ipaddr)
+        main_logger.info("Discovery data loaded")
         main_logger.debug("DISC successfully loaded: %s" % disc)
         self.pni_interfaces = [int for int in disc if disc[int]['type'] == 'pni']
         self.cdn_interfaces = [int for int in disc if disc[int]['type'] == 'cdn']
@@ -108,11 +109,13 @@ class Router(threading.Thread):
         try:
             ipaddr = socket.gethostbyname(node)
         except socket.gaierror as gaierr:
-            main_logger.warning("Operation halted: %s" % (str(gaierr)))
+            if 'Name or service not known' in gaierr:
+                main_logger.error("Operation halted. Unknown host: %s" % gaierr)
+            else:
+                main_logger.error("Operation halted: %s" % gaierr)
             sys.exit(3)
         except:
-            main_logger.warning("Unexpected error while resolving hostname")
-            main_logger.debug("Unexpected error while resolving hostname: %s\t%s" % sys.exc_info()[:2])
+            main_logger.error("Operation halted. Unexpected error while resolving hostname: %s\t%s" % sys.exc_info()[:2])
             sys.exit(3)
         return ipaddr
 
@@ -176,7 +179,7 @@ class Router(threading.Thread):
         try:
             ptup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
-            main_logger.warning("Unexpected error - Popen function probe(): %s\t%s" % sys.exc_info()[:2])
+            main_logger.error("Operation halted. Unexpected error in function probe(): %s\t%s" % sys.exc_info()[:2])
             sys.exit(3)
         else:
             if ptup[1] == '':
@@ -184,7 +187,7 @@ class Router(threading.Thread):
             elif "No such file or directory" in ptup[1]:
                 main_logger.info("New node detected")
             else:
-                main_logger.warning("Unexpected output in the probe() function" % (str(ptup)))
+                main_logger.error("Operation halted. Unexpected output in the probe() function" % (str(ptup)))
                 sys.exit(3)
         finally:
             raw_acl_status = self._ssh(ipaddr, ["sh access-lists %s usage pfilter loc all" % self.acl_name])
@@ -554,7 +557,7 @@ def main(args):
     frequency = 20
     risk_factor = 95
     loglevel = 'INFO'
-    email_alert_severity = 'WARNING'
+    email_alert_severity = 'ERROR'
     acl_name = 'CDPautomation_RhmUdpBlock'
     pni_interface_tag = 'CDPautomation_PNI'
     cdn_interface_tag = 'CDPautomation_CDN'
@@ -613,7 +616,7 @@ def main(args):
                             main_logger.info('Inventory file has been updated')
                         inventory_file = arg
                     elif opt == 'loglevel':
-                        if arg.lower() in ('info', 'warning', 'debug', 'critical', 'error'):
+                        if arg.lower() in ('debug', 'info', 'warning', 'error', 'critical'):
                             if loglevel != arg.upper():
                                 main_logger.info('Loglevel has been updated: %s' % arg.upper())
                             loglevel = arg.upper()
@@ -625,7 +628,7 @@ def main(args):
                                 main_logger.warning('Invalid value specified for loglevel. Resetting to last known '
                                                     'good configuration: %s' % loglevel)
                     elif opt == 'email_alert_severity':
-                        if arg.lower() in ('warning', 'critical', 'error'):
+                        if arg.lower() in ('warning', 'error', 'critical'):
                             if email_alert_severity != arg.upper():
                                 main_logger.info('Email alert severity has been updated: %s' % arg.upper())
                             email_alert_severity = arg.upper()
@@ -789,10 +792,10 @@ def main(args):
                 else:
                     dswitch = False
             except IOError as ioerr:
-                main_logger.error('%s. Exiting.' % ioerr)
+                main_logger.critical('%s. Exiting.' % ioerr)
                 sys.exit(1)
             except OSError as oserr:
-                main_logger.error('%s. Exiting.' % oserr)
+                main_logger.critical('%s. Exiting.' % oserr)
                 sys.exit(1)
             else:
                 threads = []
