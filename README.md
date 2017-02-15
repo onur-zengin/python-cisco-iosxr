@@ -2,9 +2,9 @@
 
 1. DESCRIPTION
 
-    A Python code that monitors the available egress bandwidth on the external interfaces of a Cisco IOS-XR router
-    acting as an ASBR, and make selective decisions to block / unblock the ingress traffic at its source (if the traffic
-    source is directly connected).
+    A Python code that monitors the available egress bandwidth on the selected PNI interfaces and pertinent external-BGP
+    sessions of a Cisco IOS-XR router acting as an ASBR, and make selective decisions to block / unblock the ingress
+    traffic at its source (if the traffic source is directly-connected).
 
 
 2. DEPENDENCIES
@@ -150,7 +150,6 @@ TO BE COMPLETED BEFORE THE FIRST RELEASE
 - Send ssh logs to file
 - Revise the main() function (--dryrun doesn't work - test it again, inventory file and interface tags should be
     configurable at the start-time only)
-- Add ipv6 acl for RHM
 - Gzip / bz rotated log files
 - Script to trigger discovery
 - Test non Cisco / non IOSXR router in the inventory file
@@ -164,6 +163,7 @@ Send the CLI output to ?
 PLANNED FOR NEXT RELEASES
 
 - Netcool integration (might outsource this)
+- IPv6 ACL for RHM Blocking
 - Multi-ASN support
 - Dying gasp
 - Nokia 7750 support

@@ -256,6 +256,7 @@ class Router(threading.Thread):
         if prv != {} and len(prv) == len(nxt):
             for p , n in zip(sorted(prv), sorted(nxt)):
                 if n in self.pni_interfaces:
+                    disc[n]['util'] = 0
                     if nxt[n]['operStatus'] == 'up' \
                             and reduce(lambda x, y: int(x) + int(y),
                                        [nxt[n]['peerStatus_ipv4'][x][1] for x in nxt[n]['peerStatus_ipv4']
@@ -269,8 +270,10 @@ class Router(threading.Thread):
                             delta_ifOutOctets = int(nxt[n]['ifOutOctets']) - int(prv[p]['ifOutOctets'])
                             #int_util = (delta_ifOutOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
                             int_util = (delta_ifOutOctets * 8) / (delta_time * 10 ** 6)
+                            disc[n]['util'] = int_util
                             actualPniOut += int_util
                 elif n in self.cdn_interfaces:
+                    disc[n]['util'] = 0
                     if nxt[n]['operStatus'] == 'up':
                         physicalCdnIn += int(nxt[n]['ifSpeed'])
                         maxCdnIn += int(nxt[n]['ifSpeed']) * self.serving_cap / 100
