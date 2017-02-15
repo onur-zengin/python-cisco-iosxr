@@ -42,10 +42,11 @@
 
     As shown above, # character can be used to create comment lines or comment out a selected node.
 
-    The program does not - nor was seen necessary to - perform regex checks to provided node names. Hence, invalid entries
-    in the inventory file will not be ignored straight away. However they will be retried in every polling cycle and
-    then ignored due to DNS lookup failures. In the next release, it is intended to include a version check function to
-    validate the IOS-XR operating system in the remote hosts.
+    The program does not perform - nor was seen necessary to do - regex checks to the provided node names. Hence,
+    invalid entries in the inventory file will not be ignored straight away. However they will be retried in every
+    polling cycle and then ignored due to DNS lookup failures. This behaviour will be modified in the next release,
+    where the name resolution check will be accompanied by a system OS validation check and will be done only once
+    during startup.
 
     [-l <loglevel>], [--logging <loglevel>]
 
@@ -165,7 +166,8 @@ PLANNED FOR NEXT RELEASES
 - Netcool integration (might outsource this)
 - Multi-ASN support
 - Dying gasp
-- IOS-XR version check
+- Nokia 7750 support
+- IOS-XR / SROS version check
 - Per-region cdn_serving_cap setting (It is available as a Global parameter in the current release)
 - Automated discovery of new interfaces
 - Persistence of the previously recorded interface utilization data upon a new node or interface discovery

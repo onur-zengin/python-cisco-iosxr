@@ -267,7 +267,8 @@ class Router(threading.Thread):
                         if prv[p]['operStatus'] == 'up':
                             delta_time = (dt.strptime(nxt[n]['ts'], dF) - dt.strptime(prv[p]['ts'], dF)).total_seconds()
                             delta_ifOutOctets = int(nxt[n]['ifOutOctets']) - int(prv[p]['ifOutOctets'])
-                            int_util = (delta_ifOutOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
+                            #int_util = (delta_ifOutOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
+                            int_util = (delta_ifOutOctets * 8) / (delta_time * 10 ** 6)
                             actualPniOut += int_util
                 elif n in self.cdn_interfaces:
                     if nxt[n]['operStatus'] == 'up':
@@ -276,7 +277,8 @@ class Router(threading.Thread):
                         if prv[p]['operStatus'] == 'up':
                             delta_time = (dt.strptime(nxt[n]['ts'], dF) - dt.strptime(prv[p]['ts'], dF)).total_seconds()
                             delta_ifInOctets = int(nxt[n]['ifInOctets']) - int(prv[p]['ifInOctets'])
-                            int_util = (delta_ifInOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
+                            #int_util = (delta_ifInOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
+                            int_util = (delta_ifInOctets * 8) / (delta_time * 10 ** 6)
                             disc[n]['util'] = int_util
                             actualCdnIn += int_util
                         if nxt[n]['aclStatus'] == 'off':
@@ -285,7 +287,8 @@ class Router(threading.Thread):
                         elif nxt[n]['aclStatus'] == 'on':
                             blocked.append(n)
             main_logger.debug("Physical CDN Capacity: %.2f" % physicalCdnIn)
-            main_logger.debug("Serving CDN Capacity: %.2f" % maxCdnIn)
+            main_logger.debug("Max CDN Capacity (total): %.2f" % maxCdnIn)
+            main_logger.debug("Max CDN Capacity (unblocked): %.2f" % unblocked_maxCdnIn)
             main_logger.debug("Actual CDN Ingress: %.2f" % actualCdnIn)
             main_logger.debug("Usable PNI Capacity: %.2f" % usablePniOut)
             main_logger.debug("Actual PNI Egress: %.2f" % actualPniOut)
