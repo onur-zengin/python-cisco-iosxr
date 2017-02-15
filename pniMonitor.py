@@ -30,7 +30,6 @@ main_fh.setFormatter(main_formatter)
 main_logger.setLevel(logging.INFO)
 main_logger.addHandler(main_fh)
 
-
 def tstamp(format):
     if format == 'hr':
         return time.asctime()
@@ -189,7 +188,7 @@ class Router(threading.Thread):
                         pf.write(line)
                 main_logger.debug('File rotation completed')
             #.prb data will be preserved for upto 60 reads max, which provides 30 min worth of int utilisation data
-            # while running in 30 sec polling frequency
+            # while running in 30 sec polling frequency. (To be able to create graphical email updates in v2)
             lines = None
         try:
             ptup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
@@ -290,38 +289,38 @@ class Router(threading.Thread):
             main_logger.debug("Actual CDN Ingress: %.2f" % actualCdnIn)
             main_logger.debug("Usable PNI Capacity: %.2f" % usablePniOut)
             main_logger.debug("Actual PNI Egress: %.2f" % actualPniOut)
+            main_logger.debug("DISC: %s" % disc)
             if usablePniOut == 0:
                 if unblocked != []:
-                    main_logger.warning('No usable PNI capacity available. Disabling all CDN interfaces')
+                    main_logger.warning('No usable PNI egress capacity available. Disabling all CDN interfaces')
                     results, output = self._acl(ipaddr, 'block', unblocked)
                     if results == ['on' for i in range(len(unblocked))]:
                         for interface in unblocked:
-                            main_logger.info('Interface %s is now blocked' % interface)
+                            main_logger.warning('Interface %s is now blocked' % interface)
                     else:
                         main_logger.critical('Interface blocking attempt failed:\n%s' % output)
-                        # SEND THIS TO NETCOOL
                     for interface in blocked:
                         main_logger.info('Interface %s was already blocked' % interface)
                 else:
-                    main_logger.debug('No usable PNI egress capacity available. But all CDN interfaces blocked already, '
-                                  'there is nothing more to be done')
+                    main_logger.debug('No usable PNI egress capacity available. However, all CDN interfaces are '
+                                      'currently blocked. No valid actions left.')
             # We can't use actualCDNIn while calculating the risk_factor because it won't include P2P traffic
-            # and / or the CDN overflow from the other site. It is worth revisiting for Sky Germany though.
+            # and / or the CDN overflow from the other site(s). It is worth revisiting for Sky Germany though.
             elif actualPniOut / usablePniOut * 100 >= self.risk_factor:
                 if unblocked != []:
-                    main_logger.warning('The ratio of actual PNI egress traffic to available egress capacity is equal to'
-                                    ' or greater than the pre-defined Risk Factor')
+                    main_logger.warning('The ratio of actual PNI egress traffic to available egress capacity is equal '
+                                        'to or greater than the pre-defined Risk Factor')
                     results, output = self._acl(ipaddr, 'block', unblocked)
                     if results == ['on' for i in range(len(unblocked))]:
                         for interface in unblocked:
-                            main_logger.info('Interface %s is now blocked' % interface)
+                            main_logger.warning('Interface %s is now blocked' % interface)
                     else:
                         main_logger.critical('Interface blocking attempt failed:\n%s' % output)
                     for interface in blocked:
                         main_logger.info('Interface %s was already blocked' % interface)
                 else:
-                    main_logger.debug('Risk Factor hit. But all CDN interfaces blocked already, '
-                                  'there is nothing more to be done')
+                    main_logger.debug('Risk Factor hit. However, all CDN interfaces are currently blocked. No valid'
+                                      'actions left.')
             elif blocked != [] and actualPniOut / usablePniOut * 100 < self.risk_factor:
                 if maxCdnIn + actualPniOut < usablePniOut:
                     main_logger.info('Risk mitigated. Re-enabling all CDN interfaces')
@@ -361,7 +360,7 @@ class Router(threading.Thread):
     def _acl(self, ipaddr, decision, interfaces):
         results, output = [], []
         commands = ["configure", "commit", "end", "sh access-lists %s usage pfilter loc all" % self.acl_name]
-        if self.dryrun == False:
+        if self.dryrun == False: #if not self.dryrun
             if decision == 'block':
                 for interface in interfaces:
                     commands[1:1] = ["interface " + interface, "ipv4 access-group %s egress" % self.acl_name, "exit"]
@@ -378,7 +377,7 @@ class Router(threading.Thread):
                     results.append(self.acl_check(output[-1], interface, self.acl_name))
         elif self.dryrun == True:
             main_logger.info('Program operating in simulation mode. No configuration changes will be made to the '
-                                'router')
+                             'router')
             if decision == 'block':
                 for interface in interfaces:
                     main_logger.warning("%s will be blocked (simulation mode)" % interface)
@@ -498,7 +497,7 @@ class Router(threading.Thread):
                     logging.error("Unexpected error during ping test [Err no.3]: %s" % (str(ptup[0])))
                     sys.exit(3)
             else:
-                logging.debug("Unexpected error during ping test [Err no.4]: %s" % (str(ptup)))
+                logging.error("Unexpected error during ping test [Err no.4]: %s" % (str(ptup)))
                 sys.exit(3)
         return pingr
 
@@ -513,8 +512,7 @@ def usage(arg, opt=False):
             usage(arg)
             sys.exit(2)
     else:
-        print 'USAGE:\n\t%s\t[-h] [--help] [--documentation]' \
-          '\n\t\t\t[--simulation] [-r <value>]' % (arg)
+        print 'USAGE:\n\t%s\t[-h] [--help] [--documentation]' % arg
 
 
 def get_pw(c=3):
