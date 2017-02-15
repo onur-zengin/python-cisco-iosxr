@@ -341,7 +341,7 @@ class Router(threading.Thread):
                 else:
                     for value in sorted([util for util in [disc[interface]['util'] for interface in disc]], reverse=True):
                         candidate_interface = filter(lambda interface: disc[interface]['util'] == value, disc)[0]
-                        self_maxCdnIn = nxt[candidate_interface]['ifSpeed'] * self.serving_cap / 100
+                        self_maxCdnIn = int(nxt[candidate_interface]['ifSpeed']) * self.serving_cap / 100
                         if actualPniOut - actualCdnIn + unblocked_maxCdnIn + self_maxCdnIn < usablePniOut:
                             main_logger.info('Risk partially mitigated. Re-enabling one interface: %s' % candidate_interface)
                             results, output = self._acl(ipaddr, 'unblock', [candidate_interface])

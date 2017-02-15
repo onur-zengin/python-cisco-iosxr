@@ -151,9 +151,9 @@ TO BE COMPLETED BEFORE THE FIRST RELEASE
 - Revise the main() function (--dryrun doesn't work - test it again, inventory file and interface tags should be
     configurable at the start-time only)
 - Gzip / bz rotated log files
-- Script to trigger discovery
+- Provide a script to trigger interface discovery
 - Test non Cisco / non IOSXR router in the inventory file
-- Test discovery of new interface during runtime (pni & cdn)
+- Test discovery of a new interface during runtime (pni & cdn)
 - Test removal of an interface during runtime (pni & cdn)
 - Test removal of a node during runtime
 - Test non-existent acl configuration on the router
@@ -169,7 +169,7 @@ PLANNED FOR NEXT RELEASES
 - Nokia 7750 support
 - IOS-XR / SROS version check
 - Per-region cdn_serving_cap setting (It is available as a Global parameter in the current release)
-- Automated discovery of new interfaces
+- Automated discovery of new interfaces (In the current release it is manually triggered)
 - Persistence of the previously recorded interface utilization data upon a new node or interface discovery
 - Graphical email updates with interface utilisation charts
 - Directory structure (/logs, /data, /conf, etc.)
