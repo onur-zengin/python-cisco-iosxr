@@ -250,7 +250,8 @@ class Router(threading.Thread):
         prv, nxt = self.probe(ipaddr, disc)
         main_logger.debug("prev: %s" % prv)
         main_logger.debug("next: %s" % nxt)
-        actualCdnIn, physicalCdnIn, maxCdnIn, unblocked_maxCdnIn, actualPniOut, usablePniOut = 0, 0, 0, 0, 0, 0
+        actualCdnIn, physicalCdnIn, maxCdnIn, unblocked_maxCdnIn, actualPniOut, physicalPniOut, usablePniOut \
+            = 0, 0, 0, 0, 0, 0, 0
         unblocked, blocked = [], []
         dF = "%Y-%m-%d %H:%M:%S.%f"
         if prv != {} and len(prv) == len(nxt):
@@ -293,7 +294,8 @@ class Router(threading.Thread):
             main_logger.debug("Max CDN Capacity (total): %.2f" % maxCdnIn)
             main_logger.debug("Max CDN Capacity (unblocked): %.2f" % unblocked_maxCdnIn)
             main_logger.debug("Actual CDN Ingress: %.2f" % actualCdnIn)
-            main_logger.debug("Usable PNI Capacity: %.2f" % usablePniOut)
+            main_logger.debug("Physical PNI Egress: %.2f" % physicalPniOut)
+            main_logger.debug("Usable PNI Egress: %.2f" % usablePniOut)
             main_logger.debug("Actual PNI Egress: %.2f" % actualPniOut)
             main_logger.debug("DISC: %s" % disc)
             if usablePniOut == 0:
@@ -339,11 +341,17 @@ class Router(threading.Thread):
                     for interface in unblocked:
                         main_logger.info('Interface %s was already unblocked' % interface)
                 else:
-                    for value in sorted([util for util in [disc[interface]['util'] for interface in disc]], reverse=True):
+                    for value in sorted([util for util in [disc[interface]['util'] for interface in
+                                                           self.cdn_interfaces]], reverse=True):
                         candidate_interface = filter(lambda interface: disc[interface]['util'] == value, disc)[0]
                         self_maxCdnIn = int(nxt[candidate_interface]['ifSpeed']) * self.serving_cap / 100
                         if actualPniOut - actualCdnIn + unblocked_maxCdnIn + self_maxCdnIn < usablePniOut:
-                            main_logger.info('Risk partially mitigated. Re-enabling one interface: %s' % candidate_interface)
+                            if usablePniOut < physicalPniOut:
+                                main_logger.info('Risk partially mitigated. Re-enabling interface: %s' %
+                                                 candidate_interface)
+                            else:
+                                main_logger.info('Risk mitigated. Re-enabling interface: %s' %
+                                                 candidate_interface)
                             results, output = self._acl(ipaddr, 'unblock', [candidate_interface])
                             if results == ['off']:
                                 main_logger.info('Interface %s is now unblocked' % candidate_interface)
