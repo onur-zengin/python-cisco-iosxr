@@ -361,7 +361,7 @@ class Router(threading.Thread):
             else:
                 main_logger.info('_process() completed. No action taken nor was necessary.')
         elif prv == {} and len(nxt) > 0:
-            main_logger.info("New node detected. _process() module will be activated in the next polling cycle")
+            main_logger.info("New node detected. _process() function will be activated in the next polling cycle")
         elif prv != {} and len(prv) < len(nxt):
             main_logger.info("New interface discovered.")
             # There is no persistence in this release (*.prb files are removed whene a new interface is discovered)
@@ -403,35 +403,41 @@ class Router(threading.Thread):
         return results, output
 
     def _ssh(self, ipaddr, commandlist):
+        if len(commandlist) == 1:
+            mssg = 'Probing'
+        else:
+            mssg = 'Configuration'
         try:
-            ssh.connect(ipaddr, username=un, password=self.pw, timeout=3, look_for_keys=False, allow_agent=False)
+            ssh.connect(ipaddr, username=un, password=self.pw, timeout=5, look_for_keys=False, allow_agent=False)
         except KeyboardInterrupt:
             main_logger.info("Keyboard Interrupt")
             sys.exit(0)
         except paramiko.ssh_exception.AuthenticationException as auth_failure:
             ssh.close()
-            main_logger.warning(auth_failure)
+            main_logger.warning('%s - %s Failed' % (auth_failure, mssg))
             sys.exit(1)
         except paramiko.ssh_exception.NoValidConnectionsError as conn_failure:
             ssh.close()
-            main_logger.critical(conn_failure)
+            main_logger.critical('%s - %s Failed' % (conn_failure, mssg))
             sys.exit(1)
-        except paramiko.ssh_exception.SSHException as sshexc:
-            ssh.close()
-            main_logger.critical('SSH connection timeout %s' % sshexc)
-            sys.exit(1)
+        #except paramiko.ssh_exception.SSHException as sshexc:
+         #   ssh.close()
+          #  main_logger.critical('SSH connection timeout %s' % sshexc)
+           # sys.exit(1)
         except:
-            main_logger.critical('Unexpected error while connecting to the node: %s\t%s' % sys.exc_info()[:2])
+            main_logger.critical('Unexpected error while connecting to the node: %s:%s - %s Failed'
+                                 % (sys.exc_info()[:2], mssg))
             sys.exit(1)
         else:
             main_logger.debug("SSH connection successful")
             try:
                 session = ssh.invoke_shell()
             except paramiko.SSHException as ssh_exc:
-                main_logger.warning(ssh_exc)
+                main_logger.critical('%s - %s Failed' % (ssh_exc, mssg))
                 sys.exit(1)
             except:
-                main_logger.warning('Unexpected error while invoking SSH shell: %s\t%s' % sys.exc_info()[:2])
+                main_logger.critical('Unexpected error while invoking SSH shell: %s:%s - %s Failed'
+                                    % (sys.exc_info()[:2], mssg))
                 sys.exit(1)
             else:
                 main_logger.debug("SSH shell session successful")
@@ -442,7 +448,7 @@ class Router(threading.Thread):
                     try:
                         session.send(cmd + '\n')
                     except socket.error as sc_err:
-                        main_logger.warning(sc_err)
+                        main_logger.critical('%s - %s Failed' % (sc_err, mssg))
                         sys.exit(1)
                     else:
                         while not session.exit_status_ready():
@@ -458,11 +464,11 @@ class Router(threading.Thread):
                         output.append(cmd_output)
                 try:
                     session.send('exit\n')
-                except socket.error as sc_err:
-                    main_logger.warning(sc_err)
+                except socket.error:
                     ssh.close()
-                else:
+                #else:
                     #ssh.close()
+                finally:
                     main_logger.debug("SSH connection closed")
         return output[1:]
 

@@ -2,26 +2,26 @@
 
 1. DESCRIPTION
 
-    A Python code that monitors the available egress bandwidth on the selected PNI interfaces and pertinent external-BGP
+    A Python code that monitors the available egress bandwidth on the selected PNI interfaces and the pertinent eBGP
     sessions of a Cisco IOS-XR router acting as an ASBR, and make selective decisions to block / unblock the ingress
     traffic at its source (if the traffic source is directly-connected).
 
 
 2. DEPENDENCIES
 
-    Python 2.7
+    Python
     There are certain modules / functions inside the code that are only available in Python 2.7 or later releases. Any
     developer who wishes to run the code on an older Python release will have to override these functions and replace
-    them with functional equivalents available in that specific release.
+    them with functional equivalents as applicable.
 
-    Linux OS
+    OS
     The code has been written and tested solely on a Debian Linux distribution (rel 7.4). And its portability to other
-    operating systems may be limited.
+    (specifically non-Linux) operating systems may be limited.
 
     NetSNMP
-    Mib translation must be enabled in the snmp.conf file (This does not require all Cisco MIBs to be loaded on the
-    local machine).
     The code has been tested with NetSNMP rel 5.4.3.
+    MIB translation must be enabled in the snmp.conf file (This is due to the output formatting of NetSNMP with and
+    without MIB translation enabled. And does not mean vendor MIBs have to be loaded on the local machine).
 
 
 3. CONFIGURATION
@@ -129,8 +129,8 @@ as pre-defined in the configuration file, and from each router found in the inve
 
     4.3. NO ACTION
 
-7. LOGGING
 
+7. LOGGING
 
 Level	    When it’s used
 DEBUG	    Detailed information, typically of interest only when diagnosing problems.
@@ -139,7 +139,6 @@ WARNING	    An indication that something unexpected happened, or indicative of s
             ‘disk space low’). The software is still working as expected.
 ERROR	    Due to a more serious problem, the software has not been able to perform some function.
 CRITICAL	A serious error, indicating that the program itself may be unable to continue running.
-
 
 
 TO BE COMPLETED BEFORE THE FIRST RELEASE
@@ -159,20 +158,22 @@ TO BE COMPLETED BEFORE THE FIRST RELEASE
 - Test non-existent acl configuration on the router
 - Revise critical logging for interface block / unblock failures. Include interface name(s) in the alert.
 Send the CLI output to ?
+- SSH failure alerts need to indicate where exactly it failed. Probing or Configuration. And what happens to int util
+calculations when probing fails intermittently
 
-PLANNED FOR NEXT RELEASES
+PLANNED FOR FUTURE RELEASES
 
 - Netcool integration (might outsource this)
 - IPv6 ACL for RHM Blocking
 - Multi-ASN support
+- Per-region cdn_serving_cap setting (It is available as a Global parameter in the current release)
+- Automated discovery of new interfaces (In the current release it is manually triggered)
+- Persistence (of the previously recorded interface utilization data upon a new node or interface discovery)
+- Graphical email updates with interface utilisation charts
+- Ordered directory structure (/logs, /data, /conf, etc.)
 - Dying gasp
 - Nokia 7750 support
 - IOS-XR / SROS version check
-- Per-region cdn_serving_cap setting (It is available as a Global parameter in the current release)
-- Automated discovery of new interfaces (In the current release it is manually triggered)
-- Persistence of the previously recorded interface utilization data upon a new node or interface discovery
-- Graphical email updates with interface utilisation charts
-- Directory structure (/logs, /data, /conf, etc.)
-- Replace SNMP & SSH with something more convenient (eg. Netconf/RestAPI)
+- Replace SNMP & SSH with something more reliable & convenient (eg. Netconf/RestAPI)
 
 
