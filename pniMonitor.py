@@ -15,17 +15,19 @@ import paramiko
 import getpass
 from datetime import datetime as dt
 from logging import handlers
+import operator
+import gzip
 
 ssh_logger = logging.getLogger('paramiko')
 ssh_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s]: %(message)s')
-ssh_fh = handlers.TimedRotatingFileHandler('pniMonitor_ssh.log', when='midnight', backupCount=7)
+ssh_fh = handlers.TimedRotatingFileHandler('pniMonitor_ssh.log', when='midnight')
 ssh_fh.setFormatter(ssh_formatter)
 ssh_logger.addHandler(ssh_fh)
-ssh_logger.setLevel(logging.INFO)
+ssh_logger.setLevel(logging.WARNING)
 
 main_logger = logging.getLogger(__name__)
 main_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
-main_fh = handlers.TimedRotatingFileHandler('pniMonitor_main.log', when='midnight', backupCount=7)
+main_fh = handlers.TimedRotatingFileHandler('pniMonitor_main.log', when='midnight')
 main_fh.setFormatter(main_formatter)
 main_logger.setLevel(logging.INFO)
 main_logger.addHandler(main_fh)
@@ -531,6 +533,26 @@ class Router(threading.Thread):
         return pingr
 
 
+def _GzipnRotate(log_retention):
+    unzipped_logfiles = filter(lambda file: re.search(r'pniMonitor_(main|ssh).log.*[^gz]$', file),
+                               os.listdir(os.getcwd()))
+    for file in unzipped_logfiles:
+        with open(file) as ulf:
+            contents = ulf.read()
+            with gzip.open(file + '.gz','w') as zlf:
+                zlf.write(contents)
+        main_logger.info('%s compressed and saved.', file)
+        os.remove(file)
+    zipped_logfiles = {file: os.stat(file).st_mtime for file in
+                       filter(lambda file: re.search(r'pniMonitor_(main|ssh).log.*[gz]$', file),
+                              os.listdir(os.getcwd()))}
+    if len(zipped_logfiles) > int(log_retention):
+        sortedlogfiles = sorted(zipped_logfiles.items(), key=operator.itemgetter(1))
+        for file in sortedlogfiles[:(len(zipped_logfiles)-int(log_retention))]:
+            os.remove(file[0])
+            main_logger.info('%s removed.', file[0])
+
+
 def usage(arg, opt=False):
     if opt is True:
         try:
@@ -591,6 +613,7 @@ def main(args):
     frequency = 20
     risk_factor = 95
     loglevel = 'INFO'
+    log_retention = 7
     email_alert_severity = 'ERROR'
     acl_name = 'CDPautomation_RhmUdpBlock'
     pni_interface_tag = 'CDPautomation_PNI'
@@ -650,18 +673,42 @@ def main(args):
                         if inventory_file != arg:
                             main_logger.info('Inventory file has been updated')
                         inventory_file = arg
-                    elif opt == 'loglevel':
+                    elif opt == 'log_level':
                         if arg.lower() in ('debug', 'info', 'warning', 'error', 'critical'):
                             if loglevel != arg.upper():
                                 main_logger.info('Loglevel has been updated: %s' % arg.upper())
                             loglevel = arg.upper()
                         else:
                             if lastChanged == "":
-                                main_logger.warning('Invalid value specified for loglevel. Resetting to default '
+                                main_logger.warning('Invalid value specified for log_level. Resetting to default '
                                                     'setting: %s' % loglevel)
                             else:
-                                main_logger.warning('Invalid value specified for loglevel. Resetting to last known '
+                                main_logger.warning('Invalid value specified for log_level. Resetting to last known '
                                                     'good configuration: %s' % loglevel)
+                    elif opt == 'log_retention':
+                        try:
+                            arg = int(arg)
+                        except ValueError:
+                            if lastChanged == "":
+                                main_logger.warning('The value of the log_retention argument must be an integer. '
+                                                    'Resetting to default setting: %s' % log_retention)
+                            else:
+                                main_logger.warning('The value of the log_retention argument must be an integer. '
+                                                    'Resetting to last known good configuration: %s' % log_retention)
+                        else:
+                            if arg >= 0 and arg <= 90:
+                                if log_retention != arg:
+                                    main_logger.info('Log retention has been updated: %s' % arg)
+                                log_retention = arg
+                            else:
+                                if lastChanged == "":
+                                    main_logger.warning('The value of the log_retention argument must be an integer '
+                                                        'between 0 and 90. Resetting to default setting: %s'
+                                                        % log_retention)
+                                else:
+                                    main_logger.warning('The value of the log_retention argument must be an integer '
+                                                        'between 0 and 90. Resetting to last known good configuration: '
+                                                        '%s' % log_retention)
                     elif opt == 'email_alert_severity':
                         if arg.lower() in ('warning', 'error', 'critical'):
                             if email_alert_severity != arg.upper():
@@ -823,6 +870,7 @@ def main(args):
                               "IPv4 Min Prefixes: %s\n\tIPv6 Min Prefixes: %s\n\tLog Level: %s\n\tSimulation Mode: %s"
                               % (inventory_file, frequency, risk_factor, acl_name, pni_interface_tag, cdn_interface_tag,
                                  cdn_serving_cap, ipv4_min_prefixes, ipv6_min_prefixes, loglevel, dryrun))
+            _GzipnRotate(log_retention)
             try:
                 with open(inventory_file) as sf:
                     inventory = filter(lambda line: line[0] != '#', [n.strip('\n') for n in sf.readlines()])

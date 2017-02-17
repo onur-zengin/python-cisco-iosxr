@@ -149,10 +149,8 @@ TO BE COMPLETED BEFORE THE FIRST RELEASE
 - Compare int util. formula against RFC2819 (obsoletes RFC1757)
 - Test int util. of a 100G interface
 - Check mem util. after long run
-- Send ssh logs to file
 - Revise the main() function (--dryrun doesn't work - test it again, inventory file and interface tags should be
     configurable at the start-time only)
-- Gzip / bz rotated log files
 - Provide a script to trigger interface discovery
 - Test non Cisco / non IOSXR router in the inventory file
 - Test discovery of a new interface during runtime (pni & cdn)
