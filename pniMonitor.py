@@ -21,7 +21,7 @@ ssh_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s]: %(message)s')
 ssh_fh = handlers.TimedRotatingFileHandler('pniMonitor_ssh.log', when='midnight', backupCount=7)
 ssh_fh.setFormatter(ssh_formatter)
 ssh_logger.addHandler(ssh_fh)
-ssh_logger.setLevel(logging.WARNING)
+ssh_logger.setLevel(logging.INFO)
 
 main_logger = logging.getLogger(__name__)
 main_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
@@ -407,10 +407,10 @@ class Router(threading.Thread):
     def _ssh(self, ipaddr, commandlist):
         if len(commandlist) == 1:
             mssg = 'Probing'
-            logging.debug("message length %s %s", mssg, len(mssg))
+            main_logger.debug("message length %s %s", mssg, len(mssg))
         else:
             mssg = 'Configuration'
-            logging.debug("message length %s %s", mssg, len(mssg))
+            main_logger.debug("message length %s %s", mssg, len(mssg))
         try:
             ssh.connect(ipaddr, username=un, password=self.pw, timeout=5, look_for_keys=False, allow_agent=False)
         except KeyboardInterrupt:
