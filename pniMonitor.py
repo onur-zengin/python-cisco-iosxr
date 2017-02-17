@@ -309,7 +309,7 @@ class Router(threading.Thread):
                         for interface in unblocked:
                             main_logger.warning('Interface %s is now blocked' % interface)
                     else:
-                        main_logger.critical('Interface blocking attempt failed:\n%s' % output)
+                        main_logger.critical('Interface blocking attempt failed: %s\n%s' % (unblocked, output))
                     for interface in blocked:
                         main_logger.info('Interface %s was already blocked' % interface)
                 else:
@@ -326,7 +326,7 @@ class Router(threading.Thread):
                         for interface in unblocked:
                             main_logger.warning('Interface %s is now blocked' % interface)
                     else:
-                        main_logger.critical('Interface blocking attempt failed:\n%s' % output)
+                        main_logger.critical('Interface blocking attempt failed %s:\n%s' % (unblocked, output))
                     for interface in blocked:
                         main_logger.info('Interface %s was already blocked' % interface)
                 else:

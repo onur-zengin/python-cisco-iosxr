@@ -146,19 +146,19 @@ CRITICAL	A serious error, indicating that the program itself may be unable to co
 
 TO BE COMPLETED BEFORE THE FIRST RELEASE
 
-- Compare int util. formula against RFC2819 (obsoletes RFC1757)
-- Test int util. of a 100G interface
-- Check mem util. after long run
-- Revise the main() function (--dryrun doesn't work - test it again, inventory file and interface tags should be
-    configurable at the start-time only)
-- Provide a script to trigger interface discovery
 - Test non Cisco / non IOSXR router in the inventory file
 - Test discovery of a new interface during runtime (pni & cdn)
 - Test removal of an interface during runtime (pni & cdn)
 - Test removal of a node during runtime
 - Test non-existent acl configuration on the router
-- Revise critical logging for interface block / unblock failures. Include interface name(s) in the alert.
-Send the CLI output to ?
+- Test int util. of a 100G interface
+
+- Compare int util. formula against RFC2819 (obsoletes RFC1757)
+- Check mem util. after long run
+
+- Revise the main() function (--dryrun doesn't work - test it again, inventory file and interface tags should be
+    configurable at the start-time only)
+- Revise critical logging for interface block / unblock failures. Include interface name(s) in the alert. Done - not tested.
 - SSH failure alerts need to indicate where exactly it failed. Probing or Configuration. Done - not tested.
 - And what happens to int util calculations when probing fails intermittently - prb file doesn't get updated. Relying on the timeDelta function.
 
