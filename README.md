@@ -106,6 +106,9 @@ the inventory file is updated.
 The first release of the code do not have persistence enabled. At any time the discovery function is triggered to run,
 which should not be too frequent, it will cause the previously collected data to be lost.
 
+6. PROBING
+
+
 
 6. OPERATION
 
@@ -144,7 +147,7 @@ CRITICAL	A serious error, indicating that the program itself may be unable to co
 TO BE COMPLETED BEFORE THE FIRST RELEASE
 
 - Compare int util. formula against RFC2819 (obsoletes RFC1757)
-- Verify interface speed in a partial bundle failure
+- Test int util. of a 100G interface
 - Check mem util. after long run
 - Send ssh logs to file
 - Revise the main() function (--dryrun doesn't work - test it again, inventory file and interface tags should be
@@ -158,8 +161,8 @@ TO BE COMPLETED BEFORE THE FIRST RELEASE
 - Test non-existent acl configuration on the router
 - Revise critical logging for interface block / unblock failures. Include interface name(s) in the alert.
 Send the CLI output to ?
-- SSH failure alerts need to indicate where exactly it failed. Probing or Configuration. And what happens to int util
-calculations when probing fails intermittently
+- SSH failure alerts need to indicate where exactly it failed. Probing or Configuration. Done - not tested.
+- And what happens to int util calculations when probing fails intermittently - prb file doesn't get updated. Relying on the timeDelta function.
 
 PLANNED FOR FUTURE RELEASES
 

@@ -16,16 +16,16 @@ import getpass
 from datetime import datetime as dt
 from logging import handlers
 
-ssh_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s]: %(message)s')
-ssh_ch = logging.StreamHandler()
-ssh_ch.setFormatter(ssh_formatter)
 ssh_logger = logging.getLogger('paramiko')
-ssh_logger.addHandler(ssh_ch)
+ssh_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s]: %(message)s')
+ssh_fh = handlers.TimedRotatingFileHandler('pniMonitor_ssh.log', when='midnight', backupCount=7)
+ssh_fh.setFormatter(ssh_formatter)
+ssh_logger.addHandler(ssh_fh)
 ssh_logger.setLevel(logging.WARNING)
 
 main_logger = logging.getLogger(__name__)
 main_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s] %(threadName)-10s: %(message)s')
-main_fh = handlers.TimedRotatingFileHandler('pniMonitor.log', when='midnight', backupCount=7)
+main_fh = handlers.TimedRotatingFileHandler('pniMonitor_main.log', when='midnight', backupCount=7)
 main_fh.setFormatter(main_formatter)
 main_logger.setLevel(logging.INFO)
 main_logger.addHandler(main_fh)
@@ -99,7 +99,7 @@ class Router(threading.Thread):
         self.cdn_interfaces = [int for int in disc if disc[int]['type'] == 'cdn']
         self.interfaces = self.pni_interfaces + self.cdn_interfaces
         if self.interfaces != []:
-            main_logger.debug("Discovered interfaces: PNI %s\tCDN %s" % (self.pni_interfaces, self.cdn_interfaces))
+            main_logger.debug("Discovered interfaces: PNI %s CDN %s" % (self.pni_interfaces, self.cdn_interfaces))
             self._process(self.ipaddr, disc)
         else:
             main_logger.warning("No interfaces eligible for monitoring")
@@ -193,7 +193,7 @@ class Router(threading.Thread):
         try:
             ptup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
-            main_logger.error("Operation halted. Unexpected error in function probe(): %s\t%s" % sys.exc_info()[:2])
+            main_logger.error("Operation halted. Unexpected error in function probe(): %s:%s" % sys.exc_info()[:2])
             sys.exit(3)
         else:
             if ptup[1] == '':
@@ -269,7 +269,7 @@ class Router(threading.Thread):
                         if prv[p]['operStatus'] == 'up':
                             delta_time = (dt.strptime(nxt[n]['ts'], dF) - dt.strptime(prv[p]['ts'], dF)).total_seconds()
                             delta_ifOutOctets = int(nxt[n]['ifOutOctets']) - int(prv[p]['ifOutOctets'])
-                            #int_util = (delta_ifOutOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
+                            #int_util_prc = (delta_ifOutOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
                             int_util = (delta_ifOutOctets * 8) / (delta_time * 10 ** 6)
                             disc[n]['util'] = int_util
                             actualPniOut += int_util
@@ -281,7 +281,7 @@ class Router(threading.Thread):
                         if prv[p]['operStatus'] == 'up':
                             delta_time = (dt.strptime(nxt[n]['ts'], dF) - dt.strptime(prv[p]['ts'], dF)).total_seconds()
                             delta_ifInOctets = int(nxt[n]['ifInOctets']) - int(prv[p]['ifInOctets'])
-                            #int_util = (delta_ifInOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
+                            #int_util_prc = (delta_ifInOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
                             int_util = (delta_ifInOctets * 8) / (delta_time * 10 ** 6)
                             disc[n]['util'] = int_util
                             actualCdnIn += int_util
@@ -300,7 +300,8 @@ class Router(threading.Thread):
             main_logger.debug("DISC: %s" % disc)
             if usablePniOut == 0:
                 if unblocked != []:
-                    main_logger.warning('No usable PNI egress capacity available. Disabling all CDN interfaces')
+                    main_logger.warning('No usable PNI egress capacity available. Disabling all CDN interfaces: %s' %
+                                        unblocked)
                     results, output = self._acl(ipaddr, 'block', unblocked)
                     if results == ['on' for i in range(len(unblocked))]:
                         for interface in unblocked:
@@ -310,14 +311,14 @@ class Router(threading.Thread):
                     for interface in blocked:
                         main_logger.info('Interface %s was already blocked' % interface)
                 else:
-                    main_logger.debug('No usable PNI egress capacity available. However, all CDN interfaces are '
-                                      'currently blocked. No valid actions left.')
+                    main_logger.info('No usable PNI egress capacity available. However, all CDN interfaces are '
+                                     'currently blocked. No valid actions left.')
             # We can't use actualCDNIn while calculating the risk_factor because it won't include P2P traffic
             # and / or the CDN overflow from the other site(s). It is worth revisiting for Sky Germany though.
             elif actualPniOut / usablePniOut * 100 >= self.risk_factor:
                 if unblocked != []:
                     main_logger.warning('The ratio of actual PNI egress traffic to available egress capacity is equal '
-                                        'to or greater than the pre-defined Risk Factor')
+                                        'to or greater than the pre-defined Risk Factor. Disabling %s' % unblocked)
                     results, output = self._acl(ipaddr, 'block', unblocked)
                     if results == ['on' for i in range(len(unblocked))]:
                         for interface in unblocked:
@@ -327,17 +328,17 @@ class Router(threading.Thread):
                     for interface in blocked:
                         main_logger.info('Interface %s was already blocked' % interface)
                 else:
-                    main_logger.debug('Risk Factor hit. However, all CDN interfaces are currently blocked. No valid'
-                                      'actions left.')
+                    main_logger.info('Risk Factor hit. However, all CDN interfaces are currently blocked. No valid '
+                                     'actions left.')
             elif blocked != [] and actualPniOut / usablePniOut * 100 < self.risk_factor:
                 if maxCdnIn + actualPniOut < usablePniOut:
-                    main_logger.info('Risk mitigated. Re-enabling all CDN interfaces')
+                    main_logger.info('Risk mitigated. Re-enabling all CDN interfaces: %s' % blocked)
                     results, output = self._acl(ipaddr, 'unblock', blocked)
                     if results == ['off' for i in range(len(blocked))]:
                         for interface in blocked:
                             main_logger.info('Interface %s is now unblocked' % interface)
                     else:
-                        main_logger.critical('Interface unblocking attempt failed:\n%s' % output)
+                        main_logger.critical('Interface unblocking attempt failed: %s\n%s' % (blocked, output))
                     for interface in unblocked:
                         main_logger.info('Interface %s was already unblocked' % interface)
                 else:
@@ -356,7 +357,8 @@ class Router(threading.Thread):
                             if results == ['off']:
                                 main_logger.info('Interface %s is now unblocked' % candidate_interface)
                             else:
-                                main_logger.critical('Interface unblocking attempt failed:\n%s' % output)
+                                main_logger.critical('Interface unblocking attempt failed: %s\n%s' %
+                                                     (candidate_interface, output))
                             break
             else:
                 main_logger.info('_process() completed. No action taken nor was necessary.')
@@ -364,7 +366,7 @@ class Router(threading.Thread):
             main_logger.info("New node detected. _process() function will be activated in the next polling cycle")
         elif prv != {} and len(prv) < len(nxt):
             main_logger.info("New interface discovered.")
-            # There is no persistence in this release (*.prb files are removed whene a new interface is discovered)
+            # There is no persistence in this release (*.prb files are removed when a new interface is discovered)
             # So the elif statement is a placeholder.
             # This will be revisited in version-2 when persistence is enabled, so that _process() function can
             # continue running for the already existing interfaces.
@@ -378,14 +380,14 @@ class Router(threading.Thread):
             if decision == 'block':
                 for interface in interfaces:
                     commands[1:1] = ["interface " + interface, "ipv4 access-group %s egress" % self.acl_name, "exit"]
-                    main_logger.warning("%s will be blocked" % interface)
+                    #main_logger.warning("%s will be blocked" % interface)
                 output = self._ssh(ipaddr, commands)
                 for interface in interfaces:
                     results.append(self.acl_check(output[-1], interface, self.acl_name))
             else:
                 for interface in interfaces:
                     commands[1:1] = ["interface " + interface, "no ipv4 access-group %s egress" % self.acl_name, "exit"]
-                    main_logger.info("%s will be unblocked" % interface)
+                    #main_logger.info("%s will be unblocked" % interface)
                 output = self._ssh(ipaddr, commands)
                 for interface in interfaces:
                     results.append(self.acl_check(output[-1], interface, self.acl_name))
@@ -394,22 +396,25 @@ class Router(threading.Thread):
                              'router')
             if decision == 'block':
                 for interface in interfaces:
-                    main_logger.warning("%s will be blocked (simulation mode)" % interface)
+                    #main_logger.warning("%s will be blocked (simulation mode)" % interface)
                     results = ['on' for x in range(len(interfaces))]
             else:
                 for interface in interfaces:
-                    main_logger.info("%s will be unblocked (simulation mode)" % interface)
+                    #main_logger.info("%s will be unblocked (simulation mode)" % interface)
                     results = ['off' for x in range(len(interfaces))]
         return results, output
 
     def _ssh(self, ipaddr, commandlist):
         if len(commandlist) == 1:
             mssg = 'Probing'
+            logging.debug("message length %s %s", mssg, len(mssg))
         else:
             mssg = 'Configuration'
+            logging.debug("message length %s %s", mssg, len(mssg))
         try:
             ssh.connect(ipaddr, username=un, password=self.pw, timeout=5, look_for_keys=False, allow_agent=False)
         except KeyboardInterrupt:
+            ssh.close()
             main_logger.info("Keyboard Interrupt")
             sys.exit(0)
         except paramiko.ssh_exception.AuthenticationException as auth_failure:
@@ -420,24 +425,27 @@ class Router(threading.Thread):
             ssh.close()
             main_logger.critical('%s - %s Failed' % (conn_failure, mssg))
             sys.exit(1)
-        #except paramiko.ssh_exception.SSHException as sshexc:
-         #   ssh.close()
-          #  main_logger.critical('SSH connection timeout %s' % sshexc)
-           # sys.exit(1)
+        except paramiko.ssh_exception.SSHException as sshexc:
+            ssh.close()
+            main_logger.critical('Unexpected error while connecting to the node: %s - %s Failed' % (sshexc, mssg))
+            sys.exit(1)
         except:
-            main_logger.critical('Unexpected error while connecting to the node: %s:%s - %s Failed'
-                                 % (sys.exc_info()[:2], mssg))
+            ssh.close()
+            main_logger.critical('Unexpected error while connecting to the node: %s:%s - %s Failed', sys.exc_info()[:2],
+                                 mssg)
             sys.exit(1)
         else:
             main_logger.debug("SSH connection successful")
             try:
                 session = ssh.invoke_shell()
             except paramiko.SSHException as ssh_exc:
-                main_logger.critical('%s - %s Failed' % (ssh_exc, mssg))
+                ssh.close()
+                main_logger.critical('Unexpected error while invoking SSH shell: %s - %s Failed' % (ssh_exc, mssg))
                 sys.exit(1)
             except:
-                main_logger.critical('Unexpected error while invoking SSH shell: %s:%s - %s Failed'
-                                    % (sys.exc_info()[:2], mssg))
+                ssh.close()
+                main_logger.critical('Unexpected error while invoking SSH shell: %s:%s - %s Failed', sys.exc_info()[:2],
+                                     mssg)
                 sys.exit(1)
             else:
                 main_logger.debug("SSH shell session successful")
@@ -448,8 +456,9 @@ class Router(threading.Thread):
                     try:
                         session.send(cmd + '\n')
                     except socket.error as sc_err:
+                        ssh.close()
                         main_logger.critical('%s - %s Failed' % (sc_err, mssg))
-                        sys.exit(1)
+                        #sys.exit(1) Taking this out, otherwise we can't get cli outputs in exception scenarios
                     else:
                         while not session.exit_status_ready():
                             while session.recv_ready():
@@ -480,7 +489,7 @@ class Router(threading.Thread):
         try:
             stup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
-            main_logger.error("Unexpected error during %s operation: %s\t%s" % (cmd, sys.exc_info()[:2]))
+            main_logger.error("Unexpected error during %s operation: %s\t%s", cmd, sys.exc_info()[:2])
             sys.exit(3)
         else:
             if stup[1] == '':
@@ -496,7 +505,7 @@ class Router(threading.Thread):
             ptup = subprocess.Popen(['ping', '-i', '0.2', '-w', '2', '-c', '500', ipaddr, '-q'], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE).communicate()
         except:
-            logging.error("Unexpected error during ping test [Err no.1]: %s\t%s" % sys.exc_info()[:2])
+            logging.error("Unexpected error during ping test [Err no.1]: %s:%s" % sys.exc_info()[:2])
             sys.exit(3)
         else:
             if ptup[1] == '':
@@ -565,7 +574,7 @@ def get_pw(c=3):
                 main_logger.warning('SSH connection timeout %s' % sshexc)
                 sys.exit(1)
             except:
-                main_logger.error('Unexpected error while verifying user password: %s\t%s' % sys.exc_info()[:2])
+                main_logger.error('Unexpected error while verifying user password: %s:%s' % sys.exc_info()[:2])
                 sys.exit(1)
             else:
                 ssh.close()
