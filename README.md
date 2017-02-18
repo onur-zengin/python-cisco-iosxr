@@ -40,10 +40,10 @@ __3. CONFIGURATION__
    The inventory details (list of node names) must be provided in a text file with each node written on a separate
     line. Example:
     
-    `##inventory.txt`
-    `er12.enslo`
-    `er12.thlon`
-    `#er13.thlon`
+    ##inventory.txt
+    er12.enslo
+    er12.thlon
+    #er13.thlon
 
    As shown above, the # character can be used to create comment lines or comment out a selected node.
 
