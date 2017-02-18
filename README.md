@@ -77,14 +77,14 @@ __3. CONFIGURATION__
     default configuration settings. However, commenting out a configuration line or removing it while the program is
     running will NOT revert it back to its default configuration.
 
-   __[log_level=<INFO|WARNING|ERROR|CRITICAL|DEBUG>(default:_INFO_)]__
+   __[log_level=<_INFO_|_WARNING_|_ERROR_|_CRITICAL_|_DEBUG_>(default:_INFO_)]__
 
    The log_level can be specified as one of INFO, WARNING, DEBUG in capital letters.
     If none specified, the program will run with default level INFO.
 
    Log files saved on disk will be rotated and compressed with Gzip daily at midnight local time.
 
-   __[log_retention=<0-90>(default:_7_)]__
+   __[log_retention=<_0-90_>(default:_7_)]__
 
    The number of days the rotated log files should be kept on disk.
 
