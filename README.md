@@ -35,7 +35,7 @@ __3. CONFIGURATION__
 
   __3.1. STARTUP CONFIGURATION__
 
-  __inventory_file=[`<filename>`(_default_:`inventory.txt`)]__
+  * __inventory_file=[`<filename>`(_default_:`inventory.txt`)]__
 
    The inventory details (list of node names) __must__ be provided in a text file with each node written on a separate
     line. Example:
@@ -52,7 +52,7 @@ __3. CONFIGURATION__
     polling cycle and then ignored due to DNS lookup failures. _(This behaviour will be modified in the next release, 
     where the name resolution check will be accompanied by system OS validation during startup.)_
     
-   __pni_interface_tag=[`<string>`(_default_:`CDPautomation_PNI`)]__
+   * __pni_interface_tag=[`<string>`(_default_:`CDPautomation_PNI`)]__
 
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle interfaces of a router, when the discovery function is run.
