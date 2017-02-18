@@ -83,18 +83,11 @@ __3. CONFIGURATION__
    If started with any or all of the configuration lines missing or commented out, the program will continue with its
     default configuration settings. However, commenting out a configuration line or removing it while the program is
     running will NOT revert it back to its default configuration.
-
-   __log_level=[`<INFO|WARNING|ERROR|CRITICAL|DEBUG>`(_default_:`INFO`)]__
-
-   The log_level can be specified as one of `INFO`, `WARNING`, `ERROR`, `CRITICAL` or `DEBUG`. If none specified, the 
-    program will run with default level INFO.
-
-   Log files saved on disk will be rotated and compressed with Gzip daily at midnight local time.
-
-   __log_retention=[`<0-90>`(_default_:`7`)]__
-
-   The number of days for the rotated log files to be kept on disk.
-
+   
+   __risk_factor=[`<0-100>`(_default_:`95`)]__
+   
+   
+    
    __ipv4_min_prefixes=[`<integer>`(_default_:`0`)]__
 
    Minimum number of prefixes 'accepted' from a BGPv4 peer with unicast IPv4 AFI. Default value is '0', which means
@@ -115,6 +108,17 @@ __3. CONFIGURATION__
     is 160 Gbps due to its manually overridden bit-limit, then the cdn_serving_cap must be set to '80'. When the bit-
     limit is removed, it should be reset to a value (typically >90) that is indicative of the highest achievable
     throughput without the region being flit-limited.
+
+   __log_level=[`<INFO|WARNING|ERROR|CRITICAL|DEBUG>`(_default_:`INFO`)]__
+
+   The log_level can be specified as one of `INFO`, `WARNING`, `ERROR`, `CRITICAL` or `DEBUG`. If none specified, the 
+    program will run with default level INFO.
+
+   Log files saved on disk will be rotated and compressed with Gzip daily at midnight local time.
+
+   __log_retention=[`<0-90>`(_default_:`7`)]__
+
+   The number of days for the rotated log files to be kept on disk.
 
    __runtime=[`<integer>`(_default_:`infinite`)]__
 
@@ -157,15 +161,17 @@ __6. PROBE__
 
 __7. OPERATION__
 
-The entire decision making logic resides in a function called _process(). The main program will constantly run in the
-background (as a daemon-like process) and will recalculate the following parameters in a specific polling frequency
-as pre-defined in the configuration file - for each router found in the inventory file - simultaneously;
+The entire decision making logic resides in a function called _process(). The main function will constantly run in the
+background (as a daemon-like process) and use subThreads to recalculate the following parameters in the preferred 
+polling frequency, simultaneously for every router as found in the inventory file;
 
-   __actualCdnIn:__
-   __physicalCdnIn:__
-   __maxCdnIn:__
-   __actualPniOut:__
-   __usablePniOut:__
+   __physicalCdnIn:__   text  
+   __actualCdnIn:__     text  
+   __maxCdnIn:__ 
+   __unblockedMaxCdnIn:__  
+   __physicalPniOut:__  
+   __actualPniOut:__  
+   __usablePniOut:__  
 
   __7.1. SCENARIOS__
 
