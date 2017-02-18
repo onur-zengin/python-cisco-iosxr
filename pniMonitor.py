@@ -693,12 +693,12 @@ def main(args):
             rg = re.search(r'(\'.+\')', str(ioerr))
             if lastChanged == "":
                 main_logger.warning("'%s could not be located. The program will continue with its default settings."
-                                 "\nUse '%s -m or %s --manual to see detailed usage instructions."
-                                 % (rg.group(1)[3:], args[0], args[0]))
+                                    "\nUse '%s -m or %s --manual to see detailed usage instructions."
+                                     % (rg.group(1)[3:], args[0], args[0]))
             else:
                 main_logger.warning("'%s could not be located. The program will continue with the last known good "
-                                 "configuration.\nUse '%s -m or %s --manual to see detailed usage instructions."
-                                 % (rg.group(1)[3:], args[0], args[0]))
+                                    "configuration.\nUse '%s -m or %s --manual to see detailed usage instructions."
+                                    % (rg.group(1)[3:], args[0], args[0]))
         else:
             try:
                 for opt, arg in parameters:
@@ -882,8 +882,8 @@ def main(args):
                                              "--manual' to see detailed usage instructions." % (opt, args[0], args[0]))
             except ValueError:
                 main_logger.warning("Invalid configuration line detected and ignored. All configuration parameters must "
-                                 "be provided as key value pairs separated by an equal sign (=). Use '%s -m' or '%s "
-                                 "--manual' for more details." % (args[0], args[0]))
+                                    "be provided as key value pairs separated by an equal sign (=). Use '%s -m' or '%s "
+                                    "--manual' for more details." % (args[0], args[0]))
         finally:
             main_logger.setLevel(logging.getLevelName(loglevel))
             try:
@@ -903,7 +903,8 @@ def main(args):
             _GzipnRotate(log_retention)
             try:
                 with open(inventory_file) as sf:
-                    inventory = filter(lambda line: line[0] != '#', [n.strip('\n') for n in sf.readlines()])
+                    inventory = filter(lambda line: line[0] != '#', [n.strip('\n')
+                                                                     for n in sf.readlines() if n != '\n'])
                 if lastChanged != os.stat(inventory_file).st_mtime:
                     dswitch = True
                 else:
