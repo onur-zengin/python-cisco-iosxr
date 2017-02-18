@@ -1,41 +1,41 @@
 __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
 
-__1. DESCRIPTION__
+#__1. DESCRIPTION__
     
    A Python code that monitors the available egress bandwidth of selected PNI interfaces and status of the pertinent
     eBGP sessions on a Cisco IOS-XR router acting as an ASBR, and make selective decisions to block / unblock the 
     ingress traffic at its source if it is on a local interface (typically a CDN cache directly-connected to the router)
 
 
-__2. DEPENDENCIES__
+#__2. DEPENDENCIES__
 
-   __Python__
+   ##__Python__
    
    There are certain modules / functions inside the code that are only available in Python 2.7 or later releases. Any
     developer who wishes to run the code on an older Python release will have to override these functions and replace
     them with functional equivalents as applicable.
 
-   __OS__
+   ##__OS__
    
    The code has been written and tested solely on a Debian Linux distribution (rel 7.4). And its portability to other
     (specifically non-Linux) operating systems may be limited.
 
-   __NetSNMP__
+   ##__NetSNMP__
    
    The code has been tested with NetSNMP rel 5.4.3.
     MIB translation must be enabled in the snmp.conf file (This is due to the output formatting of NetSNMP with and
     without MIB translation enabled. And does not mean vendor MIBs have to be loaded on the local machine).
 
 
-__3. CONFIGURATION__
+#__3. CONFIGURATION__
 
    The program can optionally be run with a configuration file (`pniMonitor.conf`) that resides inside the same folder.
     If started without a configuration file or with any or all of the configuration lines missing or commented out, the 
     program will apply its default configuration settings to the missing parameter(s) and continue.
 
-  __3.1. STARTUP CONFIGURATION__
+  ##__3.1. STARTUP CONFIGURATION__
 
-  __inventory_file=[`<filename>`(_default_:`inventory.txt`)]__
+  ###__inventory_file=[`<filename>`(_default_:`inventory.txt`)]__
 
    The inventory details (list of node names) __must__ be provided in a text file with each node written on a separate
     line. Example:
@@ -52,7 +52,7 @@ __3. CONFIGURATION__
     polling cycle and then ignored due to DNS lookup failures. _(This behaviour will be modified in the next release, 
     where the name resolution check will be accompanied by system OS validation during startup.)_
     
-   __pni_interface_tag=[`<string>`(_default_:`CDPautomation_PNI`)]__
+   ###__pni_interface_tag=[`<string>`(_default_:`CDPautomation_PNI`)]__
 
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle interfaces of a router, when the discovery function is run.
@@ -60,7 +60,7 @@ __3. CONFIGURATION__
    A `no-mon` string can be used to exclude an interface from monitoring. _(This requires a manual discovery trigger
    in the current release.)_
 
-   __cdn_interface_tag=[`<string>`(_default_:`CDPautomation_CDN`)]__
+   ###__cdn_interface_tag=[`<string>`(_default_:`CDPautomation_CDN`)]__
 
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle or HundredGigabit Ethernet interfaces of a router, when the 
@@ -69,12 +69,12 @@ __3. CONFIGURATION__
    A `no-mon` string can be used to exclude an interface from monitoring. (_This requires a manual discovery trigger
    in the current release._)
     
-   __acl_name=[`<string>`(_default_:`CDPautomation_UdpRhmBlock`)]__
+   ###__acl_name=[`<string>`(_default_:`CDPautomation_UdpRhmBlock`)]__
 
    User-defined name of the IPv4 access-list as configured on the router(s). Missing ACL configuration on the router
     will trigger a `CRITICAL` alert indicating 'interface blocking attempt failure'. A user receiving this alert may ...
 
-  __3.2. RUNTIME CONFIGURATION__
+  ##__3.2. RUNTIME CONFIGURATION__
 
    The following parameters can be modified while the program is running, and any changes will be acted on accordingly
     in the next polling cycle. Invalid configurations will be ignored, accompanied with a `WARNING` alert, and the 
@@ -84,11 +84,11 @@ __3. CONFIGURATION__
     default configuration settings. However, commenting out a configuration line or removing it while the program is
     running will NOT revert it back to its default configuration.
    
-   __risk_factor=[`<0-100>`(_default_:`95`)]__
+   ###__risk_factor=[`<0-100>`(_default_:`95`)]__
    
-   
+   `actualPniOut / usablePniOut * 100`
     
-   __ipv4_min_prefixes=[`<integer>`(_default_:`0`)]__
+   ###__ipv4_min_prefixes=[`<integer>`(_default_:`0`)]__
 
    Minimum number of prefixes 'accepted' from a BGPv4 peer with unicast IPv4 AFI. Default value is '0', which means
     the PNI interface will be considered 'usable' until ALL accepted prefixes are withdrawn by the peer.
@@ -103,8 +103,8 @@ __3. CONFIGURATION__
 
    Maximum serving capacity of a CDN node relative to its wire rate. Default value is '90'.
 
-   While working with Akamai MCDN regions, this parameter must be configured to the lowest of the 'bit-cap' or 'flit-
-    limit' values. For instance; if the maximum expected throughput from a CDN region with 200 Gbps physical capacity
+   While working with Akamai MCDN regions, this parameter must be configured to the lowest of the _bit-cap_ or _flit-
+    limit_ values. For instance; if the maximum expected throughput from a CDN region with 200 Gbps physical capacity
     is 160 Gbps due to its manually overridden bit-limit, then the cdn_serving_cap must be set to '80'. When the bit-
     limit is removed, it should be reset to a value (typically >90) that is indicative of the highest achievable
     throughput without the region being flit-limited.
@@ -120,6 +120,17 @@ __3. CONFIGURATION__
 
    The number of days for the rotated log files to be kept on disk.
 
+   __email_distribution_list=[`name.surname@sky.uk,group_name@bskyb.com`(_default_:`None`)]__
+
+   The list of email addresses to be notified when an event occurs. Email addresses that are outside the @sky.uk or 
+   @bskyb.com domains will NOT be accepted. Multiple entries must be separated by a comma (`,`).
+   
+   Emails alerts will be sent stateless and will not be retried or repeated.
+   
+   __email_alert_severity=[`<WARNING|ERROR|CRITICAL>`(_default_:`ERROR`)]__
+
+   The minimum level of event severity to trigger an email alert.
+   
    __runtime=[`<integer>`(_default_:`infinite`)]__
 
    An integer value, if configured, is used to calculate the number of polling cycles left before the program terminates
