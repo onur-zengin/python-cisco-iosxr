@@ -35,7 +35,7 @@ __3. CONFIGURATION__
 
   __3.1. STARTUP CONFIGURATION__
 
-  __[inventory_file=_`<filename>`_(default:_`inventory.txt`_)]__
+  __[inventory_file=`<filename>`(_default_:`inventory.txt`)]__
 
    The inventory details (list of node names) __must__ be provided in a text file with each node written on a separate
     line. Example:
@@ -52,7 +52,7 @@ __3. CONFIGURATION__
     polling cycle and then ignored due to DNS lookup failures. _(This behaviour will be modified in the next release, 
     where the name resolution check will be accompanied by system OS validation during startup.)_
     
-   __[pni_interface_tag=_`<string>`_(default:_`CDPautomation_PNI`_)]__
+   __[pni_interface_tag=`<string>`(_default_:`CDPautomation_PNI`)]__
 
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle interfaces of a router, when the discovery function is run.
@@ -60,7 +60,7 @@ __3. CONFIGURATION__
    A `no-mon` string can be used to exclude an interface from monitoring. _(This requires a manual discovery trigger
    in the current release.)_
 
-   __[cdn_interface_tag=`<string>`(_default:_`CDPautomation_CDN`)]__
+   __[cdn_interface_tag=`<string>`(_default_:`CDPautomation_CDN`)]__
 
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle or HundredGigabit Ethernet interfaces of a router, when the 
@@ -84,18 +84,18 @@ __3. CONFIGURATION__
     default configuration settings. However, commenting out a configuration line or removing it while the program is
     running will NOT revert it back to its default configuration.
 
-   __[log_level=<_INFO_|_WARNING_|_ERROR_|_CRITICAL_|_DEBUG_>(default:_INFO_)]__
+   __[log_level=`<INFO`|`WARNING`|`ERROR`|`CRITICAL`|`DEBUG>`(_default_:`INFO`)]__
 
    The log_level can be specified as one of INFO, WARNING, DEBUG in capital letters.
     If none specified, the program will run with default level INFO.
 
    Log files saved on disk will be rotated and compressed with Gzip daily at midnight local time.
 
-   __[log_retention=<_0-90_>(default:_7_)]__
+   __[log_retention=`<0-90>`(_default_:`7`)]__
 
    The number of days the rotated log files should be kept on disk.
 
-   __[ipv4_min_prefixes=<_integer_>(default:_0_)]__
+   __[ipv4_min_prefixes=`<integer>`(_default_:`0`)]__
 
    Minimum number of prefixes 'accepted' from a BGPv4 peer with unicast IPv4 AFI. Default value is '0', which means
     the PNI interface will be considered 'usable' until ALL accepted prefixes are withdrawn by the peer.
