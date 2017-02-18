@@ -86,14 +86,14 @@ __3. CONFIGURATION__
 
    __log_level=[`<INFO|WARNING|ERROR|CRITICAL|DEBUG>`(_default_:`INFO`)]__
 
-   The log_level can be specified as one of INFO, WARNING, DEBUG in capital letters.
-    If none specified, the program will run with default level INFO.
+   The log_level can be specified as one of `INFO`, `WARNING`, `ERROR`, `CRITICAL` or `DEBUG`. If none specified, the 
+    program will run with default level INFO.
 
    Log files saved on disk will be rotated and compressed with Gzip daily at midnight local time.
 
    __log_retention=[`<0-90>`(_default_:`7`)]__
 
-   The number of days the rotated log files should be kept on disk.
+   The number of days for the rotated log files to be kept on disk.
 
    __ipv4_min_prefixes=[`<integer>`(_default_:`0`)]__
 
@@ -159,7 +159,7 @@ __7. OPERATION__
 
 The entire decision making logic resides in a function called _process(). The main program will constantly run in the
 background (as a daemon-like process) and will recalculate the following parameters in a specific polling frequency
-as pre-defined in the configuration file, and from each router found in the inventory file simultaneously;
+as pre-defined in the configuration file - for each router found in the inventory file - simultaneously;
 
    __actualCdnIn:__
    __physicalCdnIn:__
@@ -180,13 +180,13 @@ as pre-defined in the configuration file, and from each router found in the inve
 
 __8. LOGGING__
 
-Level	    When it’s used
-__DEBUG__	    Detailed information, typically of interest only when diagnosing problems.
-__INFO__	    Confirmation that things are working as expected.
+Level	    When it’s used  
+__DEBUG__	    Detailed information, typically of interest only when diagnosing problems.  
+__INFO__	    Confirmation that things are working as expected.  
 __WARNING__	    An indication that something unexpected happened, or indicative of some problem in the near future (e.g.
-            ‘disk space low’). The program is still working as expected.
-__ERROR__	    Due to a more serious problem, the software has not been able to perform some function.
-__CRITICAL__	A serious error, indicating that the program itself may be unable to continue running.
+            ‘disk space low’). The program is still working as expected.  
+__ERROR__	    Due to a more serious problem, the software has not been able to perform some function.  
+__CRITICAL__	A serious error, indicating that the program itself may be unable to continue running.  
 
 
 __TO BE COMPLETED BEFORE THE FIRST RELEASE__
