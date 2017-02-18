@@ -84,7 +84,7 @@ __3. CONFIGURATION__
     default configuration settings. However, commenting out a configuration line or removing it while the program is
     running will NOT revert it back to its default configuration.
 
-   __[log_level=`<INFO`|`WARNING`|`ERROR`|`CRITICAL`|`DEBUG>`(_default_:`INFO`)]__
+   __[log_level=`<INFO|WARNING|ERROR|CRITICAL|DEBUG>`(_default_:`INFO`)]__
 
    The log_level can be specified as one of INFO, WARNING, DEBUG in capital letters.
     If none specified, the program will run with default level INFO.
@@ -100,7 +100,7 @@ __3. CONFIGURATION__
    Minimum number of prefixes 'accepted' from a BGPv4 peer with unicast IPv4 AFI. Default value is '0', which means
     the PNI interface will be considered 'usable' until ALL accepted prefixes are withdrawn by the peer.
 
-   __[ipv6_min_prefixes=<_integer_>(default:_100_)]__
+   __[ipv6_min_prefixes=`<integer>`(_default_:`100`)]__
 
    Minimum number of prefixes 'accepted' from a BGPv6 peer with unicast IPv6 AFI. Default value is '100', which is
     intentionally set high, in order to avoid a PNI interface running with a single IPv6 stack from being considered
