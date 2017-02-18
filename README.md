@@ -211,16 +211,16 @@ __9. PLANNED FOR FUTURE RELEASES__
 
 - __P1__ Multi-ASN support
 - __P1__ IPv6 ACL for RHM Blocking
-- __P1__ Persistence (of the previously recorded interface utilization data upon a new node or interface discovery)
-- __P1__ Automated discovery of new interfaces (In the current release it is manually triggered)
-- __P2__ Netcool integration (might outsource this)
-- __P2__ Dying gasp
-- __P2__ Catch SIGTERM KILL and report in logging
+- __P1__ Netcool integration (might outsource this)
+- __P1__ Dying gasp
+- __P1__ Catch SIGTERM KILL and report in logging
+- __P2__ Persistence (of the previously recorded interface utilization data upon a new node or interface discovery)
+- __P2__ Automated discovery of new interfaces (In the current release it is manually triggered)
 - __P3__ Per-region cdn_serving_cap setting (It is available as a Global parameter in the current release)
 - __P3__ Nokia 7750 support
 - __P3__ IOS-XR / SROS version check
 - __P4__ Graphical email updates with interface utilisation charts
 - __P4__ Ordered directory structure (/logs, /data, /conf, etc.)
-- __P4__ Replace SNMP & SSH with something more reliable & convenient (eg. Netconf/RestAPI)
+- __P4__ Replace SNMP & SSH with more reliable & convenient alternatives (eg. Netconf/RestAPI)
 
 [pniMonitor.py](https://github.com/onur-zengin/laphroaig)
