@@ -2,9 +2,9 @@ __[pniMonitor.py]__
 
 __1. DESCRIPTION__
     
-   A Python code that monitors the available egress bandwidth on the selected PNI interfaces and the pertinent eBGP
-    sessions of a Cisco IOS-XR router acting as an ASBR, and make selective decisions to block / unblock the ingress
-    traffic at its source (if the traffic source is directly-connected).
+   A Python code that monitors the available egress bandwidth of the selected PNI interfaces and status of the pertinent
+   eBGP sessions on a Cisco IOS-XR router acting as an ASBR, and make selective decisions to block / unblock the 
+   ingress traffic at its source if it is on a local interface (typically a CDN cache directly-connected to the router).
 
 
 __2. DEPENDENCIES__
@@ -211,4 +211,4 @@ __9. PLANNED FOR FUTURE RELEASES__
 - Catch SIGTERM KILL and report in logging
 - Replace SNMP & SSH with something more reliable & convenient (eg. Netconf/RestAPI)
 
-
+[github](https://github.com/onur-zengin/laphroaig)
