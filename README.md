@@ -35,7 +35,7 @@ __3. CONFIGURATION__
 
   __3.1 STARTUP CONFIGURATION__
 
-  __[inventory_file=<_`filename`_>(default:_`inventory.txt`_)]__
+  __[inventory_file=_`<filename>`_(default:_`inventory.txt`_)]__
 
    The inventory details (list of node names) __must__ be provided in a text file with each node written on a separate
     line. Example:
