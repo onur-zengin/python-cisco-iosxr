@@ -242,7 +242,8 @@ class Router(threading.Thread):
         rawinput = rawinput.split('\n')
         for i in rawinput:
             if re.search(r'Interface : (%s)$' % interface, i.strip('\r').strip(' ')) != None:
-                acl = re.search(r'Output ACL : (%s)$' % acl_name, rawinput[rawinput.index(i) + 2].strip('\r').strip(' '))
+                acl = re.search(r'Output ACL : (%s)$' % acl_name,
+                                rawinput[rawinput.index(i) + 2].strip('\r').strip(' '))
                 if acl != None:
                     if acl.group(1) == acl_name:
                         result = 'on'

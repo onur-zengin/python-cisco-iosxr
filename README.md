@@ -84,22 +84,22 @@ __3. CONFIGURATION__
 
    Log files saved on disk will be rotated and compressed with Gzip daily at midnight local time.
 
-   __[log_retention=<0-90|7(_default_)>]__
+   __[log_retention=<0-90(_default_:7)>]__
 
    The number of days the rotated log files should be kept on disk.
 
-   __[ipv4_min_prefixes=<_integer_|0(_default_)>]__
+   __[ipv4_min_prefixes=<_integer_(_default_:0)>]__
 
    Minimum number of prefixes 'accepted' from a BGPv4 peer with unicast IPv4 AFI. Default value is '0', which means
     the PNI interface will be considered 'usable' until ALL accepted prefixes are withdrawn by the peer.
 
-   __[ipv6_min_prefixes=<_integer_|100(_default_)>]__
+   __[ipv6_min_prefixes=<_integer_(_default_:100)>]__
 
    Minimum number of prefixes 'accepted' from a BGPv6 peer with unicast IPv6 AFI. Default value is '100', which is
     intentionally set high, in order to avoid a PNI interface running with a single IPv6 stack from being considered
     usable.
 
-   __[cdn_serving_cap=<0-100|90(_default_)>]__
+   __[cdn_serving_cap=<0-100(_default_:90)>]__
 
    Maximum serving capacity of a CDN node relative to its wire rate. Default value is '90'.
 
