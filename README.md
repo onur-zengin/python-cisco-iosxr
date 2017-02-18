@@ -60,7 +60,7 @@ __3. CONFIGURATION__
    A `no-mon` string can be used to exclude an interface from monitoring. _(This requires a manual discovery trigger
    in the current release.)_
 
-   __[cdn_interface_tag=_`<string>`_(default:_`CDPautomation_CDN`_)]__
+   __[cdn_interface_tag=`<string>`(_default:_`CDPautomation_CDN`)]__
 
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle or HundredGigabit Ethernet interfaces of a router, when the 
@@ -69,7 +69,7 @@ __3. CONFIGURATION__
    A `no-mon` string can be used to exclude an interface from monitoring. (_This requires a manual discovery trigger
    in the current release._)
     
-   __[acl_name=`_<string>_`(default:_`CDPautomation_UdpRhmBlock`_)]__
+   __[acl_name=`<string>`(_default_:`CDPautomation_UdpRhmBlock`)]__
 
    User-defined name of the IPv4 access-list as configured on the router(s). Missing ACL configuration on the router
     will trigger a `CRITICAL` alert indicating 'interface blocking attempt failure'. A user receiving this alert may ...
