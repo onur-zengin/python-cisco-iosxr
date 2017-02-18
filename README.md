@@ -1,10 +1,10 @@
-__[pniMonitor.py]__
+__[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
 
 __1. DESCRIPTION__
     
    A Python code that monitors the available egress bandwidth of selected PNI interfaces and status of the pertinent
-   eBGP sessions on a Cisco IOS-XR router acting as an ASBR, and make selective decisions to block / unblock the 
-   ingress traffic at its source if it is on a local interface (typically a CDN cache directly-connected to the router).
+    eBGP sessions on a Cisco IOS-XR router acting as an ASBR, and make selective decisions to block / unblock the 
+    ingress traffic at its source if it is on a local interface (typically a CDN cache directly-connected to the router)
 
 
 __2. DEPENDENCIES__
@@ -59,7 +59,8 @@ __3. CONFIGURATION__
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle interfaces of a router, when the discovery function is run.
     
-   A `no-mon` string can be used to exclude an interface from monitoring.
+   A `no-mon` string can be used to exclude an interface from monitoring. (_This requires a manual discovery trigger
+   in the current release._)
 
    __[cdn_interface_tag=<_string_>(default:_CDPautomation_CDN_)]__
 
@@ -67,11 +68,13 @@ __3. CONFIGURATION__
     within the description strings of all Ethernet Bundle or HundredGigabit Ethernet interfaces of a router, when the 
     discovery function is run. It is important __NOT__ to label the interfaces that are members of an Ethernet Bundle.
     
-   A `no-mon` string can be used to exclude an interface from monitoring.
+   A `no-mon` string can be used to exclude an interface from monitoring. (_This requires a manual discovery trigger
+   in the current release._)
     
    __[acl_name=<_string_>(default:_CDPautomation_UdpRhmBlock_)]__
 
-   User-defined name of the IPv4 access-list as configured on the router(s).
+   User-defined name of the IPv4 access-list as configured on the router(s). Missing ACL configuration on the router
+    will trigger a `CRITICAL` alert indicating 'interface blocking attempt failure'. A user receiving this alert may ...
 
   __3.2 RUNTIME CONFIGURATION__
 
@@ -117,7 +120,7 @@ __3. CONFIGURATION__
 
    __[runtime=<_integer_>(default:_infinite_)]__
 
-   An integer value, if configured, is used to calculate the number polling cycles left before the program terminates
+   An integer value, if configured, is used to calculate the number of polling cycles left before the program terminates
     itself. It could be useful in scenarios where it is desired to gracefully exit the program after a certain amount
     of time, such as C-Auth password expiry.
 
@@ -137,13 +140,18 @@ __4. MULTI-THREADING__
     monitoring of the other nodes, it would otherwise constitute a greater risk to allow the program to run while the 
     reason of the delay is unknown.
 
+
 __5. NODE DISCOVERY__
 
    The program has a built-in discovery function which will be auto-triggered either during the first run or any time
     the inventory file is updated.
-
-   The first release of the code do not have persistence enabled. At any time the discovery function is triggered to 
-    run, which should not be too frequent, it will cause the previously collected data to be lost.
+    
+   Addition or removal of an interface to / from the monitoring (once the interfaces are labeled correctly) can be 
+    achieved by running the `pniDiscovery.py` script which can be found inside the same directory.
+   
+   __Note:__ The first release of the code do not have persistence enabled. At any time the discovery function is 
+   triggered to run, which should not be too frequent, it will cause the previously collected data to be lost.
+   
 
 __6. PROBE__
 
@@ -175,12 +183,12 @@ as pre-defined in the configuration file, and from each router found in the inve
 __8. LOGGING__
 
 Level	    When it’s used
-DEBUG	    Detailed information, typically of interest only when diagnosing problems.
-INFO	    Confirmation that things are working as expected.
-WARNING	    An indication that something unexpected happened, or indicative of some problem in the near future (e.g.
-            ‘disk space low’). The software is still working as expected.
-ERROR	    Due to a more serious problem, the software has not been able to perform some function.
-CRITICAL	A serious error, indicating that the program itself may be unable to continue running.
+__DEBUG__	    Detailed information, typically of interest only when diagnosing problems.
+__INFO__	    Confirmation that things are working as expected.
+__WARNING__	    An indication that something unexpected happened, or indicative of some problem in the near future (e.g.
+            ‘disk space low’). The program is still working as expected.
+__ERROR__	    Due to a more serious problem, the software has not been able to perform some function.
+__CRITICAL__	A serious error, indicating that the program itself may be unable to continue running.
 
 
 __TO BE COMPLETED BEFORE THE FIRST RELEASE__
@@ -217,4 +225,4 @@ __9. PLANNED FOR FUTURE RELEASES__
 - Catch SIGTERM KILL and report in logging
 - Replace SNMP & SSH with something more reliable & convenient (eg. Netconf/RestAPI)
 
-[github](https://github.com/onur-zengin/laphroaig)
+[pniMonitor.py](https://github.com/onur-zengin/laphroaig)
