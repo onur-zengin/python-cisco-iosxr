@@ -14,14 +14,13 @@ else:
     for opt, arg in parameters:
         if opt == 'inventory_file':
             inventory_file = arg
-
-try:
-    with open(inventory_file) as sf:
-        inv = sf.read()
-    with open(inventory_file, "w") as sf:
-        sf.write(inv)
-except IOError as ioerr:
-    print "%s could not be located." % inventory_file
-    sys.exit(0)
-except NameError:
-    print "inventory_file parameter is not defined in the %s" % conf_file
+    try:
+        with open(inventory_file) as sf:
+            inv = sf.read()
+        with open(inventory_file, "w") as sf:
+            sf.write(inv)
+    except IOError as ioerr:
+        print "%s could not be located." % inventory_file
+        sys.exit(0)
+    except NameError:
+        print "inventory_file is not defined in the %s" % conf_file

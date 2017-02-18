@@ -160,6 +160,7 @@ TO BE COMPLETED BEFORE THE FIRST RELEASE
     configurable at the start-time only)
 - Revise critical logging for interface block / unblock failures. Include interface name(s) in the alert. Done - not tested.
 - SSH failure alerts need to indicate where exactly it failed. Probing or Configuration. Done - not tested.
+- Test sys.exc_info()[:2] logging with 3 parameters
 - And what happens to int util calculations when probing fails intermittently - prb file doesn't get updated. Relying on the timeDelta function.
 
 PLANNED FOR FUTURE RELEASES

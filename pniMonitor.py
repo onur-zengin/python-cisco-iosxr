@@ -647,6 +647,39 @@ def main(args):
             print "Authentication successful"
             main_logger.info("Authentication successful")
     lastChanged = ""
+    try:
+        with open(args[0][:-3] + ".conf") as pf:
+            parameters = [tuple(i.split('=')) for i in
+                          filter(lambda line: line[0] != '#', [n.strip('\n')
+                                                               for n in pf.readlines() if n != '\n'])]
+    except IOError as ioerr:
+        rg = re.search(r'(\'.+\')', str(ioerr))
+        main_logger.warning("'%s could not be located. The program will continue with its default settings."
+                            "\nUse '%s -m or %s --manual to see detailed usage instructions."
+                            % (rg.group(1)[3:], args[0], args[0]))
+    else:
+        try:
+            for opt, arg in parameters:
+                if opt == 'inventory_file':
+                    if inventory_file != arg:
+                        main_logger.info('Inventory file has been set: %s' % arg)
+                    inventory_file = arg
+                elif opt.lower() == 'pni_interface_tag':
+                    if pni_interface_tag != arg:
+                        main_logger.info('pni_interface_tag has been set: %s' % arg)
+                    pni_interface_tag = str(arg)
+                elif opt.lower() == 'cdn_interface_tag':
+                    if cdn_interface_tag != arg:
+                        main_logger.info('cdn_interface_tag has been set: %s' % arg)
+                    cdn_interface_tag = str(arg)
+                elif opt.lower() == 'acl_name':
+                    if acl_name != arg:
+                        main_logger.info('acl_name has been set: %s' % arg)
+                    acl_name = str(arg)
+        except ValueError:
+            main_logger.warning("Invalid configuration line detected and ignored. All configuration parameters must "
+                                "be provided as key value pairs separated by an equal sign (=). Use '%s -m' or '%s "
+                                "--manual' for more details." % (args[0], args[0]))
     while True:
         try:
             with open(args[0][:-3] + ".conf") as pf:
@@ -669,11 +702,7 @@ def main(args):
         else:
             try:
                 for opt, arg in parameters:
-                    if opt == 'inventory_file':
-                        if inventory_file != arg:
-                            main_logger.info('Inventory file has been updated')
-                        inventory_file = arg
-                    elif opt == 'log_level':
+                    if opt == 'log_level':
                         if arg.lower() in ('debug', 'info', 'warning', 'error', 'critical'):
                             if loglevel != arg.upper():
                                 main_logger.info('Loglevel has been updated: %s' % arg.upper())
@@ -839,7 +868,8 @@ def main(args):
                             dryrun = False
                         else:
                             main_logger.warning('The simulation parameter takes only two arguments: "on" or "off"')
-                    elif opt.lower() in ('pni_interface_tag', 'cdn_interface_tag', 'ssh_loglevel', 'acl_name'):
+                    elif opt.lower() in ('pni_interface_tag', 'cdn_interface_tag', 'ssh_loglevel',
+                                         'acl_name', 'persistence', 'inventory_file'):
                         pass
                     else:
                         if lastChanged == "":
@@ -852,7 +882,7 @@ def main(args):
                                              "--manual' to see detailed usage instructions." % (opt, args[0], args[0]))
             except ValueError:
                 main_logger.warning("Invalid configuration line detected and ignored. All configuration parameters must "
-                                 "be provided in key value pairs separated by an equal sign (=). Use '%s -m' or '%s "
+                                 "be provided as key value pairs separated by an equal sign (=). Use '%s -m' or '%s "
                                  "--manual' for more details." % (args[0], args[0]))
         finally:
             main_logger.setLevel(logging.getLevelName(loglevel))
