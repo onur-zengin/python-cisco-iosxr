@@ -33,7 +33,7 @@ __3. CONFIGURATION__
     If started without a configuration file or with any or all of the configuration lines missing or commented out, the 
     program will apply its default configuration settings to the missing parameter(s) and continue.
 
-  __3.1 STARTUP CONFIGURATION__
+  __3.1. STARTUP CONFIGURATION__
 
   __[inventory_file=_`<filename>`_(default:_`inventory.txt`_)]__
 
@@ -52,7 +52,7 @@ __3. CONFIGURATION__
     polling cycle and then ignored due to DNS lookup failures. _(This behaviour will be modified in the next release, 
     where the name resolution check will be accompanied by system OS validation during startup.)_
     
-   __[pni_interface_tag=<_string_>(default:_CDPautomation_PNI_)]__
+   __[pni_interface_tag=_`<string>`_(default:_`CDPautomation_PNI`_)]__
 
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle interfaces of a router, when the discovery function is run.
@@ -60,7 +60,7 @@ __3. CONFIGURATION__
    A `no-mon` string can be used to exclude an interface from monitoring. _(This requires a manual discovery trigger
    in the current release.)_
 
-   __[cdn_interface_tag=<_string_>(default:_CDPautomation_CDN_)]__
+   __[cdn_interface_tag=_`<string>`_(default:_`CDPautomation_CDN`_)]__
 
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle or HundredGigabit Ethernet interfaces of a router, when the 
@@ -69,12 +69,12 @@ __3. CONFIGURATION__
    A `no-mon` string can be used to exclude an interface from monitoring. (_This requires a manual discovery trigger
    in the current release._)
     
-   __[acl_name=<_string_>(default:_CDPautomation_UdpRhmBlock_)]__
+   __[acl_name=`_<string>_`(default:_`CDPautomation_UdpRhmBlock`_)]__
 
    User-defined name of the IPv4 access-list as configured on the router(s). Missing ACL configuration on the router
     will trigger a `CRITICAL` alert indicating 'interface blocking attempt failure'. A user receiving this alert may ...
 
-  __3.2 RUNTIME CONFIGURATION__
+  __3.2. RUNTIME CONFIGURATION__
 
    The following parameters can be modified while the program is running, and any changes will be acted on accordingly
     in the next polling cycle. Invalid configurations will be ignored, accompanied with a `WARNING` alert, and the 
