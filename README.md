@@ -35,12 +35,12 @@ __3. CONFIGURATION__
 
   __3.1 STARTUP CONFIGURATION__
 
-  __[inventory_file=<_filename_>(default:_inventory.txt_)]__
+  __[inventory_file=<_`filename`_>(default:_`inventory.txt`_)]__
 
    The inventory details (list of node names) __must__ be provided in a text file with each node written on a separate
     line. Example:
     
-    ##inventory.txt
+    ###inventory.txt
     er12.enslo
     er12.thlon
     #er13.thlon
@@ -57,8 +57,8 @@ __3. CONFIGURATION__
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle interfaces of a router, when the discovery function is run.
     
-   A `no-mon` string can be used to exclude an interface from monitoring. (_This requires a manual discovery trigger
-   in the current release._)
+   A `no-mon` string can be used to exclude an interface from monitoring. _(This requires a manual discovery trigger
+   in the current release.)_
 
    __[cdn_interface_tag=<_string_>(default:_CDPautomation_CDN_)]__
 
@@ -136,7 +136,7 @@ __4. MULTI-THREADING__
    If for any reason a single subThread takes too long (i.e. longer than the pre-defined running frequency of the
     mainThread) to complete, than the other threads will wait. Although this may incur unintended delays to the 
     monitoring of the other nodes, it would otherwise constitute a greater risk to allow the program to run while the 
-    reason of the delay is unknown.
+    reason of the delay / hang is unknown.
 
 
 __5. NODE DISCOVERY__
