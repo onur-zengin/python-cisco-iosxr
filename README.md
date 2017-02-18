@@ -115,7 +115,7 @@ __3. CONFIGURATION__
     itself. It could be useful in scenarios where it is desired to gracefully exit the program after a certain amount
     of time, such as C-Auth password expiry.
 
-   __[simulation_mode=<on|off(_default_)>]__
+   __[simulation_mode=<_on_|_off_(_default_)>]__
 
    If switched on, node discovery and probing will continue, however no configuration changes will be made to the
     router(s).
