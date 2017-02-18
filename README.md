@@ -35,7 +35,7 @@ __3. CONFIGURATION__
 
   __3.1. STARTUP CONFIGURATION__
 
-  __[inventory_file=`<filename>`(_default_:`inventory.txt`)]__
+  __inventory_file=[`<filename>`(_default_:`inventory.txt`)]__
 
    The inventory details (list of node names) __must__ be provided in a text file with each node written on a separate
     line. Example:
@@ -52,7 +52,7 @@ __3. CONFIGURATION__
     polling cycle and then ignored due to DNS lookup failures. _(This behaviour will be modified in the next release, 
     where the name resolution check will be accompanied by system OS validation during startup.)_
     
-   __[pni_interface_tag=`<string>`(_default_:`CDPautomation_PNI`)]__
+   __pni_interface_tag=[`<string>`(_default_:`CDPautomation_PNI`)]__
 
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle interfaces of a router, when the discovery function is run.
@@ -60,7 +60,7 @@ __3. CONFIGURATION__
    A `no-mon` string can be used to exclude an interface from monitoring. _(This requires a manual discovery trigger
    in the current release.)_
 
-   __[cdn_interface_tag=`<string>`(_default_:`CDPautomation_CDN`)]__
+   __cdn_interface_tag=[`<string>`(_default_:`CDPautomation_CDN`)]__
 
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle or HundredGigabit Ethernet interfaces of a router, when the 
@@ -91,22 +91,22 @@ __3. CONFIGURATION__
 
    Log files saved on disk will be rotated and compressed with Gzip daily at midnight local time.
 
-   __[log_retention=`<0-90>`(_default_:`7`)]__
+   __log_retention=[`<0-90>`(_default_:`7`)]__
 
    The number of days the rotated log files should be kept on disk.
 
-   __[ipv4_min_prefixes=`<integer>`(_default_:`0`)]__
+   __ipv4_min_prefixes=[`<integer>`(_default_:`0`)]__
 
    Minimum number of prefixes 'accepted' from a BGPv4 peer with unicast IPv4 AFI. Default value is '0', which means
     the PNI interface will be considered 'usable' until ALL accepted prefixes are withdrawn by the peer.
 
-   __[ipv6_min_prefixes=`<integer>`(_default_:`100`)]__
+   __ipv6_min_prefixes=[`<integer>`(_default_:`100`)]__
 
    Minimum number of prefixes 'accepted' from a BGPv6 peer with unicast IPv6 AFI. Default value is '100', which is
     intentionally set high, in order to avoid a PNI interface running with a single IPv6 stack from being considered
     usable.
 
-   __[cdn_serving_cap=<_0-100_>(default:_90_)]__
+   __cdn_serving_cap=[`<0-100>`(_default_:`90`)]__
 
    Maximum serving capacity of a CDN node relative to its wire rate. Default value is '90'.
 
@@ -116,13 +116,13 @@ __3. CONFIGURATION__
     limit is removed, it should be reset to a value (typically >90) that is indicative of the highest achievable
     throughput without the region being flit-limited.
 
-   __[runtime=<_integer_>(default:_infinite_)]__
+   __runtime=[`<integer>`(_default_:`infinite`)]__
 
    An integer value, if configured, is used to calculate the number of polling cycles left before the program terminates
     itself. It could be useful in scenarios where it is desired to gracefully exit the program after a certain amount
     of time, such as C-Auth password expiry.
 
-   __[simulation_mode=<_on_|_off_>(default:_off_)]__
+   __simulation_mode=[`<on|off>`(_default_:`off`)]__
 
    If switched on, node discovery and probing will continue, however no configuration changes will be made to the
     router(s).
