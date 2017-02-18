@@ -1,46 +1,46 @@
-################################################ [pniMonitor.py] #######################################################
+[pniMonitor.py] 
 
-1. [DESCRIPTION]
-
+__1. DESCRIPTION__
+    
    A Python code that monitors the available egress bandwidth on the selected PNI interfaces and the pertinent eBGP
     sessions of a Cisco IOS-XR router acting as an ASBR, and make selective decisions to block / unblock the ingress
     traffic at its source (if the traffic source is directly-connected).
 
 
-2. [DEPENDENCIES]
+__2. DEPENDENCIES__
 
-   [Python]
+   __Python__
    There are certain modules / functions inside the code that are only available in Python 2.7 or later releases. Any
     developer who wishes to run the code on an older Python release will have to override these functions and replace
     them with functional equivalents as applicable.
 
-   [OS]
+   __OS__
    The code has been written and tested solely on a Debian Linux distribution (rel 7.4). And its portability to other
     (specifically non-Linux) operating systems may be limited.
 
-   [NetSNMP]
+   __NetSNMP__
    The code has been tested with NetSNMP rel 5.4.3.
     MIB translation must be enabled in the snmp.conf file (This is due to the output formatting of NetSNMP with and
     without MIB translation enabled. And does not mean vendor MIBs have to be loaded on the local machine).
 
 
-3. [CONFIGURATION]
+__3. CONFIGURATION__
 
    The program can optionally be run with a configuration file (pniMonitor.conf) that resides inside the same folder.
     If started with any or all of the configuration lines missing or commented out, the program will apply its default
     configuration settings to the missing parameter(s) and continue.
 
-  [3.1 STARTUP CONFIGURATION]
+  __3.1 STARTUP CONFIGURATION__
 
-   [inventory_file=<filename|inventory.txt(Default)>]
+   [inventory_file=<_filename_|inventory.txt(Default)>]
 
    The inventory details (list of node names) must be provided in a text file with each node written on a separate
     line. Example:
     
-    ### [inventory.txt] ###
-    er12.enslo
-    er12.thlon
-    #er13.thlon
+    `##inventory.txt`
+    `er12.enslo`
+    `er12.thlon`
+    `#er13.thlon`
 
    As shown above, the # character can be used to create comment lines or comment out a selected node.
 
@@ -49,13 +49,12 @@
     polling cycle and then ignored due to DNS lookup failures. This behaviour will be modified in the next release,
     where the name resolution check will be accompanied by a system OS validation check during startup.
     
-    
-   [pni_interface_tag=<random_string|CDPautomation_PNI(Default)>]
+   [pni_interface_tag=<_string_|CDPautomation_PNI(_Default_)>]
 
    A user-defined label that will be searched within the description strings of all Ethernet Bundle interfaces of a
     router, when the discovery function is run.
 
-   [cdn_interface_tag=<random_string|CDPautomation_CDN(Default)>]
+   [cdn_interface_tag=<_string_|CDPautomation_CDN_(Default)_>]
 
    A user-defined label that will be searched within the description strings of all Ethernet Bundle or HundredGigabit
     Ethernet interfaces of a router, when the discovery function is run. It is important NOT to label the interfaces
