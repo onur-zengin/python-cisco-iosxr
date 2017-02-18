@@ -9,8 +9,8 @@ __1. DESCRIPTION__
 
 __2. DEPENDENCIES__
 
-   __Python__
-   There are certain modules / functions inside the code that are only available in Python 2.7 or later releases. Any
+    __Python__
+    There are certain modules / functions inside the code that are only available in Python 2.7 or later releases. Any
     developer who wishes to run the code on an older Python release will have to override these functions and replace
     them with functional equivalents as applicable.
 
@@ -49,12 +49,12 @@ __3. CONFIGURATION__
     polling cycle and then ignored due to DNS lookup failures. This behaviour will be modified in the next release,
     where the name resolution check will be accompanied by a system OS validation check during startup.
     
-   [pni_interface_tag=<_string_|CDPautomation_PNI(_Default_)>]
+   [pni_interface_tag=<_string_|CDPautomation_PNI(_default_)>]
 
    A user-defined label that will be searched within the description strings of all Ethernet Bundle interfaces of a
     router, when the discovery function is run.
 
-   [cdn_interface_tag=<_string_|CDPautomation_CDN_(Default)_>]
+   [cdn_interface_tag=<_string_|CDPautomation_CDN(_default_)>]
 
    A user-defined label that will be searched within the description strings of all Ethernet Bundle or HundredGigabit
     Ethernet interfaces of a router, when the discovery function is run. It is important NOT to label the interfaces
