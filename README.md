@@ -52,12 +52,12 @@ __3. CONFIGURATION__
     polling cycle and then ignored due to DNS lookup failures. This behaviour will be modified in the next release,
     where the name resolution check will be accompanied by a system OS validation check during startup.
     
-   __[pni_interface_tag=<_string_|CDPautomation_PNI(_default_)>]__
+   __[pni_interface_tag=<_string_>(_default_:CDPautomation_PNI)]__
 
    A user-defined label that will be searched within the description strings of all Ethernet Bundle interfaces of a
     router, when the discovery function is run.
 
-   __[cdn_interface_tag=<_string_|CDPautomation_CDN(_default_)>]__
+   __[cdn_interface_tag=<_string_CDPautomation_CDN(_default_)>]__
 
    A user-defined label that will be searched within the description strings of all Ethernet Bundle or HundredGigabit
     Ethernet interfaces of a router, when the discovery function is run. It is important NOT to label the interfaces
@@ -84,22 +84,22 @@ __3. CONFIGURATION__
 
    Log files saved on disk will be rotated and compressed with Gzip daily at midnight local time.
 
-   __[log_retention=<0-90(_default_:7)>]__
+   __[log_retention=<0-90>(_default_:7)]__
 
    The number of days the rotated log files should be kept on disk.
 
-   __[ipv4_min_prefixes=<_integer_(_default_:0)>]__
+   __[ipv4_min_prefixes=<_integer_>(_default_:0)]__
 
    Minimum number of prefixes 'accepted' from a BGPv4 peer with unicast IPv4 AFI. Default value is '0', which means
     the PNI interface will be considered 'usable' until ALL accepted prefixes are withdrawn by the peer.
 
-   __[ipv6_min_prefixes=<_integer_(_default_:100)>]__
+   __[ipv6_min_prefixes=<_integer_>(_default_:100)]__
 
    Minimum number of prefixes 'accepted' from a BGPv6 peer with unicast IPv6 AFI. Default value is '100', which is
     intentionally set high, in order to avoid a PNI interface running with a single IPv6 stack from being considered
     usable.
 
-   __[cdn_serving_cap=<0-100(_default_:90)>]__
+   __[cdn_serving_cap=<0-100>(_default_:90)]__
 
    Maximum serving capacity of a CDN node relative to its wire rate. Default value is '90'.
 
