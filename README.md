@@ -9,16 +9,19 @@ __1. DESCRIPTION__
 
 __2. DEPENDENCIES__
 
-    __Python__
-    There are certain modules / functions inside the code that are only available in Python 2.7 or later releases. Any
+   __Python__
+   
+   There are certain modules / functions inside the code that are only available in Python 2.7 or later releases. Any
     developer who wishes to run the code on an older Python release will have to override these functions and replace
     them with functional equivalents as applicable.
 
    __OS__
+   
    The code has been written and tested solely on a Debian Linux distribution (rel 7.4). And its portability to other
     (specifically non-Linux) operating systems may be limited.
 
    __NetSNMP__
+   
    The code has been tested with NetSNMP rel 5.4.3.
     MIB translation must be enabled in the snmp.conf file (This is due to the output formatting of NetSNMP with and
     without MIB translation enabled. And does not mean vendor MIBs have to be loaded on the local machine).
