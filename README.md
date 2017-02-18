@@ -2,7 +2,7 @@ __[pniMonitor.py]__
 
 __1. DESCRIPTION__
     
-   A Python code that monitors the available egress bandwidth of the selected PNI interfaces and status of the pertinent
+   A Python code that monitors the available egress bandwidth of selected PNI interfaces and status of the pertinent
    eBGP sessions on a Cisco IOS-XR router acting as an ASBR, and make selective decisions to block / unblock the 
    ingress traffic at its source if it is on a local interface (typically a CDN cache directly-connected to the router).
 
@@ -29,15 +29,15 @@ __2. DEPENDENCIES__
 
 __3. CONFIGURATION__
 
-   The program can optionally be run with a configuration file (pniMonitor.conf) that resides inside the same folder.
-    If started with any or all of the configuration lines missing or commented out, the program will apply its default
-    configuration settings to the missing parameter(s) and continue.
+   The program can optionally be run with a configuration file (`pniMonitor.conf`) that resides inside the same folder.
+    If started without a configuration file or with any or all of the configuration lines missing or commented out, the 
+    program will apply its default configuration settings to the missing parameter(s) and continue.
 
   __3.1 STARTUP CONFIGURATION__
 
   __[inventory_file=<_filename_>(default:_inventory.txt_)]__
 
-   The inventory details (list of node names) must be provided in a text file with each node written on a separate
+   The inventory details (list of node names) __must__ be provided in a text file with each node written on a separate
     line. Example:
     
     ##inventory.txt
@@ -45,23 +45,29 @@ __3. CONFIGURATION__
     er12.thlon
     #er13.thlon
 
-   As shown above, the pound sign (#) can be used to create comment lines or comment out a selected node.
+   As shown above, the pound sign (`#`) can be used to create comment lines or comment out a selected node.
 
    The program does not perform - nor was seen necessary to do - regex checks to the provided node names. Hence,
-    invalid entries in the inventory file will not be ignored straight away. However they will be retried in every
-    polling cycle and then ignored due to DNS lookup failures. This behaviour will be modified in the next release,
-    where the name resolution check will be accompanied by a system OS validation check during startup.
+    invalid entries in the inventory file will not be ignored straight away, however they will be retried in every
+    polling cycle and then ignored due to DNS lookup failures. 
+    
+    This behaviour will be modified in the next release, where the name resolution check will be accompanied by system 
+    OS validation during startup.
     
    __[pni_interface_tag=<_string_>(default:_CDPautomation_PNI_)]__
 
-   A user-defined label that will be searched within the description strings of all Ethernet Bundle interfaces of a
-    router, when the discovery function is run.
+   A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
+    within the description strings of all Ethernet Bundle interfaces of a router, when the discovery function is run.
+    
+   A `no-mon` string can be used to exclude an interface from monitoring.
 
    __[cdn_interface_tag=<_string_>(default:_CDPautomation_CDN_)]__
 
-   A user-defined label that will be searched within the description strings of all Ethernet Bundle or HundredGigabit
-    Ethernet interfaces of a router, when the discovery function is run. It is important NOT to label the interfaces
-    that are members of an Ethernet Bundle.
+   A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
+    within the description strings of all Ethernet Bundle or HundredGigabit Ethernet interfaces of a router, when the 
+    discovery function is run. It is important __NOT__ to label the interfaces that are members of an Ethernet Bundle.
+    
+   A `no-mon` string can be used to exclude an interface from monitoring.
     
    __[acl_name=<_string_>(default:_CDPautomation_UdpRhmBlock_)]__
 
@@ -70,8 +76,8 @@ __3. CONFIGURATION__
   __3.2 RUNTIME CONFIGURATION__
 
    The following parameters can be modified while the program is running, and any changes will be acted on accordingly
-    in the next polling cycle. Invalid configurations will be ignored, accompanied with a WARNING alert, and the program
-    will revert back to either default (during startup) or last known good configuration.
+    in the next polling cycle. Invalid configurations will be ignored, accompanied with a `WARNING` alert, and the 
+    program will revert back to either default (during startup) or last known good configuration.
 
    If started with any or all of the configuration lines missing or commented out, the program will continue with its
     default configuration settings. However, commenting out a configuration line or removing it while the program is
