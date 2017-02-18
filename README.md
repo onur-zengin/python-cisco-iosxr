@@ -197,11 +197,11 @@ __TO BE COMPLETED BEFORE THE FIRST RELEASE__
 - Test removal of a node during runtime
 - Test non-existent acl configuration on the router
 - Test int util. of a 100G interface
+- Test the main() function and operation under simulation_mode
 
 - Compare int util. formula against RFC2819 (obsoletes RFC1757)
 - Check mem util. after long run
 
-- Revise the main() function (--dryrun doesn't work - test it again)
 - Revise critical logging for interface block / unblock failures. Include interface name(s) in the alert. Done - not tested.
 - SSH failure alerts need to indicate where exactly it failed. Probing or Configuration. Done - not tested.
 - Test sys.exc_info()[:2] logging with 3 parameters
@@ -209,18 +209,18 @@ __TO BE COMPLETED BEFORE THE FIRST RELEASE__
 
 __9. PLANNED FOR FUTURE RELEASES__
 
-- Netcool integration (might outsource this)
-- IPv6 ACL for RHM Blocking
-- Multi-ASN support
-- Per-region cdn_serving_cap setting (It is available as a Global parameter in the current release)
-- Automated discovery of new interfaces (In the current release it is manually triggered)
-- Persistence (of the previously recorded interface utilization data upon a new node or interface discovery)
-- Graphical email updates with interface utilisation charts
-- Ordered directory structure (/logs, /data, /conf, etc.)
-- Nokia 7750 support
-- IOS-XR / SROS version check
-- Dying gasp
-- Catch SIGTERM KILL and report in logging
-- Replace SNMP & SSH with something more reliable & convenient (eg. Netconf/RestAPI)
+- __P1__ Multi-ASN support
+- __P1__ IPv6 ACL for RHM Blocking
+- __P1__ Persistence (of the previously recorded interface utilization data upon a new node or interface discovery)
+- __P1__ Automated discovery of new interfaces (In the current release it is manually triggered)
+- __P2__ Netcool integration (might outsource this)
+- __P2__ Dying gasp
+- __P2__ Catch SIGTERM KILL and report in logging
+- __P3__ Per-region cdn_serving_cap setting (It is available as a Global parameter in the current release)
+- __P3__ Nokia 7750 support
+- __P3__ IOS-XR / SROS version check
+- __P4__ Graphical email updates with interface utilisation charts
+- __P4__ Ordered directory structure (/logs, /data, /conf, etc.)
+- __P4__ Replace SNMP & SSH with something more reliable & convenient (eg. Netconf/RestAPI)
 
 [pniMonitor.py](https://github.com/onur-zengin/laphroaig)
