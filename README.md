@@ -69,7 +69,7 @@ __3. CONFIGURATION__
    A `no-mon` string can be used to exclude an interface from monitoring. (_This requires a manual discovery trigger
    in the current release._)
     
-   __[acl_name=`<string>`(_default_:`CDPautomation_UdpRhmBlock`)]__
+   __acl_name=[`<string>`(_default_:`CDPautomation_UdpRhmBlock`)]__
 
    User-defined name of the IPv4 access-list as configured on the router(s). Missing ACL configuration on the router
     will trigger a `CRITICAL` alert indicating 'interface blocking attempt failure'. A user receiving this alert may ...
@@ -84,7 +84,7 @@ __3. CONFIGURATION__
     default configuration settings. However, commenting out a configuration line or removing it while the program is
     running will NOT revert it back to its default configuration.
 
-   __log_level__=[`<INFO|WARNING|ERROR|CRITICAL|DEBUG>`(_default_:`INFO`)]
+   __log_level=[`<INFO|WARNING|ERROR|CRITICAL|DEBUG>`(_default_:`INFO`)]__
 
    The log_level can be specified as one of INFO, WARNING, DEBUG in capital letters.
     If none specified, the program will run with default level INFO.
