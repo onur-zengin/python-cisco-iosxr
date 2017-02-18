@@ -49,10 +49,8 @@ __3. CONFIGURATION__
 
    The program does not perform - nor was seen necessary to do - regex checks to the provided node names. Hence,
     invalid entries in the inventory file will not be ignored straight away, however they will be retried in every
-    polling cycle and then ignored due to DNS lookup failures. 
-    
-    This behaviour will be modified in the next release, where the name resolution check will be accompanied by system 
-    OS validation during startup.
+    polling cycle and then ignored due to DNS lookup failures. _(This behaviour will be modified in the next release, 
+    where the name resolution check will be accompanied by system OS validation during startup.)_
     
    __[pni_interface_tag=<_string_>(default:_CDPautomation_PNI_)]__
 
