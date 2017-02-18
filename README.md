@@ -33,7 +33,7 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
     If started without a configuration file or with any or all of the configuration lines missing or commented out, the 
     program will apply its default configuration settings to the missing parameter(s) and continue.
 
-  ##__3.1. STARTUP CONFIGURATION__
+  ## __3.1. STARTUP CONFIGURATION__
 
   ###__inventory_file=[`<filename>`(_default_:`inventory.txt`)]__
 
