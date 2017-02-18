@@ -84,7 +84,7 @@ __3. CONFIGURATION__
     default configuration settings. However, commenting out a configuration line or removing it while the program is
     running will NOT revert it back to its default configuration.
 
-   __[log_level=`<INFO|WARNING|ERROR|CRITICAL|DEBUG>`(_default_:`INFO`)]__
+   __log_level=__[`<INFO|WARNING|ERROR|CRITICAL|DEBUG>`(_default_:`INFO`)]
 
    The log_level can be specified as one of INFO, WARNING, DEBUG in capital letters.
     If none specified, the program will run with default level INFO.
