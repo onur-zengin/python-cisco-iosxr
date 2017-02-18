@@ -155,15 +155,15 @@ as pre-defined in the configuration file, and from each router found in the inve
    __actualPniOut:__
    __usablePniOut:__
 
-   7.1. SCENARIOS
+  __7.1. SCENARIOS__
 
    NO USABLE PNI CAPACITY LEFT
 
    THE RATIO OF ACTUAL PNI EGRESS TO USABLE PNI CAPACITY IS EQUAL OR GREATER THAN THE RISK FACTOR
 
-   4.2. UNBLOCK
+   __7.2. UNBLOCK__
 
-   4.3. NO ACTION
+   __7.3. NO ACTION__
 
 
 __8. LOGGING__

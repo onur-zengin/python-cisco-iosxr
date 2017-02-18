@@ -725,7 +725,7 @@ def main(args):
                                 main_logger.warning('The value of the log_retention argument must be an integer. '
                                                     'Resetting to last known good configuration: %s' % log_retention)
                         else:
-                            if arg >= 0 and arg <= 90:
+                            if 0 <= arg <= 90:
                                 if log_retention != arg:
                                     main_logger.info('Log retention has been updated: %s' % arg)
                                 log_retention = arg
@@ -761,7 +761,7 @@ def main(args):
                                 main_logger.warning('The value of the risk_factor argument must be an integer. '
                                                     'Resetting to last known good configuration: %s' % risk_factor)
                         else:
-                            if arg >= 0 and arg <= 100:
+                            if 0 <= arg <= 100:
                                 if risk_factor != arg:
                                     main_logger.info('Risk Factor has been updated: %s' % arg)
                                 risk_factor = arg
@@ -780,12 +780,12 @@ def main(args):
                         except ValueError:
                             if lastChanged == "":
                                 main_logger.warning('The value of the frequency argument must be an integer. Resetting '
-                                                 'to default setting: %s' % frequency)
+                                                    'to default setting: %s' % frequency)
                             else:
                                 main_logger.warning('The value of the frequency argument must be an integer. Resetting '
-                                                 'to last known good configuration: %s' % frequency)
+                                                    'to last known good configuration: %s' % frequency)
                         else:
-                            if arg >= 30 and arg <= 120:
+                            if 30 <= arg <= 120:
                                 if frequency != arg:
                                     main_logger.info('Running frequency has been updated: %s' % arg)
                                 frequency = arg
@@ -798,6 +798,29 @@ def main(args):
                                     main_logger.warning('The running frequency can not be shorter than 30 or longer '
                                                         'than 120 seconds. Resetting to last known good configuration: '
                                                         '%s' % frequency)
+                    elif opt == 'cdn_serving_cap':
+                        try:
+                            arg = int(arg)
+                        except ValueError:
+                            if lastChanged == "":
+                                main_logger.warning('The value of the cdn_serving_cap must be an integer. Resetting '
+                                                    'to default setting: %s' % cdn_serving_cap)
+                            else:
+                                main_logger.warning('The value of the cdn_serving_cap must be an integer. Resetting '
+                                                    'to last known good configuration: %s' % cdn_serving_cap)
+                        else:
+                            if 0 <= arg <= 100:
+                                if cdn_serving_cap != arg:
+                                    main_logger.info('CDN Serving Cap has been updated: %s' % arg)
+                                cdn_serving_cap = arg
+                            else:
+                                if lastChanged == "":
+                                    main_logger.warning('The cdn_serving_cap must be an integer between 0 and 100. '
+                                                        'Resetting to default setting: %s' % cdn_serving_cap)
+                                else:
+                                    main_logger.warning('The cdn_serving_cap must be an integer between 0 and 100.'
+                                                        'Resetting to last known good configuration: %s'
+                                                        % cdn_serving_cap)
                     elif opt == 'runtime':
                         if arg.lower() == 'infinite':
                             if runtime != arg.lower():
@@ -808,7 +831,7 @@ def main(args):
                                 arg = int(arg)
                             except ValueError:
                                 main_logger.warning('The value of the runtime argument must be either be "infinite" or '
-                                                 'an integer')
+                                                    'an integer')
                             else:
                                 if runtime != arg:
                                     main_logger.info('Runtime has been updated: %s' % arg)
@@ -819,10 +842,10 @@ def main(args):
                         except ValueError:
                             if lastChanged == "":
                                 main_logger.warning('The value of the ipv4_min_prefixes must be an integer. Resetting '
-                                                 'to default setting: %s' % ipv4_min_prefixes)
+                                                    'to default setting: %s' % ipv4_min_prefixes)
                             else:
                                 main_logger.warning('The value of the ipv4_min_prefixes must be an integer. Resetting '
-                                                 'to last known good configuration: %s' % ipv4_min_prefixes)
+                                                    'to last known good configuration: %s' % ipv4_min_prefixes)
                         else:
                             if ipv4_min_prefixes != arg:
                                 main_logger.info('ipv4_min_prefix count has been updated: %s' % arg)
@@ -833,10 +856,10 @@ def main(args):
                         except ValueError:
                             if lastChanged == "":
                                 main_logger.warning('The value of the ipv6_min_prefixes must be an integer. Resetting '
-                                                 'to default setting: %s' % ipv6_min_prefixes)
+                                                    'to default setting: %s' % ipv6_min_prefixes)
                             else:
                                 main_logger.warning('The value of the ipv6_min_prefixes must be an integer. Resetting '
-                                                 'to last known good configuration: %s' % ipv6_min_prefixes)
+                                                    'to last known good configuration: %s' % ipv6_min_prefixes)
                         else:
                             if ipv6_min_prefixes != arg:
                                 main_logger.info('ipv6_min_prefix count has been updated: %s' % arg)
