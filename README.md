@@ -11,9 +11,9 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
 
    __Python__
    
-   There are certain modules / functions inside the code that are only available in Python 2.7 or later releases. Any
-    developer who wishes to run the code on an older Python release will have to override these functions and replace
-    them with functional equivalents as applicable.
+   The code contains certain modules / functions that are only available in Python 2.7 or later minor releases (< 3.x). 
+    Any developer who wishes to run the code on an older Python release will have to override these functions and / or
+    replace them with their functional equivalents as applicable.
 
    __OS__
    
@@ -23,17 +23,20 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
    __NetSNMP__
    
    The code has been tested with NetSNMP rel 5.4.3.
-    MIB translation must be enabled in the snmp.conf file (This is due to the output formatting of NetSNMP with and
-    without MIB translation enabled. And does not mean vendor MIBs have to be loaded on the local machine).
+    MIB translation __MUST__ be enabled in the `snmp.conf` file. This is due to the differences in output formatting of 
+    NetSNMP with and without MIB translation enabled. The program does __NOT__ require the vendor MIB files to operate.
 
 
 #__3. CONFIGURATION__
 
-   The program can optionally be run with a configuration file (`pniMonitor.conf`) that resides inside the same folder.
-    If started without a configuration file or with any or all of the configuration lines missing or commented out, the 
-    program will apply its default configuration settings to the missing parameter(s) and continue.
+   The program can optionally be run with a configuration file (`pniMonitor.conf`) that resides inside the same
+    directory with the Python file. If the program is started without a configuration file or with any or all of the 
+    configuration lines missing or commented out, it will then apply its default configuration settings for the missing 
+    parameter(s) and continue running.
 
   __3.1. STARTUP CONFIGURATION__
+  
+  The following parameters MUST be 
 
   __inventory_file=[`<filename>`(_default_:`inventory.txt`)]__
 
@@ -49,7 +52,7 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
 
    The program does not perform - nor was seen necessary to do - regex checks to the provided node names. Hence,
     invalid entries in the inventory file will not be ignored straight away, however they will be retried in every
-    polling cycle and then ignored due to DNS lookup failures. _(This behaviour will be modified in the next release, 
+    polling cycle and then ignored due to DNS lookup failures. _(This behaviour will be modified in the next releases, 
     where the name resolution check will be accompanied by system OS validation during startup.)_
     
    __pni_interface_tag=[`<string>`(_default_:`CDPautomation_PNI`)]__
@@ -57,17 +60,17 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle interfaces of a router, when the discovery function is run.
     
-   A `no-mon` string can be used to exclude an interface from monitoring. _(This requires a manual discovery trigger
-   in the current release.)_
+   Interfaces with a `no-mon` string applied will be excluded from monitoring. _(Including a new interface or 
+   excluding an existing one from monitoring requires a manual discovery trigger in the current release.)_
 
    __cdn_interface_tag=[`<string>`(_default_:`CDPautomation_CDN`)]__
 
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
-    within the description strings of all Ethernet Bundle or HundredGigabit Ethernet interfaces of a router, when the 
+    within the description strings of all Ethernet Bundle and HundredGigabit Ethernet interfaces of a router, when the 
     discovery function is run. It is important __NOT__ to label the interfaces that are members of an Ethernet Bundle.
     
-   A `no-mon` string can be used to exclude an interface from monitoring. (_This requires a manual discovery trigger
-   in the current release._)
+   Interfaces with a `no-mon` string applied will be excluded from monitoring. _(Including a new interface or 
+   excluding an existing one from monitoring requires a manual discovery trigger in the current release.)_
     
    __acl_name=[`<string>`(_default_:`CDPautomation_UdpRhmBlock`)]__
 
@@ -146,14 +149,18 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
 __4. MULTI-THREADING__
 
    The program will initiate a subThread for each node (router) specified in the inventory file, so that the interface
-    status on multiple routers can be managed simultaneously and independently.
+    status on multiple routers can be managed simultaneously and independently. 
    
-   If for any reason a single subThread takes too long (i.e. longer than the pre-defined running frequency of the
-    mainThread) to complete, than the other threads will wait. Although this may incur unintended delays to the 
-    monitoring of the other nodes, it would otherwise constitute a greater risk to allow the program to run while the 
-    reason of the delay / hang is unknown.
-
-
+   For convenience in operations and diagnostics, a subThread's name will be comprised of the hostname of the router 
+    that it is relevant to. And the thread names will be included in every log line and alert produced by the program.
+   
+   If for any reason one or more of the subThreads take too long (i.e. longer than the pre-defined running frequency of 
+    the mainThread) to complete, then the program will send out a dying gasp and terminate itself along with all active
+    subThreads. The dying gasp will be issued by the MainThread as a `CRITICAL` severity alert including the name of 
+    all subThread(s) that were detected to be in _hung state_. This behaviour is designed intentionally. Although it 
+    may incur unintended interruptions to monitoring of the PNI status, it would otherwise constitute a greater risk to
+    allow the program to continue while the reason of the delay / hang is unknown.
+    
 __5. NODE DISCOVERY__
 
    The program has a built-in discovery function which will be auto-triggered either during the first run or any time

@@ -438,11 +438,6 @@ class Router(threading.Thread):
             ssh.close()
             main_logger.error('%s - %s Failed' % (conn_failure, mssg))
             sys.exit(1)
-        except paramiko.ssh_exception.SSHException as sshexc:
-            ssh.close()
-            main_logger.error('Unexpected error while connecting to the node [_ssh() Err no.1]: %s - %s Failed' %
-                                 (sshexc, mssg))
-            sys.exit(1)
         except:
             ssh.close()
             main_logger.error('Unexpected error while connecting to the node [_ssh() Err no.2]: %s:%s - %s Failed',
@@ -452,11 +447,6 @@ class Router(threading.Thread):
             main_logger.debug("SSH connection successful")
             try:
                 session = ssh.invoke_shell()
-            except paramiko.SSHException as ssh_exc:
-                ssh.close()
-                main_logger.error('Unexpected error while invoking SSH shell [_ssh() Err no.3]: %s - %s Failed' %
-                                     (ssh_exc, mssg))
-                sys.exit(1)
             except:
                 ssh.close()
                 main_logger.error('Unexpected error while invoking SSH shell [_ssh() Err no.4]: %s:%s - %s Failed',
@@ -473,7 +463,7 @@ class Router(threading.Thread):
                     except socket.error as sc_err:
                         ssh.close()
                         main_logger.error('%s - %s Failed' % (sc_err, mssg))
-                        #sys.exit(1) Taking this out, otherwise we can't get cli outputs in exception scenarios
+                        sys.exit(1)
                     else:
                         while not session.exit_status_ready():
                             while session.recv_ready():
@@ -604,10 +594,6 @@ def get_pw(c=3):
             except paramiko.ssh_exception.NoValidConnectionsError as conn_failure:
                 ssh.close()
                 main_logger.warning(conn_failure)
-                sys.exit(1)
-            except paramiko.ssh_exception.SSHException as sshexc:
-                ssh.close()
-                main_logger.warning('SSH connection timeout %s' % sshexc)
                 sys.exit(1)
             except:
                 main_logger.error('Unexpected error while verifying user password: %s:%s' % sys.exc_info()[:2])
@@ -963,8 +949,16 @@ def main(args):
                                (pni_interface_tag, cdn_interface_tag), (ipv4_min_prefixes, ipv6_min_prefixes))
                     threads.append(t)
                     t.start()
+                hungThreads = []
                 for t in threads:
-                    t.join()
+                    t.join(frequency - 0.2)
+                    if t.isAlive():
+                        hungThreads.append(t.name)
+                if hungThreads != []:
+                    main_logger.critical("Threads detected in hung state: %r. Terminating." % hungThreads)
+                    subprocess.Popen(['kill', '-9', str(os.getpid())], stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE).communicate()
+                main_logger.info("SubThreads completed")
                 lastChanged = os.stat(inventory_file).st_mtime
                 if type(runtime) == int:
                     runtime -= 1
