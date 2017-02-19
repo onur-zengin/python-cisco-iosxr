@@ -9,18 +9,18 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
 
 #__2. DEPENDENCIES__
 
-   ##__Python__
+   __Python__
    
    There are certain modules / functions inside the code that are only available in Python 2.7 or later releases. Any
     developer who wishes to run the code on an older Python release will have to override these functions and replace
     them with functional equivalents as applicable.
 
-   ##__OS__
+   __OS__
    
    The code has been written and tested solely on a Debian Linux distribution (rel 7.4). And its portability to other
     (specifically non-Linux) operating systems may be limited.
 
-   ##__NetSNMP__
+   __NetSNMP__
    
    The code has been tested with NetSNMP rel 5.4.3.
     MIB translation must be enabled in the snmp.conf file (This is due to the output formatting of NetSNMP with and
@@ -33,9 +33,9 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
     If started without a configuration file or with any or all of the configuration lines missing or commented out, the 
     program will apply its default configuration settings to the missing parameter(s) and continue.
 
-  ## __3.1. STARTUP CONFIGURATION__
+  __3.1. STARTUP CONFIGURATION__
 
-  ###__inventory_file=[`<filename>`(_default_:`inventory.txt`)]__
+  __inventory_file=[`<filename>`(_default_:`inventory.txt`)]__
 
    The inventory details (list of node names) __must__ be provided in a text file with each node written on a separate
     line. Example:
@@ -52,7 +52,7 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
     polling cycle and then ignored due to DNS lookup failures. _(This behaviour will be modified in the next release, 
     where the name resolution check will be accompanied by system OS validation during startup.)_
     
-   ###__pni_interface_tag=[`<string>`(_default_:`CDPautomation_PNI`)]__
+   __pni_interface_tag=[`<string>`(_default_:`CDPautomation_PNI`)]__
 
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle interfaces of a router, when the discovery function is run.
@@ -60,7 +60,7 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
    A `no-mon` string can be used to exclude an interface from monitoring. _(This requires a manual discovery trigger
    in the current release.)_
 
-   ###__cdn_interface_tag=[`<string>`(_default_:`CDPautomation_CDN`)]__
+   __cdn_interface_tag=[`<string>`(_default_:`CDPautomation_CDN`)]__
 
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle or HundredGigabit Ethernet interfaces of a router, when the 
@@ -69,12 +69,12 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
    A `no-mon` string can be used to exclude an interface from monitoring. (_This requires a manual discovery trigger
    in the current release._)
     
-   ###__acl_name=[`<string>`(_default_:`CDPautomation_UdpRhmBlock`)]__
+   __acl_name=[`<string>`(_default_:`CDPautomation_UdpRhmBlock`)]__
 
    User-defined name of the IPv4 access-list as configured on the router(s). Missing ACL configuration on the router
     will trigger a `CRITICAL` alert indicating 'interface blocking attempt failure'. A user receiving this alert may ...
 
-  ##__3.2. RUNTIME CONFIGURATION__
+  __3.2. RUNTIME CONFIGURATION__
 
    The following parameters can be modified while the program is running, and any changes will be acted on accordingly
     in the next polling cycle. Invalid configurations will be ignored, accompanied with a `WARNING` alert, and the 
@@ -84,11 +84,11 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
     default configuration settings. However, commenting out a configuration line or removing it while the program is
     running will NOT revert it back to its default configuration.
    
-   ###__risk_factor=[`<0-100>`(_default_:`95`)]__
+   __risk_factor=[`<0-100>`(_default_:`95`)]__
    
    `actualPniOut / usablePniOut * 100`
     
-   ###__ipv4_min_prefixes=[`<integer>`(_default_:`0`)]__
+   __ipv4_min_prefixes=[`<integer>`(_default_:`0`)]__
 
    Minimum number of prefixes 'accepted' from a BGPv4 peer with unicast IPv4 AFI. Default value is '0', which means
     the PNI interface will be considered 'usable' until ALL accepted prefixes are withdrawn by the peer.
@@ -168,7 +168,7 @@ __5. NODE DISCOVERY__
 
 __6. PROBE__
 
-
+If an SSH connection attempt fails, SNMP won't be tried either. 
 
 __7. OPERATION__
 
@@ -219,9 +219,7 @@ __TO BE COMPLETED BEFORE THE FIRST RELEASE__
 - Compare int util. formula against RFC2819 (obsoletes RFC1757)
 - Check mem util. after long run
 
-- Revise critical logging for interface block / unblock failures. Include interface name(s) in the alert. Done - not tested.
-- SSH failure alerts need to indicate where exactly it failed. Probing or Configuration. Done - not tested.
-- Test sys.exc_info()[:2] logging with 3 parameters
+- Revise critical logging for interface block / unblock failures. Include interface name(s) in the alert. - Done. && Output? - not tested.
 - And what happens to int util calculations when probing fails intermittently - prb file doesn't get updated. Relying on the timeDelta function.
 
 __9. PLANNED FOR FUTURE RELEASES__
@@ -236,6 +234,7 @@ __9. PLANNED FOR FUTURE RELEASES__
 - __P3__ Per-region cdn_serving_cap setting (It is available as a Global parameter in the current release)
 - __P3__ Nokia 7750 support
 - __P3__ IOS-XR / SROS version check
+- __P4__ Activate node reachability checks for improved logging
 - __P4__ Graphical email updates with interface utilisation charts
 - __P4__ Ordered directory structure (/logs, /data, /conf, etc.)
 - __P4__ Replace SNMP & SSH with more reliable & convenient alternatives (eg. Netconf/RestAPI)

@@ -117,7 +117,7 @@ class Router(threading.Thread):
                 main_logger.error("Operation halted: %s" % gaierr)
             sys.exit(3)
         except:
-            main_logger.error("Operation halted. Unexpected error while resolving hostname: %s\t%s" % sys.exc_info()[:2])
+            main_logger.error("Operation halted. Unexpected error while resolving hostname: %s:%s" % sys.exc_info()[:2])
             sys.exit(3)
         return ipaddr
 
@@ -237,18 +237,6 @@ class Router(threading.Thread):
                 pf.write(str(nxt)+'\n')
         return prv, nxt
 
-    def acl_check(self, rawinput, interface, acl_name):
-        result = 'off'
-        rawinput = rawinput.split('\n')
-        for i in rawinput:
-            if re.search(r'Interface : (%s)$' % interface, i.strip('\r').strip(' ')) != None:
-                acl = re.search(r'Output ACL : (%s)$' % acl_name,
-                                rawinput[rawinput.index(i) + 2].strip('\r').strip(' '))
-                if acl != None:
-                    if acl.group(1) == acl_name:
-                        result = 'on'
-        return result
-
     def _process(self, ipaddr, disc):
         prv, nxt = self.probe(ipaddr, disc)
         main_logger.debug("prev: %s" % prv)
@@ -261,6 +249,7 @@ class Router(threading.Thread):
             for p , n in zip(sorted(prv), sorted(nxt)):
                 if n in self.pni_interfaces:
                     disc[n]['util'] = 0
+                    disc[n]['util_prc'] = 0
                     if nxt[n]['operStatus'] == 'up' \
                             and reduce(lambda x, y: int(x) + int(y),
                                        [nxt[n]['peerStatus_ipv4'][x][1] for x in nxt[n]['peerStatus_ipv4']
@@ -272,19 +261,22 @@ class Router(threading.Thread):
                         if prv[p]['operStatus'] == 'up':
                             delta_time = (dt.strptime(nxt[n]['ts'], dF) - dt.strptime(prv[p]['ts'], dF)).total_seconds()
                             delta_ifOutOctets = int(nxt[n]['ifOutOctets']) - int(prv[p]['ifOutOctets'])
-                            #int_util_prc = (delta_ifOutOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
+                            int_util_prc = (delta_ifOutOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
+                            disc[n]['util_prc'] = int_util_prc
                             int_util = (delta_ifOutOctets * 8) / (delta_time * 10 ** 6)
                             disc[n]['util'] = int_util
                             actualPniOut += int_util
                 elif n in self.cdn_interfaces:
                     disc[n]['util'] = 0
+                    disc[n]['util_prc'] = 0
                     if nxt[n]['operStatus'] == 'up':
                         physicalCdnIn += int(nxt[n]['ifSpeed'])
                         maxCdnIn += int(nxt[n]['ifSpeed']) * self.serving_cap / 100
                         if prv[p]['operStatus'] == 'up':
                             delta_time = (dt.strptime(nxt[n]['ts'], dF) - dt.strptime(prv[p]['ts'], dF)).total_seconds()
                             delta_ifInOctets = int(nxt[n]['ifInOctets']) - int(prv[p]['ifInOctets'])
-                            #int_util_prc = (delta_ifInOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
+                            int_util_prc = (delta_ifInOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
+                            disc[n]['util_prc'] = int_util_prc
                             int_util = (delta_ifInOctets * 8) / (delta_time * 10 ** 6)
                             disc[n]['util'] = int_util
                             actualCdnIn += int_util
@@ -293,13 +285,15 @@ class Router(threading.Thread):
                             unblocked_maxCdnIn += int(nxt[n]['ifSpeed']) * self.serving_cap / 100
                         elif nxt[n]['aclStatus'] == 'on':
                             blocked.append(n)
-            main_logger.debug("Physical CDN Capacity: %.2f" % physicalCdnIn)
-            main_logger.debug("Max CDN Capacity (total): %.2f" % maxCdnIn)
-            main_logger.debug("Max CDN Capacity (unblocked): %.2f" % unblocked_maxCdnIn)
-            main_logger.debug("Actual CDN Ingress: %.2f" % actualCdnIn)
-            main_logger.debug("Physical PNI Egress: %.2f" % physicalPniOut)
-            main_logger.debug("Usable PNI Egress: %.2f" % usablePniOut)
-            main_logger.debug("Actual PNI Egress: %.2f" % actualPniOut)
+            for interface in disc:
+                main_logger.debug("%s: %.2f", interface, disc[interface]['util_prc'])
+            main_logger.debug("Physical CDN Capacity: %.2f Mbps" % physicalCdnIn)
+            main_logger.debug("Max CDN Capacity (total): %.2f Mbps" % maxCdnIn)
+            main_logger.debug("Max CDN Capacity (unblocked): %.2f Mbps" % unblocked_maxCdnIn)
+            main_logger.debug("Actual CDN Ingress: %.2f Mbps" % actualCdnIn)
+            main_logger.debug("Physical PNI Egress: %.2f Mbps" % physicalPniOut)
+            main_logger.debug("Usable PNI Egress: %.2f Mbps" % usablePniOut)
+            main_logger.debug("Actual PNI Egress: %.2f Mbps" % actualPniOut)
             main_logger.debug("DISC: %s" % disc)
             if usablePniOut == 0:
                 if unblocked != []:
@@ -394,7 +388,7 @@ class Router(threading.Thread):
             # This will be revisited in version-2 when persistence is enabled, so that _process() function can
             # continue running for the already existing interfaces.
         else:
-            main_logger.critical("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (prv, nxt))
+            main_logger.error("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (prv, nxt))
 
     def _acl(self, ipaddr, decision, interfaces):
         results, output = [], []
@@ -402,26 +396,34 @@ class Router(threading.Thread):
         if decision == 'block':
             for interface in interfaces:
                 commands[1:1] = ["interface " + interface, "ipv4 access-group %s egress" % self.acl_name, "exit"]
-                # main_logger.warning("%s will be blocked" % interface)
             output = self._ssh(ipaddr, commands)
             for interface in interfaces:
                 results.append(self.acl_check(output[-1], interface, self.acl_name))
         else:
             for interface in interfaces:
                 commands[1:1] = ["interface " + interface, "no ipv4 access-group %s egress" % self.acl_name, "exit"]
-                # main_logger.info("%s will be unblocked" % interface)
             output = self._ssh(ipaddr, commands)
             for interface in interfaces:
                 results.append(self.acl_check(output[-1], interface, self.acl_name))
         return results, output
 
+    def acl_check(self, rawinput, interface, acl_name):
+        result = 'off'
+        rawinput = rawinput.split('\n')
+        for i in rawinput:
+            if re.search(r'Interface : (%s)$' % interface, i.strip('\r').strip(' ')) is not None:
+                acl = re.search(r'Output ACL : (%s)$' % acl_name,
+                                rawinput[rawinput.index(i) + 2].strip('\r').strip(' '))
+                if acl is not None:
+                    if acl.group(1) == acl_name:
+                        result = 'on'
+        return result
+
     def _ssh(self, ipaddr, commandlist):
         if len(commandlist) == 1:
-            mssg = 'Probing'
-            main_logger.debug("message length %s %s", mssg, len(mssg))
+            mssg = 'Data Collection'
         else:
-            mssg = 'Configuration'
-            main_logger.debug("message length %s %s", mssg, len(mssg))
+            mssg = 'Configuration Attempt'
         try:
             ssh.connect(ipaddr, username=un, password=self.pw, timeout=5, look_for_keys=False, allow_agent=False)
         except KeyboardInterrupt:
@@ -434,16 +436,17 @@ class Router(threading.Thread):
             sys.exit(1)
         except paramiko.ssh_exception.NoValidConnectionsError as conn_failure:
             ssh.close()
-            main_logger.critical('%s - %s Failed' % (conn_failure, mssg))
+            main_logger.error('%s - %s Failed' % (conn_failure, mssg))
             sys.exit(1)
         except paramiko.ssh_exception.SSHException as sshexc:
             ssh.close()
-            main_logger.critical('Unexpected error while connecting to the node: %s - %s Failed' % (sshexc, mssg))
+            main_logger.error('Unexpected error while connecting to the node [_ssh() Err no.1]: %s - %s Failed' %
+                                 (sshexc, mssg))
             sys.exit(1)
         except:
             ssh.close()
-            main_logger.critical('Unexpected error while connecting to the node: %s:%s - %s Failed', sys.exc_info()[:2],
-                                 mssg)
+            main_logger.error('Unexpected error while connecting to the node [_ssh() Err no.2]: %s:%s - %s Failed',
+                                 sys.exc_info()[0], sys.exc_info()[1], mssg)
             sys.exit(1)
         else:
             main_logger.debug("SSH connection successful")
@@ -451,12 +454,13 @@ class Router(threading.Thread):
                 session = ssh.invoke_shell()
             except paramiko.SSHException as ssh_exc:
                 ssh.close()
-                main_logger.critical('Unexpected error while invoking SSH shell: %s - %s Failed' % (ssh_exc, mssg))
+                main_logger.error('Unexpected error while invoking SSH shell [_ssh() Err no.3]: %s - %s Failed' %
+                                     (ssh_exc, mssg))
                 sys.exit(1)
             except:
                 ssh.close()
-                main_logger.critical('Unexpected error while invoking SSH shell: %s:%s - %s Failed', sys.exc_info()[:2],
-                                     mssg)
+                main_logger.error('Unexpected error while invoking SSH shell [_ssh() Err no.4]: %s:%s - %s Failed',
+                                     sys.exc_info()[0], sys.exc_info()[1], mssg)
                 sys.exit(1)
             else:
                 main_logger.debug("SSH shell session successful")
@@ -468,7 +472,7 @@ class Router(threading.Thread):
                         session.send(cmd + '\n')
                     except socket.error as sc_err:
                         ssh.close()
-                        main_logger.critical('%s - %s Failed' % (sc_err, mssg))
+                        main_logger.error('%s - %s Failed' % (sc_err, mssg))
                         #sys.exit(1) Taking this out, otherwise we can't get cli outputs in exception scenarios
                     else:
                         while not session.exit_status_ready():
@@ -500,14 +504,15 @@ class Router(threading.Thread):
         try:
             stup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         except:
-            main_logger.error("Unexpected error during %s operation: %s\t%s", cmd, sys.exc_info()[:2])
+            main_logger.error("Unexpected error during %s operation [_snmp() Err no.1]: %s:%s", cmd, sys.exc_info()[0],
+                              sys.exc_info()[1])
             sys.exit(3)
         else:
             if stup[1] == '':
                 snmpr = stup[0].strip('\n').split('\n')
                 # elif timeout self.ping(self.ipaddr)
             else:
-                main_logger.error("Unexpected error during %s operation: %s" % (cmd, str(stup)))
+                main_logger.error("Unexpected error during %s operation [_snmp() Err no.2]: %s" % (cmd, str(stup)))
                 sys.exit(3)
         return snmpr
 
@@ -516,7 +521,7 @@ class Router(threading.Thread):
             ptup = subprocess.Popen(['ping', '-i', '0.2', '-w', '2', '-c', '500', ipaddr, '-q'], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE).communicate()
         except:
-            logging.error("Unexpected error during ping test [Err no.1]: %s:%s" % sys.exc_info()[:2])
+            main_logger.error("Unexpected error during ping test [Err no.1]: %s:%s" % sys.exc_info()[:2])
             sys.exit(3)
         else:
             if ptup[1] == '':
@@ -525,19 +530,19 @@ class Router(threading.Thread):
                     if int(n.group(1)) == 0:
                         pingr = 0
                     elif 0 < int(n.group(1)) < 100:
-                        logging.error("Operation halted. Packet loss detected")
+                        main_logger.error("Operation halted. Packet loss detected")
                         sys.exit(1)
                     elif int(n.group(1)) == 100:
-                        logging.error("Operation halted. Node unreachable")
+                        main_logger.error("Operation halted. Node unreachable")
                         sys.exit(1)
                     else:
-                        logging.error("Unexpected error during ping test [Err no.2]: %s" % (str(n)))
+                        main_logger.error("Unexpected error during ping test [Err no.2]: %s" % (str(n)))
                         sys.exit(3)
                 else:
-                    logging.error("Unexpected error during ping test [Err no.3]: %s" % (str(ptup[0])))
+                    main_logger.error("Unexpected error during ping test [Err no.3]: %s" % (str(ptup[0])))
                     sys.exit(3)
             else:
-                logging.error("Unexpected error during ping test [Err no.4]: %s" % (str(ptup)))
+                main_logger.error("Unexpected error during ping test [Err no.4]: %s" % (str(ptup)))
                 sys.exit(3)
         return pingr
 
@@ -632,7 +637,7 @@ def main(args):
     cdn_serving_cap = 90
     dryrun = False
     runtime = 'infinite'
-    email_recipient_list = ['onur.zengin@sky.uk']
+    email_distro = []
     try:
         options, remainder = getopt.getopt(args[1:], "hm", ["help", "manual"])
     except getopt.GetoptError as getopterr:
@@ -873,7 +878,7 @@ def main(args):
                             if ipv6_min_prefixes != arg:
                                 main_logger.info('ipv6_min_prefix count has been updated: %s' % arg)
                             ipv6_min_prefixes = arg
-                    elif opt == 'email_recipient_list':
+                    elif opt == 'email_distribution_list':
                         split_lst = arg.split(',')
                         try:
                             for email in split_lst:
@@ -881,15 +886,15 @@ def main(args):
                                 match.group()
                         except AttributeError:
                             if lastChanged == "":
-                                main_logger.warning('Invalid email address found in the recipient list. Resetting '
-                                                    'to default setting: %s' % email_recipient_list)
+                                main_logger.warning('Invalid email address found in the distribution list. Resetting '
+                                                    'to default setting: %s' % email_distro)
                             else:
-                                main_logger.warning('Invalid email address found in the recipient list. Resetting '
-                                                    'to last known good configuration: %s' % email_recipient_list)
+                                main_logger.warning('Invalid email address found in the distribution list. Resetting '
+                                                    'to last known good configuration: %s' % email_distro)
                         else:
-                            if email_recipient_list != split_lst:
-                                main_logger.info('Email recipient list has been updated: %s' % split_lst)
-                            email_recipient_list = split_lst
+                            if email_distro != split_lst:
+                                main_logger.info('Email distribution list has been updated: %s' % split_lst)
+                            email_distro = split_lst
                     elif opt == 'simulation_mode':
                         if arg.lower() == 'on':
                             dryrun = True
@@ -923,16 +928,18 @@ def main(args):
                 main_logger.removeHandler(main_eh)
             except NameError:
                 pass
-            main_eh = handlers.SMTPHandler('localhost', 'no-reply@automation.skycdp.com', email_recipient_list,
+            main_eh = handlers.SMTPHandler('localhost', 'no-reply@automation.skycdp.com', email_distro,
                                            'Virgin Media PNI Monitor')
             main_eh.setFormatter(main_formatter)
             main_eh.setLevel(logging.getLevelName(email_alert_severity))
             main_logger.addHandler(main_eh)
-            main_logger.debug("\n\tInventory File: %s\n\tFrequency: %s\n\tRisk Factor: %s\n\tACL Name: %s\n\t"
-                              "PNI Interface Tag: %s\n\tCDN Interface Tag: %s\n\tCDN Serving Cap: %s\n\t"
-                              "IPv4 Min Prefixes: %s\n\tIPv6 Min Prefixes: %s\n\tLog Level: %s\n\tSimulation Mode: %s"
-                              % (inventory_file, frequency, risk_factor, acl_name, pni_interface_tag, cdn_interface_tag,
-                                 cdn_serving_cap, ipv4_min_prefixes, ipv6_min_prefixes, loglevel, dryrun))
+            main_logger.debug("\n\tInventory File: %s\n\tACL Name: %s\n\tPNI Interface Tag: %s\n\tCDN Interface Tag: %s"
+                              "\n\n\tFrequency: %s\n\tRisk Factor: %s\n\tCDN Serving Cap: %s\n\tIPv4 Min Prefixes: %s"
+                              "\n\tIPv6 Min Prefixes: %s\n\tLog Level: %s\n\tLog Retention: %s\n\tEmail Alert Sev: %s"
+                              "\n\tSimulation Mode: %s\n\tRuntime: %s\n\n\tEmail distribution list: %s"
+                              % (inventory_file, acl_name, pni_interface_tag, cdn_interface_tag, frequency, risk_factor,
+                                 cdn_serving_cap, ipv4_min_prefixes, ipv6_min_prefixes, loglevel, log_retention,
+                                 email_alert_severity, dryrun, runtime, email_distro))
             _GzipnRotate(log_retention)
             try:
                 with open(inventory_file) as sf:
