@@ -480,8 +480,6 @@ class Router(threading.Thread):
                     session.send('exit\n')
                 except socket.error:
                     ssh.close()
-                #else:
-                    #ssh.close()
                 finally:
                     main_logger.debug("SSH connection closed")
         return output[1:]

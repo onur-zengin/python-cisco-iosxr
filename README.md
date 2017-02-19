@@ -234,8 +234,7 @@ __9. PLANNED FOR FUTURE RELEASES__
 - __P1__ Multi-ASN support
 - __P1__ IPv6 ACL for RHM Blocking
 - __P1__ Netcool integration (might outsource this)
-- __P1__ Dying gasp
-- __P1__ Catch SIGTERM KILL and report in logging
+- __P2__ Dying gasp (Catch SIGTERM KILL and report in logging)
 - __P2__ Persistence (of the previously recorded interface utilization data upon a new node or interface discovery)
 - __P2__ Automated discovery of new interfaces (In the current release it is manually triggered)
 - __P3__ Per-region cdn_serving_cap setting (It is available as a Global parameter in the current release)
