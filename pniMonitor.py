@@ -286,7 +286,7 @@ class Router(threading.Thread):
                         elif nxt[n]['aclStatus'] == 'on':
                             blocked.append(n)
             for interface in disc:
-                main_logger.debug("%s: %.2f", interface, disc[interface]['util_prc'])
+                main_logger.debug("%s(%s): %.2f%%", interface, disc[interface]['type'], disc[interface]['util_prc'])
             main_logger.debug("Physical CDN Capacity: %.2f Mbps" % physicalCdnIn)
             main_logger.debug("Max CDN Capacity (total): %.2f Mbps" % maxCdnIn)
             main_logger.debug("Max CDN Capacity (unblocked): %.2f Mbps" % unblocked_maxCdnIn)
