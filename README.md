@@ -187,7 +187,7 @@ __7. OPERATION__
     recalculate the actual `risk_factor` in the preferred polling frequency, simultaneously for every router as found 
     in the inventory file.
     
-   If at any time;
+  If at any time;
 
    - __There is no usable PNI egress capacity left on the local router:__
    
@@ -198,7 +198,7 @@ __7. OPERATION__
      
    __ALL DIRECTLY-ATTACHED CDN INTERFACES WILL BE BLOCKED.__
    
-   Else, if at any time;
+  Else, if at any time;
 
    - __Usable PNI egress capacity is present on the local router and the ratio of the actual PNI egress to usable PNI 
      egress capacity is smaller then the risk factor:__
@@ -211,7 +211,7 @@ __7. OPERATION__
 
    __DIRECTLY-ATTACHED CDN INTERFACES WILL START BEING UNBLOCKED ONE BY ONE, WHILE THE AFOREMENTIONED RULE IS SATISFIED.__
 
-   Otherwise;
+  Otherwise;
    
    __No action will be taken.__
 
