@@ -891,7 +891,7 @@ def main(args):
                             main_logger.warning('Invalid configuration. The simulation_mode parameter has only two '
                                                 'valid arguments: "on" or "off"')
                     elif opt.lower() in ('pni_interface_tag', 'cdn_interface_tag', 'ssh_loglevel',
-                                         'acl_name', 'persistence', 'inventory_file'):
+                                         'acl_name', 'persistence', 'inventory_file', 'ssh_timeout'):
                         pass
                     else:
                         if lastChanged == "":
@@ -949,8 +949,7 @@ def main(args):
                     t.start()
                 hungThreads = []
                 for t in threads:
-                    #t.join(frequency - 0.2)
-                    t.join(60)
+                    t.join(frequency - 0.2)
                     if t.isAlive():
                         hungThreads.append(t.name)
                 if hungThreads != []:

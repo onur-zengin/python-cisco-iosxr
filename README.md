@@ -75,7 +75,9 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
    __acl_name=[`<string>`(_default_:`CDPautomation_UdpRhmBlock`)]__
 
    User-defined name of the IPv4 access-list as configured on the router(s). Missing ACL configuration on the router
-    will trigger a `CRITICAL` alert indicating 'interface blocking attempt failure'. A user receiving this alert may ...
+    or misconfiguration of the acl_name in the pniMonitor.conf file will cause the SSH session(s) to be stalled, until 
+    the protection mechanism in the MainThread kicks in terminates all threads, including itself. This will trigger a 
+    `CRITICAL` alert. _(see Section-4 'Multi-Threading' for further details)_
 
   __3.2. RUNTIME CONFIGURATION__
 
@@ -125,8 +127,8 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
 
    __email_distribution_list=[`name.surname@sky.uk,group_name@bskyb.com`(_default_:`None`)]__
 
-   The list of email addresses to be notified when an event occurs. Email addresses that are outside the @sky.uk or 
-   @bskyb.com domains will NOT be accepted. Multiple entries must be separated by a comma (`,`).
+   The list of email addresses to be notified when an event occurs. Email addresses that are outside the `@sky.uk` or 
+   `@bskyb.com` domains will __NOT__ be accepted. Multiple entries must be separated by a comma (`,`).
    
    Emails alerts will be sent stateless and will not be retried or repeated.
    
@@ -142,8 +144,8 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
 
    __simulation_mode=[`<on|off>`(_default_:`off`)]__
 
-   If switched on, node discovery and probing will continue, however no configuration changes will be made to the
-    router(s).
+   If switched on; node discovery, probing and decision-making functions will continue, however __NO__ configuration 
+    changes will be made to the router(s).
 
 
 __4. MULTI-THREADING__
@@ -154,12 +156,12 @@ __4. MULTI-THREADING__
    For convenience in operations and diagnostics, a subThread's name will be comprised of the hostname of the router 
     that it is relevant to. And the thread names will be included in every log line and alert produced by the program.
    
-   If for any reason one or more of the subThreads take too long (i.e. longer than the pre-defined running frequency of 
-    the mainThread) to complete, then the program will send out a dying gasp and terminate itself along with all active
-    subThreads. The dying gasp will be issued by the MainThread as a `CRITICAL` severity alert including the name of 
-    all subThread(s) that were detected to be in _hung state_. This behaviour is designed intentionally. Although it 
-    may incur unintended interruptions to monitoring of the PNI status, it would otherwise constitute a greater risk to
-    allow the program to continue while the reason of the delay / hang is unknown.
+   If for any reason (such as a stalled SSH session) one or more of the subThreads take too long (i.e. longer than the 
+    pre-defined running frequency of the mainThread) to complete, then the program will send out a dying gasp and 
+    terminate itself along with all active subThreads. The dying gasp will be issued by the MainThread as a `CRITICAL` 
+    severity alert including the name of all subThread(s) that were detected to be in _hung state_. This behaviour is 
+    designed intentionally. Although this may incur unintended interruptions to monitoring, it would otherwise 
+    constitute a greater risk to allow the program to continue while the reason of the delay / hang is unknown.
     
 __5. NODE DISCOVERY__
 
@@ -176,58 +178,74 @@ __5. NODE DISCOVERY__
 __6. PROBE__
 
 If an SSH connection attempt fails, SNMP won't be tried either. 
+And what happens to int util calculations when probing fails intermittently - prb file doesn't get updated. Relying on the timeDelta function.
 
 __7. OPERATION__
 
-The entire decision making logic resides in a function called _process(). The main function will constantly run in the
-background (as a daemon-like process) and use subThreads to recalculate the following parameters in the preferred 
-polling frequency, simultaneously for every router as found in the inventory file;
+   The entire decision making logic resides in a function called _process(). The main function will constantly run in 
+    the background (as a daemon-like process) and use subThreads to re-assess the usable PNI egress capacity and 
+    recalculate the actual `risk_factor` in the preferred polling frequency, simultaneously for every router as found 
+    in the inventory file.
+    
+   If at any time;
 
-   __physicalCdnIn:__   text  
-   __actualCdnIn:__     text  
-   __maxCdnIn:__ 
-   __unblockedMaxCdnIn:__  
-   __physicalPniOut:__  
-   __actualPniOut:__  
-   __usablePniOut:__  
+   - __There is no usable PNI egress capacity left on the local router:__
+   
+   __OR__
+   
+   - __There is a partial PNI failure scenario on the local router / traffic overflow from another site, which causes
+     the ratio of the actual PNI egress to usable PNI egress capacity to be equal or greater than the risk factor:__
+     
+   __ALL DIRECTLY-ATTACHED CDN INTERFACES WILL BE BLOCKED.__
+   
+   Else, if at any time;
 
-  __7.1. SCENARIOS__
+   - __Usable PNI egress capacity is present on the local router and the ratio of the actual PNI egress to usable PNI 
+     egress capacity is smaller then the risk factor:__
+     
+   __AND__
+   
+   - __The sum of the actual local CDN traffic and non-local traffic (P2P + Overflow) egressing the local PNI and the 
+     maximum serving capacity of any directly-attached (and unblocked) CDN region is smaller than the usable PNI egress 
+     capacity on the local router:__
 
-   NO USABLE PNI CAPACITY LEFT
+   __DIRECTLY-ATTACHED CDN INTERFACES WILL START BEING UNBLOCKED ONE BY ONE, WHILE THE AFOREMENTIONED RULE IS SATISFIED.__
 
-   THE RATIO OF ACTUAL PNI EGRESS TO USABLE PNI CAPACITY IS EQUAL OR GREATER THAN THE RISK FACTOR
-
-   __7.2. UNBLOCK__
-
-   __7.3. NO ACTION__
+   Otherwise;
+   
+   __No action will be taken.__
 
 
 __8. LOGGING__
 
-Level	    When it’s used  
-__DEBUG__	    Detailed information, typically of interest only when diagnosing problems.  
-__INFO__	    Confirmation that things are working as expected.  
-__WARNING__	    An indication that something unexpected happened, or indicative of some problem in the near future (e.g.
-            ‘disk space low’). The program is still working as expected.  
-__ERROR__	    Due to a more serious problem, the software has not been able to perform some function.  
-__CRITICAL__	A serious error, indicating that the program itself may be unable to continue running.  
+   The program saves its logs in two separate local files saved on the disk and rotated daily;
+   
+   - __pniMonitor_main.log:__ All events produced by the MainThread and its subThreads. Configurable severity.
+   - __pniMonitor_ssh.log:__ All events that are logged by the SSH module. Fixed severity: WARNING
+   
+   Available log alert severities are as follows:
+    
+   __DEBUG__     Detailed information, typically of interest only when diagnosing problems.  
+   __INFO__      Confirmation that things are working as expected.  
+   __WARNING__   An indication that something unexpected happened (such as a misconfiguration), or indicative of event 
+                  (PNI failure, BGP session withdrawal, etc) which will soon trigger automated recovery actions. The 
+                  program is still working as expected.  
+   __ERROR__     Due to a more serious problem, the program has not been able to perform some function (such as _Data
+                  Collection_ or _Configuration Attempt_ failures). 
+   __CRITICAL__  A serious error, indicating that the program itself will be unable to continue running (_Dying gasp_).  
 
 
 __TO BE COMPLETED BEFORE THE FIRST RELEASE__
 
-- Test non Cisco / non IOSXR router in the inventory file
 - Test discovery of a new interface during runtime (pni & cdn)
 - Test removal of an interface during runtime (pni & cdn)
 - Test removal of a node during runtime
-- Test non-existent acl configuration on the router
 - Test int util. of a 100G interface
 - Test the main() function and operation under simulation_mode
-
-- Compare int util. formula against RFC2819 (obsoletes RFC1757)
 - Check mem util. after long run
 
 - Revise critical logging for interface block / unblock failures. Include interface name(s) in the alert. - Done. && Output? - not tested.
-- And what happens to int util calculations when probing fails intermittently - prb file doesn't get updated. Relying on the timeDelta function.
+
 
 __9. PLANNED FOR FUTURE RELEASES__
 
