@@ -313,7 +313,7 @@ class Router(threading.Thread):
                                             'disabled (Simulation Mode): %s' % unblocked)
                 else:
                     main_logger.info('No usable PNI egress capacity available. However, all CDN interfaces are '
-                                     'currently blocked. No valid actions left.')
+                                     'currently down / blocked. No valid actions left.')
             # We can't use actualCDNIn while calculating the risk_factor because it won't include P2P traffic
             # and / or the CDN overflow from the other site(s). It is worth revisiting for Sky Germany though.
             elif actualPniOut / usablePniOut * 100 >= self.risk_factor:
@@ -335,8 +335,8 @@ class Router(threading.Thread):
                                             'equal to or greater than the pre-defined Risk Factor. %s must be disabled'
                                             % unblocked)
                 else:
-                    main_logger.info('Risk Factor hit. However, all CDN interfaces are currently blocked. No valid '
-                                     'actions left.')
+                    main_logger.info('Risk Factor hit. However, all CDN interfaces are currently down / blocked. No '
+                                     'valid actions left.')
             elif blocked != [] and actualPniOut / usablePniOut * 100 < self.risk_factor:
                 if maxCdnIn + actualPniOut < usablePniOut:
                     if not self.dryrun:
@@ -949,14 +949,15 @@ def main(args):
                     t.start()
                 hungThreads = []
                 for t in threads:
-                    t.join(frequency - 0.2)
+                    #t.join(frequency - 0.2)
+                    t.join(60)
                     if t.isAlive():
                         hungThreads.append(t.name)
                 if hungThreads != []:
                     main_logger.critical("Threads detected in hung state: %r. Terminating." % hungThreads)
                     subprocess.Popen(['kill', '-9', str(os.getpid())], stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE).communicate()
-                main_logger.info("SubThreads completed")
+                main_logger.info("All subThreads completed")
                 lastChanged = os.stat(inventory_file).st_mtime
                 if type(runtime) == int:
                     runtime -= 1
