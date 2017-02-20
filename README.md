@@ -39,7 +39,7 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
   The following parameters can be configured during startup only. Any modifications during runtime will be silently 
    ignored. 
 
-   * __inventory_file=[`<filename>`(_default_:`inventory.txt`)]__
+   __inventory_file=[`<filename>`(_default_:`inventory.txt`)]__
 
    The inventory details (list of node names) __must__ be provided in a text file with each node written on a separate
     line. Example:
@@ -56,7 +56,7 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
     polling cycle and then ignored due to DNS lookup failures. _(This behaviour will be modified in the next releases, 
     where the name resolution check will be accompanied by system OS validation during startup.)_
    
-   * __pni_interface_tag=[`<string>`(_default_:`CDPautomation_PNI`)]__
+   __pni_interface_tag=[`<string>`(_default_:`CDPautomation_PNI`)]__
 
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle interfaces of a router, when the discovery function is run.
@@ -64,7 +64,7 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
    Interfaces with a `no-mon` string applied will be excluded from monitoring. _(Including a new interface or 
    excluding an existing one from monitoring requires a manual discovery trigger in the current release.)_
 
-   * __cdn_interface_tag=[`<string>`(_default_:`CDPautomation_CDN`)]__
+   __cdn_interface_tag=[`<string>`(_default_:`CDPautomation_CDN`)]__
 
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle and HundredGigabit Ethernet interfaces of a router, when the 
@@ -73,7 +73,7 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
    Interfaces with a `no-mon` string applied will be excluded from monitoring. _(Including a new interface or 
    excluding an existing one from monitoring requires a manual discovery trigger in the current release.)_
     
-   * __acl_name=[`<string>`(_default_:`CDPautomation_UdpRhmBlock`)]__
+   __acl_name=[`<string>`(_default_:`CDPautomation_UdpRhmBlock`)]__
 
    User-defined name of the IPv4 access-list as configured on the router(s). Missing ACL configuration on the router
     or misconfiguration of the acl_name in the pniMonitor.conf file will cause the SSH session(s) to be stalled, until 
