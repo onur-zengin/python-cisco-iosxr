@@ -36,9 +36,10 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
 
   __3.1. STARTUP CONFIGURATION__
   
-  The following parameters MUST be 
+  The following parameters can be configured during startup only. Any modifications during runtime will be silently 
+   ignored. 
 
-  __inventory_file=[`<filename>`(_default_:`inventory.txt`)]__
+   * __inventory_file=[`<filename>`(_default_:`inventory.txt`)]__
 
    The inventory details (list of node names) __must__ be provided in a text file with each node written on a separate
     line. Example:
@@ -54,8 +55,8 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
     invalid entries in the inventory file will not be ignored straight away, however they will be retried in every
     polling cycle and then ignored due to DNS lookup failures. _(This behaviour will be modified in the next releases, 
     where the name resolution check will be accompanied by system OS validation during startup.)_
-    
-   __pni_interface_tag=[`<string>`(_default_:`CDPautomation_PNI`)]__
+   
+   * __pni_interface_tag=[`<string>`(_default_:`CDPautomation_PNI`)]__
 
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle interfaces of a router, when the discovery function is run.
@@ -63,7 +64,7 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
    Interfaces with a `no-mon` string applied will be excluded from monitoring. _(Including a new interface or 
    excluding an existing one from monitoring requires a manual discovery trigger in the current release.)_
 
-   __cdn_interface_tag=[`<string>`(_default_:`CDPautomation_CDN`)]__
+   * __cdn_interface_tag=[`<string>`(_default_:`CDPautomation_CDN`)]__
 
    A user-defined label to identify the PNI interfaces that are intended for monitoring. The label will be searched 
     within the description strings of all Ethernet Bundle and HundredGigabit Ethernet interfaces of a router, when the 
@@ -72,7 +73,7 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
    Interfaces with a `no-mon` string applied will be excluded from monitoring. _(Including a new interface or 
    excluding an existing one from monitoring requires a manual discovery trigger in the current release.)_
     
-   __acl_name=[`<string>`(_default_:`CDPautomation_UdpRhmBlock`)]__
+   * __acl_name=[`<string>`(_default_:`CDPautomation_UdpRhmBlock`)]__
 
    User-defined name of the IPv4 access-list as configured on the router(s). Missing ACL configuration on the router
     or misconfiguration of the acl_name in the pniMonitor.conf file will cause the SSH session(s) to be stalled, until 
@@ -85,13 +86,12 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
     in the next polling cycle. Invalid configurations will be ignored, accompanied with a `WARNING` alert, and the 
     program will revert back to either default (during startup) or last known good configuration.
 
-   If started with any or all of the configuration lines missing or commented out, the program will continue with its
-    default configuration settings. However, commenting out a configuration line or removing it while the program is
-    running will NOT revert it back to its default configuration.
+   __Note:__ Commenting out a configuration line or removing it while the program is running will __NOT__ revert it 
+   back to its default configuration. Once the program is running, preferred settings must be configured explicitly.
    
    __risk_factor=[`<0-100>`(_default_:`95`)]__
    
-   `actualPniOut / usablePniOut * 100`
+   `actualPniOut / usablePniOut * 100` See section-7 for further details.
     
    __ipv4_min_prefixes=[`<integer>`(_default_:`0`)]__
 
@@ -148,7 +148,7 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
     changes will be made to the router(s).
 
 
-__4. MULTI-THREADING__
+#__4. MULTI-THREADING__
 
    The program will initiate a subThread for each node (router) specified in the inventory file, so that the interface
     status on multiple routers can be managed simultaneously and independently. 
@@ -163,67 +163,109 @@ __4. MULTI-THREADING__
     designed intentionally. Although this may incur unintended interruptions to monitoring, it would otherwise 
     constitute a greater risk to allow the program to continue while the reason of the delay / hang is unknown.
     
-__5. NODE DISCOVERY__
+    
+#__5. DISCOVERY__
 
    The program has a built-in discovery function which will be auto-triggered either during the first run or any time
-    the inventory file is updated.
+    the inventory file is updated. Collected data is stored in a local file on disk; `.DO_NOT_MODIFY_<nodename>.dsc`.
     
    Addition or removal of an interface to / from the monitoring (once the interfaces are labeled correctly) can be 
     achieved by running the `pniDiscovery.py` script which can be found inside the same directory.
    
-   __Note:__ The first release of the code do not have persistence enabled. At any time the discovery function is 
-   triggered to run, which should not be too frequent, it will cause the previously collected data to be lost.
+   __Note:__ The first release of the code do not have persistence enabled. Hence, at any time the discovery function is 
+   triggered to run, which should not be too frequent, it will cause the previously collected data to be lost. This does
+   not incur any risk other than delaying the process (decision making) functions by one (1) polling period.
    
 
-__6. PROBE__
+#__6. PROBE (_Data Collection_)__
 
-If an SSH connection attempt fails, SNMP won't be tried either. 
-And what happens to int util calculations when probing fails intermittently - prb file doesn't get updated. Relying on the timeDelta function.
+   The probe function collects data from each node statelessly and stores it in a local hidden file on disk; 
+   `.DO_NOT_MODIFY_<nodename>.prb`, while tagging the data it collects with timestamps.   
+   
+   At the time of development, the original intent of the code was to make it operate over SNMP only, to keep it fast 
+    and light-touch on the network equipment. However, since Cisco routers do not support the ACL-MIB; the probe 
+    function had to evolve in a hybrid mode of operation where the ACL status on the interfaces is verified via an SSH 
+    session, while Interface and BGP status are polled via SNMP.
 
-__7. OPERATION__
+   As it can be anticipated from the description above; interface ACL status is not saved on disk or stored in memory,
+    but re-checked in every polling cycle. This is to prevent data inconsistencies in the case of manual intervention 
+    to the router configuration via CLI.
+   
+   During data collection; if an SSH connection attempt fails for any reason, then SNMP read functions won't be 
+    attempted either. This will result in the relevant `*.prb` file not being updated, which is the intentional 
+    behaviour to prevent data inconsistencies between two polling cycles. Since the process function specifically relies
+    on the timestamps of the previously collected data and is capable of measuring the timeDelta in its calculations,
+    interface utilisation can still be reliably calculated regardless of any interruptions in polling. 
 
-   The entire decision making logic resides in a function called _process(). The main function will constantly run in 
+
+#__7. PROCESS (_Decision Making_)__
+
+   The entire decision making logic resides in a function called _process(). The main function constantly runs in 
     the background (as a daemon-like process) and use subThreads to re-assess the usable PNI egress capacity and 
-    recalculate the actual `risk_factor` in the preferred polling frequency, simultaneously for every router as found 
-    in the inventory file.
+    recalculate the actual `risk_factor` in the preferred polling frequency, using the data collected by probe.
     
-  If at any time;
+   For any PNI interface and its available physical egress capacity to be considered as 'usable', it must satisfy the 
+    following requirements;
+    
+   - Interface operational status __MUST__ be `UP` (this will typically be a Ethernet Bundle interface, and in the 
+      case of partial link failures, the total bandwidth of the remaining interfaces will be considered available)  
+    
+     __AND__  
+    
+   - State of the BGPv4 session sourced from the interface's local IPv4 address __MUST__ be `ESTABLISHED` __AND__ the 
+      number of IPv4 prefixes received and __accepted__ from the remote BGP peer __MUST NOT__ be lower than the 
+      configured `ipv4_min_prefixes`  
+   
+     __OR__
+   
+   - State of the BGPv6 session sourced from the interface's local IPv6 address __MUST__ be `ESTABLISHED` __AND__ the 
+      number of IPv6 prefixes received and __accepted__ from the remote BGP peer __MUST NOT__ be lower than the 
+      configured `ipv6_min_prefixes`  
+   
+   Once the usable PNI egress capacity is calculated:
+    
+   * If at any time;
 
-   - __There is no usable PNI egress capacity left on the local router:__
+        - __There is no usable PNI egress capacity left on the local router:__
    
-   __OR__
+        __AND__
    
-   - __There is a partial PNI failure scenario on the local router / traffic overflow from another site, which causes
-     the ratio of the actual PNI egress to usable PNI egress capacity to be equal or greater than the risk factor:__
+        - __There is a partial PNI failure scenario on the local router / traffic overflow from another site, which 
+        causes the ratio of the actual PNI egress to usable PNI egress capacity to be equal or greater than the risk 
+        factor:__
      
-   __ALL DIRECTLY-ATTACHED CDN INTERFACES WILL BE BLOCKED.__
+        __ALL DIRECTLY-ATTACHED CDN INTERFACES WILL BE BLOCKED.__
    
-  Else, if at any time;
+   * Else, if at any time;
 
-   - __Usable PNI egress capacity is present on the local router and the ratio of the actual PNI egress to usable PNI 
-     egress capacity is smaller then the risk factor:__
+        - __Usable PNI egress capacity is present on the local router and the ratio of the actual PNI egress to usable 
+        PNI egress capacity is smaller then the risk factor:__
      
-   __AND__
+        __AND__
    
-   - __The sum of the actual local CDN traffic and non-local traffic (P2P + Overflow) egressing the local PNI and the 
-     maximum serving capacity of any directly-attached (and unblocked) CDN region is smaller than the usable PNI egress 
-     capacity on the local router:__
+        - __The sum of the actual local CDN traffic and non-local traffic (P2P + Overflow) egressing the local PNI and 
+        the maximum serving capacity of any directly-attached (and unblocked) CDN region is smaller than the usable PNI 
+        egress capacity on the local router:__
 
-   __DIRECTLY-ATTACHED CDN INTERFACES WILL START BEING UNBLOCKED ONE BY ONE, WHILE THE AFOREMENTIONED RULE IS SATISFIED.__
+        __DIRECTLY-ATTACHED CDN INTERFACES WILL START BEING UNBLOCKED, ONE BY ONE, AS SOON AS THE AFOREMENTIONED RULE IS 
+        SATISFIED.__
 
-  Otherwise;
+   * Otherwise;
    
-   __No action will be taken.__
+        __NO ACTION WILL BE TAKEN.__
 
 
-__8. LOGGING__
+#__8. LOGGING__
 
    The program saves its logs in two separate local files saved on the disk and rotated daily;
    
    - __pniMonitor_main.log:__ All events produced by the MainThread and its subThreads. Configurable severity.
    - __pniMonitor_ssh.log:__ All events that are logged by the SSH module. Fixed severity: WARNING
    
-   Available log alert severities are as follows:
+   In addition to local log files, high severity events are also available to be distributed as email alerts (_see
+    Section-3 for configuration details_).
+   
+   Definition of available log / alert severities are as follows:
     
    __DEBUG__     Detailed information, typically of interest only when diagnosing problems.  
    __INFO__      Confirmation that things are working as expected.  
@@ -235,19 +277,19 @@ __8. LOGGING__
    __CRITICAL__  A serious error, indicating that the program itself will be unable to continue running (_Dying gasp_).  
 
 
-__TO BE COMPLETED BEFORE THE FIRST RELEASE__
+#__TO BE COMPLETED BEFORE THE FIRST RELEASE__
 
 - Test discovery of a new interface during runtime (pni & cdn)
 - Test removal of an interface during runtime (pni & cdn)
 - Test removal of a node during runtime
-- Test int util. of a 100G interface
+- Test int util. of an 100G interface
 - Test the main() function and operation under simulation_mode
-- Check mem util. after long run
+- Check mem util. after continuous run
+- Revise critical logging for interface block / unblock failures. Include interface name(s) in the alerts. - Done. 
+&& Output? - not tested.
 
-- Revise critical logging for interface block / unblock failures. Include interface name(s) in the alert. - Done. && Output? - not tested.
 
-
-__9. PLANNED FOR FUTURE RELEASES__
+#__9. PLANNED FOR FUTURE RELEASES__
 
 - __P1__ Multi-ASN support
 - __P1__ IPv6 ACL for RHM Blocking
