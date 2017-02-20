@@ -226,35 +226,36 @@ __7. PROCESS (_Decision Making_)__
     
    Once the usable PNI egress capacity is calculated:
     
-  * If at any time;
+   If at any time;
 
-      - __There is no usable PNI egress capacity left on the local router:__
+   - __There is no usable PNI egress capacity left on the local router:__
    
-        __AND__
+     __AND__
    
-      - __There is a partial PNI failure scenario on the local router / traffic overflow from another site, which 
+   - __There is a partial PNI failure scenario on the local router / traffic overflow from another site, which 
         causes the ratio of the actual PNI egress to usable PNI egress capacity to be equal or greater than the risk 
         factor:__
      
-        __ALL DIRECTLY-ATTACHED CDN INTERFACES WILL BE BLOCKED.__
+     __ALL DIRECTLY-ATTACHED CDN INTERFACES WILL BE BLOCKED.__
    
-  * Else, if at any time;
+   Else, if at any time;
 
-      - __Usable PNI egress capacity is present on the local router and the ratio of the actual PNI egress to usable 
+   - __Usable PNI egress capacity is present on the local router and the ratio of the actual PNI egress to usable 
         PNI egress capacity is smaller then the risk factor:__
      
-        __AND__
+     __AND__
    
-      - __The sum of the actual local CDN traffic and non-local traffic (P2P + Overflow) egressing the local PNI and 
+   - __The sum of the actual local CDN traffic and non-local traffic (P2P + Overflow) egressing the local PNI and 
         the maximum serving capacity of any directly-attached (and unblocked) CDN region is smaller than the usable PNI 
         egress capacity on the local router:__
 
-        __DIRECTLY-ATTACHED CDN INTERFACES WILL START BEING UNBLOCKED, ONE BY ONE, AS SOON AS THE AFOREMENTIONED RULE IS 
+     __DIRECTLY-ATTACHED CDN INTERFACES WILL START BEING UNBLOCKED, ONE BY ONE, AS SOON AS THE AFOREMENTIONED RULE IS 
         SATISFIED.__
 
-  * Otherwise;
+  Otherwise;
    
-      __NO ACTION WILL BE TAKEN.__
+   __NO ACTION WILL BE TAKEN.__
+
 
 
 __8. LOGGING__
@@ -286,6 +287,7 @@ __8. LOGGING__
                   
  __CRITICAL__  
  A serious error, indicating that the program itself will be unable to continue running (_Dying gasp_).  
+
 
 
 __TO BE COMPLETED BEFORE THE FIRST RELEASE__
