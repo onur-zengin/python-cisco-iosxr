@@ -1,13 +1,13 @@
 __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
 
-#__1. DESCRIPTION__
+__1. DESCRIPTION__
     
    A Python code that monitors the available egress bandwidth of selected PNI interfaces and status of the pertinent
     eBGP sessions on a Cisco IOS-XR router acting as an ASBR, and make selective decisions to block / unblock the 
     ingress traffic at its source if it is on a local interface (typically a CDN cache directly-connected to the router)
 
 
-#__2. DEPENDENCIES__
+__2. DEPENDENCIES__
 
    __Python__
    
@@ -27,7 +27,7 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
     NetSNMP with and without MIB translation enabled. The program does __NOT__ require the vendor MIB files to operate.
 
 
-#__3. CONFIGURATION__
+__3. CONFIGURATION__
 
    The program can optionally be run with a configuration file (`pniMonitor.conf`) that resides inside the same
     directory with the Python file. If the program is started without a configuration file or with any or all of the 
@@ -145,10 +145,11 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
    __simulation_mode=[`<on|off>`(_default_:`off`)]__
 
    If switched on; node discovery, probing and decision-making functions will continue, however __NO__ configuration 
-    changes will be made to the router(s).
+    changes will be made to the router(s).   
 
 
-#__4. MULTI-THREADING__
+
+__4. MULTI-THREADING__
 
    The program will initiate a subThread for each node (router) specified in the inventory file, so that the interface
     status on multiple routers can be managed simultaneously and independently. 
@@ -164,7 +165,7 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
     constitute a greater risk to allow the program to continue while the reason of the delay / hang is unknown.
     
     
-#__5. DISCOVERY__
+__5. DISCOVERY__
 
    The program has a built-in discovery function which will be auto-triggered either during the first run or any time
     the inventory file is updated. Collected data is stored in a local file on disk; `.DO_NOT_MODIFY_<nodename>.dsc`.
@@ -177,7 +178,7 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
    not incur any risk other than delaying the process (decision making) functions by one (1) polling period.
    
 
-#__6. PROBE (_Data Collection_)__
+__6. PROBE (_Data Collection_)__
 
    The probe function collects data from each node statelessly and stores it in a local hidden file on disk; 
    `.DO_NOT_MODIFY_<nodename>.prb`, while tagging the data it collects with timestamps.   
@@ -198,7 +199,7 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
     interface utilisation can still be reliably calculated regardless of any interruptions in polling. 
 
 
-#__7. PROCESS (_Decision Making_)__
+__7. PROCESS (_Decision Making_)__
 
    The entire decision making logic resides in a function called _process(). The main function constantly runs in 
     the background (as a daemon-like process) and use subThreads to re-assess the usable PNI egress capacity and 
@@ -221,63 +222,73 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
    - State of the BGPv6 session sourced from the interface's local IPv6 address __MUST__ be `ESTABLISHED` __AND__ the 
       number of IPv6 prefixes received and __accepted__ from the remote BGP peer __MUST NOT__ be lower than the 
       configured `ipv6_min_prefixes`  
-   
+
+    
    Once the usable PNI egress capacity is calculated:
     
-   * If at any time;
+  * If at any time;
 
-        - __There is no usable PNI egress capacity left on the local router:__
+      - __There is no usable PNI egress capacity left on the local router:__
    
         __AND__
    
-        - __There is a partial PNI failure scenario on the local router / traffic overflow from another site, which 
+      - __There is a partial PNI failure scenario on the local router / traffic overflow from another site, which 
         causes the ratio of the actual PNI egress to usable PNI egress capacity to be equal or greater than the risk 
         factor:__
      
         __ALL DIRECTLY-ATTACHED CDN INTERFACES WILL BE BLOCKED.__
    
-   * Else, if at any time;
+  * Else, if at any time;
 
-        - __Usable PNI egress capacity is present on the local router and the ratio of the actual PNI egress to usable 
+      - __Usable PNI egress capacity is present on the local router and the ratio of the actual PNI egress to usable 
         PNI egress capacity is smaller then the risk factor:__
      
         __AND__
    
-        - __The sum of the actual local CDN traffic and non-local traffic (P2P + Overflow) egressing the local PNI and 
+      - __The sum of the actual local CDN traffic and non-local traffic (P2P + Overflow) egressing the local PNI and 
         the maximum serving capacity of any directly-attached (and unblocked) CDN region is smaller than the usable PNI 
         egress capacity on the local router:__
 
         __DIRECTLY-ATTACHED CDN INTERFACES WILL START BEING UNBLOCKED, ONE BY ONE, AS SOON AS THE AFOREMENTIONED RULE IS 
         SATISFIED.__
 
-   * Otherwise;
+  * Otherwise;
    
-        __NO ACTION WILL BE TAKEN.__
+      __NO ACTION WILL BE TAKEN.__
 
 
-#__8. LOGGING__
+__8. LOGGING__
 
    The program saves its logs in two separate local files saved on the disk and rotated daily;
    
    - __pniMonitor_main.log:__ All events produced by the MainThread and its subThreads. Configurable severity.
    - __pniMonitor_ssh.log:__ All events that are logged by the SSH module. Has a fixed severity setting; WARNING. 
    
-  In addition to local log files, high severity events are also available to be distributed as email alerts (_see
+ In addition to local log files, high severity events are also available to be distributed as email alerts (_see
     Section-3 for configuration details_).
    
-  Definition of available log / alert severities are as follows:
+ Definition of available log / alert severities are as follows:
     
-   - __DEBUG__     Detailed information, typically of interest only when diagnosing problems.  
-   - __INFO__      Confirmation that things are working as expected.  
-   - __WARNING__   An indication that something unexpected happened (such as a misconfiguration), or indicative of event 
-                  (PNI failure, BGP session withdrawal, etc) which will soon trigger automated recovery actions. The 
-                  program is still working as expected.  
-   - __ERROR__     Due to a more serious problem, the program has not been able to perform some function (such as _Data
-                  Collection_ or _Configuration Attempt_ failures). 
-   - __CRITICAL__  A serious error, indicating that the program itself will be unable to continue running (_Dying gasp_).  
+ __DEBUG__     
+   Detailed information, typically of interest only when diagnosing problems.  
+   
+ __INFO__      
+   Confirmation that things are working as expected.  
+   
+ __WARNING__   
+   An indication that something unexpected happened (such as a misconfiguration), or indicative of event (PNI failure, 
+   BGP prefix withdrawal, etc) which will soon trigger automated recovery actions. The program is still working as 
+   expected.  
+       
+ __ERROR__     
+ Due to a more serious problem, the program has not been able to perform some function (such as a _Data Collection_ or 
+ _Configuration Attempt_ failures). 
+                  
+ __CRITICAL__  
+ A serious error, indicating that the program itself will be unable to continue running (_Dying gasp_).  
 
 
-#__TO BE COMPLETED BEFORE THE FIRST RELEASE__
+__TO BE COMPLETED BEFORE THE FIRST RELEASE__
 
 - Test discovery of a new interface during runtime (pni & cdn)
 - Test removal of an interface during runtime (pni & cdn)
@@ -289,7 +300,7 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
 && Output? - not tested.
 
 
-#__9. PLANNED FOR FUTURE RELEASES__
+__9. PLANNED FOR FUTURE RELEASES__
 
 - __P1__ Multi-ASN support
 - __P1__ IPv6 ACL for RHM Blocking
