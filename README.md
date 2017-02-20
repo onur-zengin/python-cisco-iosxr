@@ -91,7 +91,7 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
    
    __risk_factor=[`<0-100>`(_default_:`95`)]__
    
-   `actualPniOut / usablePniOut * 100` See section-7 for further details.
+   Calculated as; `actualPniOut / usablePniOut * 100`. See section-7 for further details.
     
    __ipv4_min_prefixes=[`<integer>`(_default_:`0`)]__
 
