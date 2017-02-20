@@ -32,7 +32,8 @@ __3. CONFIGURATION__
    The program can optionally be run with a configuration file (`pniMonitor.conf`) that resides inside the same
     directory with the Python file. If the program is started without a configuration file or with any or all of the 
     configuration lines missing or commented out, it will then apply its default configuration settings for the missing 
-    parameter(s) and continue running.
+    parameter(s) and continue running.  
+    
 
   __3.1. STARTUP CONFIGURATION__
   
@@ -78,7 +79,8 @@ __3. CONFIGURATION__
    User-defined name of the IPv4 access-list as configured on the router(s). Missing ACL configuration on the router
     or misconfiguration of the acl_name in the pniMonitor.conf file will cause the SSH session(s) to be stalled, until 
     the protection mechanism in the MainThread kicks in terminates all threads, including itself. This will trigger a 
-    `CRITICAL` alert. _(see Section-4 'Multi-Threading' for further details)_
+    `CRITICAL` alert. _(see Section-4 'Multi-Threading' for further details)_  
+    
 
   __3.2. RUNTIME CONFIGURATION__
 
@@ -162,7 +164,7 @@ __4. MULTI-THREADING__
     terminate itself along with all active subThreads. The dying gasp will be issued by the MainThread as a `CRITICAL` 
     severity alert including the name of all subThread(s) that were detected to be in _hung state_. This behaviour is 
     designed intentionally. Although this may incur unintended interruptions to monitoring, it would otherwise 
-    constitute a greater risk to allow the program to continue while the reason of the delay / hang is unknown.
+    constitute a greater risk to allow the program to continue while the reason of the delay / hang is unknown.  
     
     
 __5. DISCOVERY__
@@ -175,7 +177,7 @@ __5. DISCOVERY__
    
    __Note:__ The first release of the code do not have persistence enabled. Hence, at any time the discovery function is 
    triggered to run, which should not be too frequent, it will cause the previously collected data to be lost. This does
-   not incur any risk other than delaying the process (decision making) functions by one (1) polling period.
+   not incur any risk other than delaying the process (decision making) functions by one (1) polling period.  
    
 
 __6. PROBE (_Data Collection_)__
@@ -196,7 +198,7 @@ __6. PROBE (_Data Collection_)__
     attempted either. This will result in the relevant `*.prb` file not being updated, which is the intentional 
     behaviour to prevent data inconsistencies between two polling cycles. Since the process function specifically relies
     on the timestamps of the previously collected data and is capable of measuring the timeDelta in its calculations,
-    interface utilisation can still be reliably calculated regardless of any interruptions in polling. 
+    interface utilisation can still be reliably calculated regardless of any interruptions in polling.   
 
 
 __7. PROCESS (_Decision Making_)__
@@ -205,88 +207,87 @@ __7. PROCESS (_Decision Making_)__
     the background (as a daemon-like process) and use subThreads to re-assess the usable PNI egress capacity and 
     recalculate the actual `risk_factor` in the preferred polling frequency, using the data collected by probe.
     
-   For any PNI interface and its available physical egress capacity to be considered as 'usable', it must satisfy the 
+For any PNI interface and its available physical egress capacity to be considered as 'usable', it must satisfy the 
     following requirements;
     
-   - Interface operational status __MUST__ be `UP` (this will typically be a Ethernet Bundle interface, and in the 
+    - Interface operational status __MUST__ be `UP` (this will typically be a Ethernet Bundle interface, and in the 
       case of partial link failures, the total bandwidth of the remaining interfaces will be considered available)  
     
-     __AND__  
+    __AND__  
     
-   - State of the BGPv4 session sourced from the interface's local IPv4 address __MUST__ be `ESTABLISHED` __AND__ the 
+    - State of the BGPv4 session sourced from the interface's local IPv4 address __MUST__ be `ESTABLISHED` __AND__ the 
       number of IPv4 prefixes received and __accepted__ from the remote BGP peer __MUST NOT__ be lower than the 
       configured `ipv4_min_prefixes`  
    
-     __OR__
+    __OR__
    
-   - State of the BGPv6 session sourced from the interface's local IPv6 address __MUST__ be `ESTABLISHED` __AND__ the 
+    - State of the BGPv6 session sourced from the interface's local IPv6 address __MUST__ be `ESTABLISHED` __AND__ the 
       number of IPv6 prefixes received and __accepted__ from the remote BGP peer __MUST NOT__ be lower than the 
       configured `ipv6_min_prefixes`  
 
-    
-   Once the usable PNI egress capacity is calculated:
-    
-   If at any time;
 
-   - __There is no usable PNI egress capacity left on the local router:__
+Once the usable PNI egress capacity is calculated:
+    
+If at any time;
+
+    - __There is no usable PNI egress capacity left on the local router:__
    
-     __AND__
+    __AND__
    
-   - __There is a partial PNI failure scenario on the local router / traffic overflow from another site, which 
+    - __There is a partial PNI failure scenario on the local router / traffic overflow from another site, which 
         causes the ratio of the actual PNI egress to usable PNI egress capacity to be equal or greater than the risk 
         factor:__
      
-     __ALL DIRECTLY-ATTACHED CDN INTERFACES WILL BE BLOCKED.__
+    __ALL DIRECTLY-ATTACHED CDN INTERFACES WILL BE BLOCKED.__
    
-   Else, if at any time;
+Else, if at any time;
 
-   - __Usable PNI egress capacity is present on the local router and the ratio of the actual PNI egress to usable 
+    - __Usable PNI egress capacity is present on the local router and the ratio of the actual PNI egress to usable 
         PNI egress capacity is smaller then the risk factor:__
      
-     __AND__
-   
-   - __The sum of the actual local CDN traffic and non-local traffic (P2P + Overflow) egressing the local PNI and 
-        the maximum serving capacity of any directly-attached (and unblocked) CDN region is smaller than the usable PNI 
-        egress capacity on the local router:__
+    __AND__
 
-     __DIRECTLY-ATTACHED CDN INTERFACES WILL START BEING UNBLOCKED, ONE BY ONE, AS SOON AS THE AFOREMENTIONED RULE IS 
+    - __The sum of the maximum serving capacity of the unblocked local CDN caches and the actual non-local traffic (P2P 
+        + Overflow) egressing the local PNI and the maximum serving capacity of any directly-attached (but blocked) CDN 
+        region is smaller than the usable PNI egress capacity on the local router:__
+
+    __DIRECTLY-ATTACHED CDN INTERFACES WILL START BEING UNBLOCKED, ONE BY ONE, AS SOON AS THE AFOREMENTIONED RULE IS 
         SATISFIED.__
 
-  Otherwise;
+Otherwise;
    
-   __NO ACTION WILL BE TAKEN.__
-
+    __NO ACTION WILL BE TAKEN.__  
 
 
 __8. LOGGING__
 
-   The program saves its logs in two separate local files saved on the disk and rotated daily;
+  The program saves its logs in two separate local files saved on the disk and rotated daily;
    
    - __pniMonitor_main.log:__ All events produced by the MainThread and its subThreads. Configurable severity.
    - __pniMonitor_ssh.log:__ All events that are logged by the SSH module. Has a fixed severity setting; WARNING. 
    
- In addition to local log files, high severity events are also available to be distributed as email alerts (_see
+In addition to local log files, high severity events are also available to be distributed as email alerts (_see
     Section-3 for configuration details_).
    
- Definition of available log / alert severities are as follows:
+Definition of available log / alert severities are as follows:
     
- __DEBUG__     
-   Detailed information, typically of interest only when diagnosing problems.  
+    __DEBUG__     
+    Detailed information, typically of interest only when diagnosing problems.  
    
- __INFO__      
-   Confirmation that things are working as expected.  
+    __INFO__      
+    Confirmation that things are working as expected.  
    
- __WARNING__   
-   An indication that something unexpected happened (such as a misconfiguration), or indicative of event (PNI failure, 
-   BGP prefix withdrawal, etc) which will soon trigger automated recovery actions. The program is still working as 
-   expected.  
+    __WARNING__   
+    An indication that something unexpected happened (such as a misconfiguration), or indicative of event (PNI failure, 
+    BGP prefix withdrawal, etc) which will soon trigger automated recovery actions. The program is still working as 
+    expected.  
        
- __ERROR__     
- Due to a more serious problem, the program has not been able to perform some function (such as a _Data Collection_ or 
- _Configuration Attempt_ failures). 
+    __ERROR__     
+    Due to a more serious problem, the program has not been able to perform some function (such as a _Data Collection_ 
+    or _Configuration Attempt_ failures). 
                   
- __CRITICAL__  
- A serious error, indicating that the program itself will be unable to continue running (_Dying gasp_).  
+    __CRITICAL__  
+    A serious error, indicating that the program itself will be unable to continue running (_Dying gasp_).   
 
 
 
@@ -299,7 +300,7 @@ __TO BE COMPLETED BEFORE THE FIRST RELEASE__
 - Test the main() function and operation under simulation_mode
 - Check mem util. after continuous run
 - Revise critical logging for interface block / unblock failures. Include interface name(s) in the alerts. - Done. 
-&& Output? - not tested.
+&& Output? - not tested.  
 
 
 __9. PLANNED FOR FUTURE RELEASES__
@@ -316,6 +317,6 @@ __9. PLANNED FOR FUTURE RELEASES__
 - __P4__ Activate node reachability checks for improved logging
 - __P4__ Graphical email updates with interface utilisation charts
 - __P4__ Ordered directory structure (/logs, /data, /conf, etc.)
-- __P4__ Replace SNMP & SSH with more reliable & convenient alternatives (eg. Netconf/RestAPI)
+- __P4__ Replace SNMP & SSH with more reliable & convenient alternatives (eg. Netconf/RestAPI)  
 
 [pniMonitor.py](https://github.com/onur-zengin/laphroaig)
