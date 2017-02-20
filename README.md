@@ -260,21 +260,21 @@ __[pniMonitor.py](https://github.com/onur-zengin/laphroaig)__
    The program saves its logs in two separate local files saved on the disk and rotated daily;
    
    - __pniMonitor_main.log:__ All events produced by the MainThread and its subThreads. Configurable severity.
-   - __pniMonitor_ssh.log:__ All events that are logged by the SSH module. Fixed severity: WARNING
+   - __pniMonitor_ssh.log:__ All events that are logged by the SSH module. Has a fixed severity setting; WARNING. 
    
-   In addition to local log files, high severity events are also available to be distributed as email alerts (_see
+  In addition to local log files, high severity events are also available to be distributed as email alerts (_see
     Section-3 for configuration details_).
    
-   Definition of available log / alert severities are as follows:
+  Definition of available log / alert severities are as follows:
     
-   __DEBUG__     Detailed information, typically of interest only when diagnosing problems.  
-   __INFO__      Confirmation that things are working as expected.  
-   __WARNING__   An indication that something unexpected happened (such as a misconfiguration), or indicative of event 
+   - __DEBUG__     Detailed information, typically of interest only when diagnosing problems.  
+   - __INFO__      Confirmation that things are working as expected.  
+   - __WARNING__   An indication that something unexpected happened (such as a misconfiguration), or indicative of event 
                   (PNI failure, BGP session withdrawal, etc) which will soon trigger automated recovery actions. The 
                   program is still working as expected.  
-   __ERROR__     Due to a more serious problem, the program has not been able to perform some function (such as _Data
+   - __ERROR__     Due to a more serious problem, the program has not been able to perform some function (such as _Data
                   Collection_ or _Configuration Attempt_ failures). 
-   __CRITICAL__  A serious error, indicating that the program itself will be unable to continue running (_Dying gasp_).  
+   - __CRITICAL__  A serious error, indicating that the program itself will be unable to continue running (_Dying gasp_).  
 
 
 #__TO BE COMPLETED BEFORE THE FIRST RELEASE__
