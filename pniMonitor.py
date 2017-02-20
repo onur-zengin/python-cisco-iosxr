@@ -82,7 +82,7 @@ class Router(threading.Thread):
         main_logger.info("Starting")
         self.tstamp = tstamp('mr')
         self.ipaddr = self.dns(self.node)
-        if self.switch is True:
+        if self.switch:
             main_logger.info("Inventory updated. Initializing node discovery")
             for f in os.listdir('.'):
                 if self.node+'.dsc' in f or self.node+'.prb' in f:
@@ -556,7 +556,7 @@ def _GzipnRotate(log_retention):
 
 
 def usage(arg, opt=False):
-    if opt is True:
+    if opt:
         try:
             with open("README.md") as readme_file:
                 print readme_file.read()
