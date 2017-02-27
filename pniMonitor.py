@@ -500,7 +500,7 @@ class Router(threading.Thread):
                 snmpr = stup[0].strip('\n').split('\n')
                 # elif timeout self.ping(self.ipaddr)
             else:
-                main_logger.error("Unexpected error during %s operation [_snmp() Err no.2]: %s" % (cmd, str(stup)))
+                main_logger.error("Unexpected error during %s operation [_snmp() Err no.2]: %s" % (cmd, stup[1]))
                 sys.exit(3)
         return snmpr
 
