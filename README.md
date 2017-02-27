@@ -232,7 +232,7 @@ If at any time;
 
     - __There is no usable PNI egress capacity left on the local router:__
    
-    __AND__
+    __OR__
    
     - __There is a partial PNI failure scenario on the local router / traffic overflow from another site, which 
         causes the ratio of the actual PNI egress to usable PNI egress capacity to be equal or greater than the risk 
@@ -242,7 +242,13 @@ If at any time;
    
 Else, if at any time;
 
-    - __Usable PNI egress capacity is present on the local router and the ratio of the actual PNI egress to usable PNI 
+    - __Usable PNI egress capacity is present on the local router 
+    
+    
+    __AND__ 
+    
+    
+    the ratio of the actual PNI egress to usable PNI 
         egress capacity is smaller than the risk factor:__
      
     __AND__
