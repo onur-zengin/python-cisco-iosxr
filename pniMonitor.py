@@ -299,18 +299,19 @@ class Router(threading.Thread):
                 if unblocked != []:
                     if not self.dryrun:
                         main_logger.warning('No usable PNI egress capacity available. Disabling all CDN interfaces: '
-                                            '%s' % unblocked)
+                                            '%r' % unblocked)
                         results, output = self._acl(ipaddr, 'block', unblocked)
                         if results == ['on' for i in range(len(unblocked))]:
+                            main_logger.warning('TEST LOG Interface blocking successful: %r\n%r' % (unblocked, output))
                             for interface in unblocked:
                                 main_logger.warning('Interface %s is now blocked' % interface)
                         else:
-                            main_logger.critical('Interface blocking attempt failed: %s\n%s' % (unblocked, output))
+                            main_logger.error('Interface blocking attempt failed: %r\n%r' % (unblocked, output))
                         for interface in blocked:
                             main_logger.info('Interface %s was already blocked' % interface)
                     elif self.dryrun:
-                        main_logger.warning('No usable PNI egress capacity available.  All CDN interfaces must be '
-                                            'disabled (Simulation Mode): %s' % unblocked)
+                        main_logger.warning('No usable PNI egress capacity available. All CDN interfaces must be '
+                                            'disabled (Simulation Mode): %r' % unblocked)
                 else:
                     main_logger.info('No usable PNI egress capacity available. However, all CDN interfaces are '
                                      'currently down / blocked. No valid actions left.')
@@ -320,37 +321,37 @@ class Router(threading.Thread):
                 if unblocked != []:
                     if not self.dryrun:
                         main_logger.warning('The ratio of actual PNI egress traffic to available egress capacity is '
-                                            'equal to or greater than the pre-defined Risk Factor. Disabling %s'
+                                            'equal to or greater than the pre-defined Risk Factor. Disabling %r'
                                             % unblocked)
                         results, output = self._acl(ipaddr, 'block', unblocked)
                         if results == ['on' for i in range(len(unblocked))]:
                             for interface in unblocked:
                                 main_logger.warning('Interface %s is now blocked' % interface)
                         else:
-                            main_logger.critical('Interface blocking attempt failed %s:\n%s' % (unblocked, output))
+                            main_logger.error('Interface blocking attempt failed %r:\n%r' % (unblocked, output))
                         for interface in blocked:
                             main_logger.info('Interface %s was already blocked' % interface)
                     elif self.dryrun:
                         main_logger.warning('The ratio of actual PNI egress traffic to available egress capacity is '
-                                            'equal to or greater than the pre-defined Risk Factor. %s must be disabled'
+                                            'equal to or greater than the pre-defined Risk Factor. %r must be disabled'
                                             % unblocked)
                 else:
-                    main_logger.info('Risk Factor hit. However, all CDN interfaces are currently down / blocked. No '
+                    main_logger.info('Risk Factor hit. However all CDN interfaces are currently down / blocked. No '
                                      'valid actions left.')
             elif blocked != [] and actualPniOut / usablePniOut * 100 < self.risk_factor:
                 if maxCdnIn + actualPniOut < usablePniOut:
                     if not self.dryrun:
-                        main_logger.info('Risk mitigated. Re-enabling all CDN interfaces: %s' % blocked)
+                        main_logger.info('Risk mitigated. Re-enabling all CDN interfaces: %r' % blocked)
                         results, output = self._acl(ipaddr, 'unblock', blocked)
                         if results == ['off' for i in range(len(blocked))]:
                             for interface in blocked:
                                 main_logger.info('Interface %s is now unblocked' % interface)
                         else:
-                            main_logger.critical('Interface unblocking attempt failed: %s\n%s' % (blocked, output))
+                            main_logger.error('Interface unblocking attempt failed: %r\n%r' % (blocked, output))
                         for interface in unblocked:
                             main_logger.info('Interface %s was already unblocked' % interface)
                     elif self.dryrun:
-                        main_logger.info('Risk mitigated. All CDN interfaces should be enabled (Simulation Mode): %s'
+                        main_logger.info('Risk mitigated. All CDN interfaces should be enabled (Simulation Mode): %r'
                                          % blocked)
                 else:
                     for value in sorted([util for util in [disc[interface]['util'] for interface in
@@ -368,15 +369,16 @@ class Router(threading.Thread):
                                 if results == ['off']:
                                     main_logger.info('Interface %s is now unblocked' % candidate_interface)
                                 else:
-                                    main_logger.critical('Interface unblocking attempt failed: %s\n%s' %
-                                                         (candidate_interface, output))
+                                    main_logger.error('Interface unblocking attempt failed: %r\n%r' %
+                                                      (candidate_interface, output))
                                 break
                             elif self.dryrun:
                                 if usablePniOut < physicalPniOut:
-                                    main_logger.info('Risk partially mitigated. %s should be enabled.' %
-                                                     candidate_interface)
+                                    main_logger.info('Risk partially mitigated. %s should be enabled (Simulation Mode)'
+                                                     % candidate_interface)
                                 else:
-                                    main_logger.info('Risk mitigated. %s should be enabled' % candidate_interface)
+                                    main_logger.info('Risk mitigated. %s should be enabled (Simulation Mode)'
+                                                     % candidate_interface)
             else:
                 main_logger.info('_process() completed. No action taken nor was necessary.')
         elif prv == {} and len(nxt) > 0:
@@ -388,7 +390,7 @@ class Router(threading.Thread):
             # This will be revisited in version-2 when persistence is enabled, so that _process() function can
             # continue running for the already existing interfaces.
         else:
-            main_logger.error("Unexpected error in the _process() function\nprev:%s\nnext:%s" % (prv, nxt))
+            main_logger.error("Unexpected error in the _process() function\nprev:%r\nnext:%r" % (prv, nxt))
 
     def _acl(self, ipaddr, decision, interfaces):
         results, output = [], []
