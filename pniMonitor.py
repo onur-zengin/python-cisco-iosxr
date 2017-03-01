@@ -507,35 +507,31 @@ class Router(threading.Thread):
                 else:
                     if pingresult == 0:
                         main_logger.error("Unexpected error during %s operation [_snmp() Err no.3]: %s\n"
-                                          "(Troubleshooting advice: Node responds to ICMP ping. Verify SNMP "
-                                          "configuration)" % (cmd, stup[1]))
+                                          "(Troubleshooting note: Node responds to ICMP ping. Verify SNMP configuration"
+                                          "and the management ACLs on the node)" % (cmd, stup[1]))
                         sys.exit(3)
                     elif pingresult == 1:
                         main_logger.error("Unexpected error during %s operation [_snmp() Err no.4]: %s\n"
-                                          "(Troubleshooting advice: Intermittent packet loss detected)"
+                                          "(Troubleshooting note: Intermittent packet loss detected)"
                                           % (cmd, stup[1]))
                         sys.exit(3)
                     elif pingresult == 2:
                         main_logger.error("Unexpected error during %s operation [_snmp() Err no.5]: %s\n"
-                                          "(Troubleshooting advice: Node unreachable)"
-                                          % (cmd, stup[1]))
-                        sys.exit(3)
-                    elif pingresult == 3:
-                        main_logger.error("Unexpected error during %s operation [_snmp() Err no.6]: %s\n"
-                                          "(Troubleshooting advice: None)"
+                                          "(Troubleshooting note: Node unreachable)"
                                           % (cmd, stup[1]))
                         sys.exit(3)
                     else:
-                        main_logger.error("Unexpected error during %s operation [_snmp() Err no.7]: %s\n"
-                                          "(Troubleshooting advice: None)"
+                        main_logger.error("Unexpected error during %s operation [_snmp() Err no.6]: %s\n"
+                                          "(Troubleshooting note: None)"
                                           % (cmd, stup[1]))
                         sys.exit(3)
             else:
-                main_logger.error("Unexpected error during %s operation [_snmp() Err no.8]: %s" % (cmd, stup[1]))
+                main_logger.error("Unexpected error during %s operation [_snmp() Err no.7]: %s" % (cmd, stup[1]))
                 sys.exit(3)
         return snmpr
 
     def ping(self,ipaddr):
+        pingr = None
         try:
             ptup = subprocess.Popen(['ping', '-i', '0.2', '-w', '2', '-c', '500', ipaddr, '-q'], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE).communicate()
@@ -554,13 +550,10 @@ class Router(threading.Thread):
                         pingr = 2
                     else:
                         main_logger.debug("Unexpected error during ping test [Err no.2]: %s" % (str(n)))
-                        pingr = 3
                 else:
                     main_logger.debug("Unexpected error during ping test [Err no.3]: %s" % (str(ptup[0])))
-                    pingr = 3
             else:
                 main_logger.debug("Unexpected error during ping test [Err no.4]: %s" % (str(ptup)))
-                pingr = 3
         return pingr
 
 
