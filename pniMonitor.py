@@ -302,7 +302,10 @@ class Router(threading.Thread):
                                             '%r' % unblocked)
                         results, output = self._acl(ipaddr, 'block', unblocked)
                         if results == ['on' for i in range(len(unblocked))]:
-                            main_logger.warning('TEST LOG Interface blocking successful: %r\n%r' % (unblocked, output))
+                            readable = ''
+                            for line in output:
+                                readable += line
+                            main_logger.warning('TEST LOG Interface blocking successful: %r\n%r' % (unblocked, readable))
                             for interface in unblocked:
                                 main_logger.warning('Interface %s is now blocked' % interface)
                         else:
@@ -313,8 +316,8 @@ class Router(threading.Thread):
                         main_logger.warning('No usable PNI egress capacity available. All CDN interfaces must be '
                                             'disabled (Simulation Mode): %r' % unblocked)
                 else:
-                    main_logger.info('No usable PNI egress capacity available. However, all CDN interfaces are '
-                                     'currently down / blocked. No valid actions left.')
+                    main_logger.info('No usable PNI egress capacity available. However all CDN interfaces are '
+                                     'currently down or in blocked state. No valid actions left.')
             # We can't use actualCDNIn while calculating the risk_factor because it won't include P2P traffic
             # and / or the CDN overflow from the other site(s). It is worth revisiting for Sky Germany though.
             elif actualPniOut / usablePniOut * 100 >= self.risk_factor:
@@ -336,8 +339,8 @@ class Router(threading.Thread):
                                             'equal to or greater than the pre-defined Risk Factor. %r must be disabled'
                                             % unblocked)
                 else:
-                    main_logger.info('Risk Factor hit. However all CDN interfaces are currently down / blocked. No '
-                                     'valid actions left.')
+                    main_logger.info('Risk Factor hit. However all CDN interfaces are currently down or in blocked '
+                                     'state. No valid actions left.')
             elif blocked != [] and actualPniOut / usablePniOut * 100 < self.risk_factor:
                 if maxCdnIn + actualPniOut < usablePniOut:
                     if not self.dryrun:
