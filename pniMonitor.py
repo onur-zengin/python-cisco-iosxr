@@ -305,11 +305,11 @@ class Router(threading.Thread):
                             readable = ''
                             for line in output:
                                 readable += line
-                            main_logger.warning('TEST LOG Interface blocking successful: %r\n%r' % (unblocked, readable))
+                            main_logger.warning('TEST LOG Interface blocking successful: %s\n%s' % (unblocked, readable))
                             for interface in unblocked:
                                 main_logger.warning('Interface %s is now blocked' % interface)
                         else:
-                            main_logger.error('Interface blocking attempt failed: %r\n%r' % (unblocked, output))
+                            main_logger.error('Interface blocking attempt failed: %s\n%s' % (unblocked, output))
                         for interface in blocked:
                             main_logger.info('Interface %s was already blocked' % interface)
                     elif self.dryrun:
