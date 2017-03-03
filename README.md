@@ -148,6 +148,25 @@ __3. CONFIGURATION__
 
    If switched on; node discovery, probing and decision-making functions will continue, however __NO__ configuration 
     changes will be made to the router(s).   
+ 
+
+  __3.3. HOW TO START__
+  
+  - Verify environment settings:
+    - Python version must be 2.7.x; `python -V`
+    - If the correct version not found, add the following line to the `.bash_profile` file in user `$HOME` directory;
+        - `source ~nadt/nadt-aliases.include.bash`
+        - Verify the Python version again; `vrun python -V`
+  - Browse to the script directory; `cd /scripts/laphroaig/`
+  - Run the script:
+    - If using the native Python installation on the system; `./pniMonitor.py`  
+    OR
+    - If using the virtualized NADT environment as described above; `vrun ./pniMonitor.py`
+  - Wait for the prompt and enter C-Auth password
+  - Once the `Authentication Successful` message is displayed:
+    - Pause the script; `ctrl^z`
+    - Send it to background; `bg`
+    - And finally de-attach it from your terminal session; `disown -h %1`
 
 
 
@@ -303,7 +322,6 @@ __TO BE COMPLETED BEFORE THE FIRST RELEASE__
 - Test removal of an interface during runtime (pni & cdn)
 - Test removal of a node during runtime
 - Test int util. of an 100G interface
-- Test the main() function and operation under simulation_mode
 - Check mem util. after continuous run
 
 

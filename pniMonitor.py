@@ -17,7 +17,7 @@ import operator
 import gzip
 #import resource
 #import gc
-#import fcntl
+import fcntl
 
 ssh_logger = logging.getLogger('paramiko')
 ssh_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s]: %(message)s')
@@ -629,6 +629,12 @@ def get_pw(c=3):
 
 
 def main(args):
+    fp = open(args[0][:-3] + ".pid", 'w')
+    try:
+        fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except IOError:
+        print "Another instance is already running."
+        sys.exit(1)
     #asctime = tstamp('hr')
     inventory_file = 'inventory.txt'
     frequency = 20
@@ -943,7 +949,7 @@ def main(args):
             main_logger.debug("\n\tInventory File: %s\n\tACL Name: %s\n\tPNI Interface Tag: %s\n\tCDN Interface Tag: %s"
                               "\n\n\tFrequency: %s\n\tRisk Factor: %s\n\tCDN Serving Cap: %s\n\tIPv4 Min Prefixes: %s"
                               "\n\tIPv6 Min Prefixes: %s\n\tLog Level: %s\n\tLog Retention: %s\n\tEmail Alert Sev: %s"
-                              "\n\tSimulation Mode: %s\n\tRuntime: %s\n\n\tEmail distribution list: %s"
+                              "\n\tSimulation Mode: %s\n\tRuntime: %s\n\tEmail distribution list: %s"
                               % (inventory_file, acl_name, pni_interface_tag, cdn_interface_tag, frequency, risk_factor,
                                  cdn_serving_cap, ipv4_min_prefixes, ipv6_min_prefixes, loglevel, log_retention,
                                  email_alert_severity, dryrun, runtime, email_distro))
