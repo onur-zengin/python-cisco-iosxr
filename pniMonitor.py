@@ -8,8 +8,6 @@ import logging
 import time
 import subprocess
 import re
-import resource
-import gc
 import os
 import paramiko
 import getpass
@@ -17,7 +15,9 @@ from datetime import datetime as dt
 from logging import handlers
 import operator
 import gzip
-import zc.lockfile
+#import resource
+#import gc
+#import fcntl
 
 ssh_logger = logging.getLogger('paramiko')
 ssh_formatter = logging.Formatter('%(asctime)-15s [%(levelname)s]: %(message)s')
