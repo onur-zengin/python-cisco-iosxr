@@ -305,22 +305,21 @@ __TO BE COMPLETED BEFORE THE FIRST RELEASE__
 - Test int util. of an 100G interface
 - Test the main() function and operation under simulation_mode
 - Check mem util. after continuous run
-- Revise critical logging for interface block / unblock failures. Include interface name(s) in the alerts. - Done. 
-&& Output? - not tested.  
 
 
 __9. PLANNED FOR FUTURE RELEASES__
 
-- __P1__ Multi-ASN support
-- __P1__ IPv6 ACL for RHM Blocking
 - __P1__ Netcool integration (might outsource this)
-- __P2__ Dying gasp (Catch SIGTERM KILL and report in logging)
+- __P1__ Prevent multiple instances of the script being run (potentially with 'fcntl')
+- __P1__ Dying gasp (Catch SIGTERM KILL and report in logging) & Provide a bash script for liveness checks (SIGKILL cannot be caught)
+- __P2__ Multi-ASN support
+- __P2__ IPv6 ACL for RHM Blocking
 - __P2__ Persistence (of the previously recorded interface utilization data upon a new node or interface discovery)
 - __P2__ Automated discovery of new interfaces (In the current release it is manually triggered)
 - __P3__ Per-region cdn_serving_cap setting (It is available as a Global parameter in the current release)
 - __P3__ Nokia 7750 support
 - __P3__ IOS-XR / SROS version check
-- __P4__ Activate node reachability checks for improved logging
+- __P4__ Activate node reachability checks upon SSH failures for improved logging (Currently available for SNMP failures)
 - __P4__ Graphical email updates with interface utilisation charts
 - __P4__ Ordered directory structure (/logs, /data, /conf, etc.)
 - __P4__ Replace SNMP & SSH with more reliable & convenient alternatives (eg. Netconf/RestAPI)  

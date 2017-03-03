@@ -2,6 +2,7 @@
 !inventory.txt
 .idea/
 test*
+*.log
 .DO_NOT_MODIFY*
 updated_main*
 pniAlerts*
