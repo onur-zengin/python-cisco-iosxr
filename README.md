@@ -229,10 +229,10 @@ __7. PROCESS (_Decision Making_)__
 For any PNI interface and its available physical egress capacity to be considered as 'usable', it must satisfy the 
     following requirements;
     
-    - Interface operational status __MUST__ be `UP` (this will typically be a Ethernet Bundle interface, and in the 
+    - Interface operational status **MUST** be `UP` (this will typically be a Ethernet Bundle interface, and in the 
       case of partial link failures, the total bandwidth of the remaining interfaces will be considered available)  
     
-    __AND__  
+    **AND** 
     
     - State of the BGPv4 session sourced from the interface's local IPv4 address __MUST__ be `ESTABLISHED` __AND__ the 
       number of IPv4 prefixes received and __accepted__ from the remote BGP peer __MUST NOT__ be lower than the 
