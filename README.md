@@ -261,14 +261,13 @@ If at any time;
    
 Else, if at any time;
 
-    - __Usable PNI egress capacity is present on the local router 
+    - __Usable PNI egress capacity is present on the local router__
     
     
     __AND__ 
     
     
-    the ratio of the actual PNI egress to usable PNI 
-        egress capacity is smaller than the risk factor:__
+    - __The ratio of the actual PNI egress to usable PNI egress capacity is smaller than the risk factor:__
      
     __AND__
 
