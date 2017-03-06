@@ -226,7 +226,7 @@ __7. PROCESS (_Decision Making_)__
     the background (as a daemon-like process) and use subThreads to re-assess the usable PNI egress capacity and 
     recalculate the actual `risk_factor` in the preferred polling frequency, using the data collected by probe.
     
-For any PNI interface and its available physical egress capacity to be considered as 'usable', it must satisfy the 
+   For any PNI interface and its available physical egress capacity to be considered 'usable', it must satisfy the 
     following requirements;
     
     - Interface operational status MUST be `UP` (this will typically be a Ethernet Bundle interface, and in the 
@@ -325,7 +325,6 @@ __TO BE COMPLETED BEFORE THE FIRST RELEASE__
 __9. PLANNED FOR FUTURE RELEASES__
 
 - __P1__ Netcool integration (might outsource this)
-- __P1__ Prevent multiple instances of the script being run (potentially with 'fcntl')
 - __P1__ Dying gasp (Catch SIGTERM KILL and report in logging) & Provide a bash script for liveness checks (SIGKILL cannot be caught)
 - __P2__ Multi-ASN support
 - __P2__ IPv6 ACL for RHM Blocking
