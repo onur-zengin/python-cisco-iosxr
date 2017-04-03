@@ -950,7 +950,7 @@ def main(args):
             main_eh.setLevel(logging.getLevelName(email_alert_severity))
             main_logger.addHandler(main_eh)
             main_logger.debug("\n\tInventory File: %s\n\tACL Name: %s\n\tPNI Interface Tag: %s\n\tCDN Interface Tag: %s"
-                              "\n\n\tFrequency: %s\n\tRisk Factor: %s\n\tCDN Serving Cap: %s\n\tIPv4 Min Prefixes: %s"
+                              "\n\tFrequency: %s\n\tRisk Factor: %s\n\tCDN Serving Cap: %s\n\tIPv4 Min Prefixes: %s"
                               "\n\tIPv6 Min Prefixes: %s\n\tLog Level: %s\n\tLog Retention: %s\n\tEmail Alert Sev: %s"
                               "\n\tSimulation Mode: %s\n\tRuntime: %s\n\tEmail distribution list: %s"
                               % (inventory_file, acl_name, pni_interface_tag, cdn_interface_tag, frequency, risk_factor,

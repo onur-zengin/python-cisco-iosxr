@@ -47,22 +47,7 @@ def main(args):
     else:
         try:
             for opt, arg in parameters:
-                if opt == 'log_retention':
-                    try:
-                        arg = int(arg)
-                    except ValueError:
-                        logging.warning('The value of the log_retention argument must be an integer. '
-                                                'Resetting to last known good configuration: %s' % log_retention)
-                    else:
-                        if 0 <= arg <= 90:
-                            if log_retention != arg:
-                                logging.info('Log retention has been updated: %s' % arg)
-                            log_retention = arg
-                        else:
-                            logging.warning('The value of the log_retention argument must be an integer '
-                                                    'between 0 and 90. Resetting to last known good configuration: '
-                                                    '%s' % log_retention)
-                elif opt == 'email_alert_severity':
+                if opt == 'email_alert_severity':
                     if arg.lower() in ('warning', 'error', 'critical'):
                         if email_alert_severity != arg.upper():
                             logging.info('Email alert severity has been updated: %s' % arg.upper())
@@ -70,86 +55,7 @@ def main(args):
                     else:
                         logging.warning('Invalid severity specified for email alerts. Resetting to last '
                                                 'known good configuration: %s' % email_alert_severity)
-                elif opt == 'risk_factor':
-                    try:
-                        arg = int(arg)
-                    except ValueError:
-                        logging.warning('The value of the risk_factor argument must be an integer. '
-                                                'Resetting to last known good configuration: %s' % risk_factor)
-                    else:
-                        if 0 <= arg <= 100:
-                            if risk_factor != arg:
-                                logging.info('Risk Factor has been updated: %s' % arg)
-                            risk_factor = arg
-                        else:
-                            logging.warning('The value of the risk_factor argument must be an integer '
-                                                    'between 0 and 100. Resetting to last known good configuration: '
-                                                    '%s' % risk_factor)
-                elif opt == 'frequency':
-                    try:
-                        arg = int(arg)
-                    except ValueError:
-                        logging.warning('The value of the frequency argument must be an integer. Resetting '
-                                                'to last known good configuration: %s' % frequency)
-                    else:
-                        if 30 <= arg <= 120:
-                            if frequency != arg:
-                                logging.info('Running frequency has been updated: %s' % arg)
-                            frequency = arg
-                        else:
-                            logging.warning('The running frequency can not be shorter than 30 or longer '
-                                                    'than 120 seconds. Resetting to last known good configuration: '
-                                                    '%s' % frequency)
-                elif opt == 'cdn_serving_cap':
-                    try:
-                        arg = int(arg)
-                    except ValueError:
-                        logging.warning('The value of the cdn_serving_cap must be an integer. Resetting '
-                                                'to last known good configuration: %s' % cdn_serving_cap)
-                    else:
-                        if 0 <= arg <= 100:
-                            if cdn_serving_cap != arg:
-                                logging.info('CDN Serving Cap has been updated: %s' % arg)
-                            cdn_serving_cap = arg
-                        else:
-                            logging.warning('The cdn_serving_cap must be an integer between 0 and 100.'
-                                                    'Resetting to last known good configuration: %s'
-                                                    % cdn_serving_cap)
-                elif opt == 'runtime':
-                    if arg.lower() == 'infinite':
-                        if runtime != arg.lower():
-                            logging.info('Runtime has been updated: "infinite"')
-                        runtime = 'infinite'
-                    else:
-                        try:
-                            arg = int(arg)
-                        except ValueError:
-                            logging.warning('The value of the runtime argument must be either be "infinite" or '
-                                                'an integer')
-                        else:
-                            if runtime != arg:
-                                logging.info('Runtime has been updated: %s' % arg)
-                            runtime = arg
-                elif opt.lower() == 'ipv4_min_prefixes':
-                    try:
-                        arg = int(arg)
-                    except ValueError:
-                        logging.warning('The value of the ipv4_min_prefixes must be an integer. Resetting '
-                                                'to last known good configuration: %s' % ipv4_min_prefixes)
-                    else:
-                        if ipv4_min_prefixes != arg:
-                            logging.info('ipv4_min_prefix count has been updated: %s' % arg)
-                        ipv4_min_prefixes = arg
-                elif opt.lower() == 'ipv6_min_prefixes':
-                    try:
-                        arg = int(arg)
-                    except ValueError:
-                        logging.warning('The value of the ipv6_min_prefixes must be an integer. Resetting '
-                                                'to last known good configuration: %s' % ipv6_min_prefixes)
-                    else:
-                        if ipv6_min_prefixes != arg:
-                            logging.info('ipv6_min_prefix count has been updated: %s' % arg)
-                        ipv6_min_prefixes = arg
+
                 elif opt == 'email_distribution_list':
                     split_lst = arg.split(',')
                     try:

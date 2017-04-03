@@ -6,10 +6,93 @@ import logging.handlers
 import argparse
 import getopt
 import os
-import fcntl
+import os.path
+import re
+
+email_distro = ['onur.zengin@sky.uk']
+
+logFormatter = logging.Formatter('%(asctime)-15s [%(levelname)s]: %(message)s')
+rootLogger = logging.getLogger()
+
+emailHandler = logging.handlers.SMTPHandler('localhost', 'no-reply@automation.skycdp.com', email_distro, 'CRITICAL: PNI Monitor Liveness Check Failed')
+emailHandler.setFormatter(logFormatter)
+emailHandler.setLevel(logging.CRITICAL)
+rootLogger.addHandler(emailHandler)
+
+consoleHandler = logging.StreamHandler()
+consoleHandler.setFormatter(logFormatter)
+rootLogger.addHandler(consoleHandler)
+
 
 def main(args):
-
+    print "initial values"
+    print email_distro
+    global email_distro
+    global emailHandler
+    try:
+        options, remainder = getopt.getopt(args[1:], "c:", ["config="])
+    except getopt.GetoptError as getopterr:
+        rootLogger.error(getopterr)
+        sys.exit(2)
+    else:
+        for opt, arg in options:
+            if opt in ('-c', '--config'):
+                config_file = arg
+            else:
+                rootLogger.error("Invalid option specified on the command line: %s" % opt)
+                sys.exit(2)
+    try:
+        with open(config_file) as pf:
+            parameters = [tuple(i.split('=')) for i in
+                          filter(lambda line: line[0] != '#', [n.strip('\n')
+                                                               for n in pf.readlines() if n != '\n'])]
+    except IOError:
+        rootLogger.critical("Liveness Check Failed. %r could not be located.", config_file)
+    else:
+        try:
+            for opt, arg in parameters:
+                if opt == 'email_distribution_list':
+                    split_lst = arg.split(',')
+                    try:
+                        for email in split_lst:
+                            match = re.search(r"[\w.-]+@(sky.uk|bskyb.com)", email)
+                            match.group()
+                    except AttributeError:
+                        rootLogger.warning('Invalid email address found in the distribution list. Resetting to default '
+                                           'configuration: %s' % email_distro)
+                    else:
+                        if email_distro != split_lst:
+                            rootLogger.info('Email distribution list has been updated: %s' % split_lst)
+                        email_distro = split_lst
+                else:
+                    pass
+        except ValueError:
+            logging.warning("Invalid configuration line detected and ignored. All configuration parameters must "
+                            "be provided as key value pairs separated by an equal sign (=).")
+    finally:
+        try:
+            rootLogger.removeHandler(emailHandler)
+        except NameError:
+            pass
+        emailHandler = logging.handlers.SMTPHandler('localhost', 'no-reply@automation.skycdp.com', email_distro,
+                                                    'CRITICAL: PNI Monitor Liveness Check Failed')
+        emailHandler.setFormatter(logFormatter)
+        emailHandler.setLevel(logging.CRITICAL)
+        rootLogger.addHandler(emailHandler)
+    print "final values"
+    print config_file
+    print email_distro
+    pid_file = config_file.split(".")[0] + '.pid'
+    try:
+        with open(pid_file) as pf:
+            pid = pf.read()
+    except IOError:
+        rootLogger.critical("Liveness Check Failed. %r could not be located.", pid_file)
+    except:
+        rootLogger.critical("Liveness Check Failed. Unexpected error: %r %r", sys.exc_info()[0], sys.exc_info()[1])
+    else:
+        if not os.path.exists("/proc/" + pid):
+            rootLogger.critical("Liveness Check Failed. No process found with PID#%r.", pid)
 
 if __name__ == '__main__':
     main(sys.argv)
