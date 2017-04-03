@@ -150,7 +150,8 @@ __3. CONFIGURATION__
     changes will be made to the router(s).   
  
 
-  __3.3. HOW TO START__
+
+  __3.3. HOW TO RUN__
   
   - Verify environment settings:
     - Python version must be 2.7.x; `python -V`
@@ -261,14 +262,13 @@ If at any time;
    
 Else, if at any time;
 
-    - __Usable PNI egress capacity is present on the local router 
+    - __Usable PNI egress capacity is present on the local router__
     
     
     __AND__ 
     
     
-    the ratio of the actual PNI egress to usable PNI 
-        egress capacity is smaller than the risk factor:__
+    - __The ratio of the actual PNI egress to usable PNI egress capacity is smaller than the risk factor__
      
     __AND__
 
@@ -323,12 +323,12 @@ __TO BE COMPLETED BEFORE THE FIRST RELEASE__
 - Test removal of a node during runtime
 - Test int util. of an 100G interface
 - Check mem util. after continuous run
+- SNMP failure after ssh succeeds
 
 
 __9. PLANNED FOR FUTURE RELEASES__
 
 - __P1__ Netcool integration (might outsource this)
-- __P1__ Prevent multiple instances of the script being run (potentially with 'fcntl')
 - __P1__ Dying gasp (Catch SIGTERM KILL and report in logging) & Provide a bash script for liveness checks (SIGKILL cannot be caught)
 - __P2__ Multi-ASN support
 - __P2__ IPv6 ACL for RHM Blocking

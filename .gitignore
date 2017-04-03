@@ -7,3 +7,4 @@ test*
 updated_main*
 pniAlerts*
 ssh_pniMon*
+*.pid
