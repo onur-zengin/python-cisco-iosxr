@@ -227,22 +227,22 @@ __7. PROCESS (_Decision Making_)__
     the background (as a daemon-like process) and use subThreads to re-assess the usable PNI egress capacity and 
     recalculate the actual `risk_factor` in the preferred polling frequency, using the data collected by probe.
     
-For any PNI interface and its available physical egress capacity to be considered as 'usable', it must satisfy the 
+   For any PNI interface and its available physical egress capacity to be considered 'usable', it must satisfy the 
     following requirements;
     
-    - Interface operational status __MUST__ be `UP` (this will typically be a Ethernet Bundle interface, and in the 
+    - Interface operational status MUST be `UP` (this will typically be a Ethernet Bundle interface, and in the 
       case of partial link failures, the total bandwidth of the remaining interfaces will be considered available)  
     
-    __AND__  
+    AND  
     
-    - State of the BGPv4 session sourced from the interface's local IPv4 address __MUST__ be `ESTABLISHED` __AND__ the 
-      number of IPv4 prefixes received and __accepted__ from the remote BGP peer __MUST NOT__ be lower than the 
+    - State of the BGPv4 session sourced from the interface's local IPv4 address MUST be `ESTABLISHED` AND the 
+      number of IPv4 prefixes received and `accepted` from the remote BGP peer MUST NOT be lower than the 
       configured `ipv4_min_prefixes`  
    
-    __OR__
+    OR
    
-    - State of the BGPv6 session sourced from the interface's local IPv6 address __MUST__ be `ESTABLISHED` __AND__ the 
-      number of IPv6 prefixes received and __accepted__ from the remote BGP peer __MUST NOT__ be lower than the 
+    - State of the BGPv6 session sourced from the interface's local IPv6 address MUST be `ESTABLISHED` AND the 
+      number of IPv6 prefixes received and `accepted` from the remote BGP peer MUST NOT be lower than the 
       configured `ipv6_min_prefixes`  
 
 
@@ -250,38 +250,42 @@ Once the usable PNI egress capacity is calculated:
     
 If at any time;
 
-    - __There is no usable PNI egress capacity left on the local router:__
+    - There is NO usable PNI egress capacity left on the local router:
    
-    __OR__
+    OR
    
-    - __There is a partial PNI failure scenario on the local router / traffic overflow from another site, which 
-        causes the ratio of the actual PNI egress to usable PNI egress capacity to be equal or greater than the risk 
-        factor:__
+    - There is a partial PNI failure scenario on the local router / traffic overflow from another site, which 
+      causes the ratio of the actual PNI egress to usable PNI egress capacity to be equal or greater than the risk 
+      factor:
      
-    __ALL DIRECTLY-ATTACHED CDN INTERFACES WILL BE BLOCKED.__
+    ALL DIRECTLY-ATTACHED CDN INTERFACES WILL BE BLOCKED
    
 Else, if at any time;
 
-    - __Usable PNI egress capacity is present on the local router__
+    - Usable PNI egress capacity is present on the local router
     
     
-    __AND__ 
+    AND
+
+    - There is usable PNI egress capacity is present on the local router,
     
+    AND
     
-    - __The ratio of the actual PNI egress to usable PNI egress capacity is smaller than the risk factor__
+
+    - The ratio of the actual PNI egress to usable PNI egress capacity is smaller than the risk factor,
      
-    __AND__
+    AND
 
-    - __The sum of the maximum serving capacity of the unblocked local CDN caches and the actual non-local traffic (P2P 
-        + Overflow) egressing the local PNI and the maximum serving capacity of any directly-attached (but blocked) CDN 
-        region is smaller than the usable PNI egress capacity on the local router:__
+    - The sum of the maximum serving capacity of the unblocked local CDN caches and the actual non-local traffic (P2P 
+      + Overflow) egressing the local PNI and the maximum serving capacity of any directly-attached (but blocked) CDN 
+      region is smaller than the usable PNI egress capacity on the local router:
 
-    __DIRECTLY-ATTACHED CDN INTERFACES WILL START BEING UNBLOCKED, ONE BY ONE, AS SOON AS THE AFOREMENTIONED RULE IS 
-        SATISFIED.__
+    DIRECTLY-ATTACHED CDN INTERFACES WILL START BEING UNBLOCKED, ONE BY ONE, AS SOON AS THE AFOREMENTIONED RULE IS 
+     SATISFIED
 
 Otherwise;
    
-    __NO ACTION WILL BE TAKEN.__  
+    NO ACTION WILL BE TAKEN
 
 
 __8. LOGGING__
@@ -296,23 +300,23 @@ In addition to local log files, high severity events are also available to be di
    
 Definition of available log / alert severities are as follows:
     
-    __DEBUG__     
+    DEBUG    
     Detailed information, typically of interest only when diagnosing problems.  
    
-    __INFO__      
+    INFO      
     Confirmation that things are working as expected.  
    
-    __WARNING__   
+    WARNING   
     An indication that something unexpected happened (such as a misconfiguration), or indicative of event (PNI failure, 
     BGP prefix withdrawal, etc) which will soon trigger automated recovery actions. The program is still working as 
     expected.  
        
-    __ERROR__     
-    Due to a more serious problem, the program has not been able to perform some function (such as a _Data Collection_ 
-    or _Configuration Attempt_ failures). 
+    ERROR     
+    Due to a more serious problem, the program has not been able to perform some function (such as a `Data Collection` 
+    or `Configuration Attempt` failures). 
                   
-    __CRITICAL__  
-    A serious error, indicating that the program itself will be unable to continue running (_Dying gasp_).   
+    CRITICAL  
+    A serious error, indicating that the program itself will be unable to continue running (`Dying gasp`).   
 
 
 
