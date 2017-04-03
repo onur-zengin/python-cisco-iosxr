@@ -3,7 +3,6 @@
 import sys
 import logging
 import logging.handlers
-import argparse
 import getopt
 import os
 import os.path
@@ -41,6 +40,11 @@ def main(args):
                 rootLogger.error("Invalid option specified on the command line: %s" % opt)
                 sys.exit(2)
     try:
+        config_file = config_file
+    except UnboundLocalError:
+        rootLogger.error("A configuration file must be specified. Syntax; [-c <filename>] or [--config <filename>]")
+        sys.exit(2)
+    try:
         with open(config_file) as pf:
             parameters = [tuple(i.split('=')) for i in
                           filter(lambda line: line[0] != '#', [n.strip('\n')
@@ -66,8 +70,7 @@ def main(args):
                 else:
                     pass
         except ValueError:
-            logging.warning("Invalid configuration line detected and ignored. All configuration parameters must "
-                            "be provided as key value pairs separated by an equal sign (=).")
+            pass
     finally:
         try:
             rootLogger.removeHandler(emailHandler)
@@ -81,14 +84,16 @@ def main(args):
     pid_file = config_file.split(".")[0] + '.pid'
     try:
         with open(pid_file) as pf:
-            pid = pf.read().strip("'")
+            pid = pf.read()
     except IOError:
-        rootLogger.critical("Liveness Check Failed. %r could not be located.", pid_file)
+        rootLogger.critical("Liveness Check Failed. %s could not be located.", pid_file)
     except:
         rootLogger.critical("Liveness Check Failed. Unexpected error: %r %r", sys.exc_info()[0], sys.exc_info()[1])
     else:
+        if len(pid) == 0:
+            rootLogger.critical("Liveness Check Failed. (No process id found)")
         if not os.path.exists("/proc/" + pid):
-            rootLogger.critical("Liveness Check Failed. No process found with PID#%r.", pid)
+            rootLogger.critical("Liveness Check Failed. (No process found with PID#%s)", pid)
 
 if __name__ == '__main__':
     main(sys.argv)
