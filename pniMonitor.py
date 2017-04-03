@@ -629,13 +629,12 @@ def get_pw(c=3):
 
 
 def main(args):
-    pid = os.getpid()
+    pid = str(os.getpid())
+    with open(args[0][:-3] + '.pid', 'w') as pidfile:
+        pidfile.write(pid)
     try:
-        fp = open(args[0][:-3] + ".pid", 'w')
-        fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        fp.seek(0)
-        fp.truncate(0)
-        fp.write(str(pid))
+        lockfile = open(args[0][:-3] + '.lck', 'w')
+        fcntl.lockf(lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except IOError:
         print "Another instance is already running."
         sys.exit(1)
@@ -987,7 +986,7 @@ def main(args):
                         hungThreads.append(t.name)
                 if hungThreads != []:
                     main_logger.critical("Threads detected in hung state: %r. Terminating." % hungThreads)
-                    subprocess.Popen(['kill', '-9', str(os.getpid())], stdout=subprocess.PIPE,
+                    subprocess.Popen(['kill', '-9', pid], stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE).communicate()
                 main_logger.info("All subThreads completed")
                 lastChanged = os.stat(inventory_file).st_mtime
