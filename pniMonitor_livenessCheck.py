@@ -21,14 +21,6 @@ eh.setLevel(logging.CRITICAL)
 logger.addHandler(eh)
 
 def main(args):
-    frequency = 20
-    risk_factor = 95
-    log_retention = 7
-    email_alert_severity = 'ERROR'
-    ipv4_min_prefixes = 0
-    ipv6_min_prefixes = 50
-    cdn_serving_cap = 90
-    runtime = 'infinite'
     email_distro = []
     try:
         options, remainder = getopt.getopt(args[1:], "c:", ["config="])
