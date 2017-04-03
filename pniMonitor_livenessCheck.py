@@ -51,6 +51,7 @@ def main(args):
                                                                for n in pf.readlines() if n != '\n'])]
     except IOError:
         rootLogger.critical("Liveness Check Failed. %r could not be located.", config_file)
+        sys.exit(2)
     else:
         try:
             for opt, arg in parameters:
@@ -87,12 +88,14 @@ def main(args):
             pid = pf.read()
     except IOError:
         rootLogger.critical("Liveness Check Failed. %s could not be located.", pid_file)
+        sys.exit(2)
     except:
         rootLogger.critical("Liveness Check Failed. Unexpected error: %r %r", sys.exc_info()[0], sys.exc_info()[1])
+        sys.exit(2)
     else:
         if len(pid) == 0:
             rootLogger.critical("Liveness Check Failed. (No process id found)")
-        if not os.path.exists("/proc/" + pid):
+        elif not os.path.exists("/proc/" + pid):
             rootLogger.critical("Liveness Check Failed. (No process found with PID#%s)", pid)
 
 if __name__ == '__main__':
