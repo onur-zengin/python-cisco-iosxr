@@ -14,7 +14,8 @@ email_distro = ['onur.zengin@sky.uk']
 logFormatter = logging.Formatter('%(asctime)-15s [%(levelname)s]: %(message)s')
 rootLogger = logging.getLogger()
 
-emailHandler = logging.handlers.SMTPHandler('localhost', 'no-reply@automation.skycdp.com', email_distro, 'CRITICAL: PNI Monitor Liveness Check Failed')
+emailHandler = logging.handlers.SMTPHandler('localhost', 'no-reply@automation.skycdp.com', email_distro,
+                                            'CRITICAL: PNI Monitor Liveness Check Failed')
 emailHandler.setFormatter(logFormatter)
 emailHandler.setLevel(logging.CRITICAL)
 rootLogger.addHandler(emailHandler)
@@ -25,8 +26,6 @@ rootLogger.addHandler(consoleHandler)
 
 
 def main(args):
-    print "initial values"
-    print email_distro
     global email_distro
     global emailHandler
     try:
@@ -79,13 +78,10 @@ def main(args):
         emailHandler.setFormatter(logFormatter)
         emailHandler.setLevel(logging.CRITICAL)
         rootLogger.addHandler(emailHandler)
-    print "final values"
-    print config_file
-    print email_distro
     pid_file = config_file.split(".")[0] + '.pid'
     try:
         with open(pid_file) as pf:
-            pid = pf.read()
+            pid = pf.read().strip("'")
     except IOError:
         rootLogger.critical("Liveness Check Failed. %r could not be located.", pid_file)
     except:
