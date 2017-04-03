@@ -630,7 +630,7 @@ def get_pw(c=3):
 
 def main(args):
     fp = open(args[0][:-3] + ".pid", 'w')
-    fp.write(os.getpid())
+    fp.write(str(os.getpid()))
     try:
         fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except IOError:
