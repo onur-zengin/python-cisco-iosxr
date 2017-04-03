@@ -630,9 +630,9 @@ def get_pw(c=3):
 
 def main(args):
     fp = open(args[0][:-3] + ".pid", 'w')
-    fp.write('text')
     try:
         fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        fp.write(str(os.getpid()))
     except IOError:
         print "Another instance is already running."
         sys.exit(1)
