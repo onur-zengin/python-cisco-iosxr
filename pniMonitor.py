@@ -653,7 +653,7 @@ def main(args):
     cdn_serving_cap = 90
     dryrun = False
     runtime = 'infinite'
-    email_distro = []
+    email_distro = ['cdnsupport@sky.uk', 'dl-contentdeliveryplatform@bskyb.com']
     try:
         options, remainder = getopt.getopt(args[1:], "hm", ["help", "manual"])
     except getopt.GetoptError as getopterr:

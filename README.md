@@ -127,7 +127,7 @@ __3. CONFIGURATION__
 
    The number of days for the rotated log files to be kept on disk.
 
-   __email_distribution_list=[`name.surname@sky.uk,group_name@bskyb.com`(_default_:`None`)]__
+   __email_distribution_list=[`name.surname@sky.uk,group_name@bskyb.com`(_default_:`cdnsupport@sky.uk`)]__
 
    The list of email addresses to be notified when an event occurs. Email addresses that are outside the `@sky.uk` or 
    `@bskyb.com` domains will __NOT__ be accepted. Multiple entries must be separated by a comma (`,`).
@@ -318,6 +318,28 @@ Definition of available log / alert severities are as follows:
     CRITICAL  
     A serious error, indicating that the program itself will be unable to continue running (`Dying gasp`).   
 
+
+__9. LIVENESS CHECKS__
+
+  The distribution includes an audit script `pniMonitor_livenessCheck.py` which can be added into the operating 
+  system's crontab configuration to verify the liveness of the main program at regular intervals. It reads the PID of 
+  the main process from the `pniMonitor.pid` file, which is created by the main process during startup, and verifies 
+  the existence of a matching entry in the operating system's `/proc/` folder.
+  
+  Any of the following conditions will cause the liveness check to _fail_ and send out an email alert with `CRITICAL` 
+  severity to the email distribution list found in the `pniMonitor.conf` file;
+
+    - A process with the given PID is not running,
+    - A process ID could not be found in the pniMonitor.pid file,
+    - The pniMonitor.pid file could not be located,
+    - The pniMonitor.conf file could not be located. (This results in the email alerts being sent to a default 
+    distribution list)
+   
+  Non-critical events (`INFO` or `WARNING`) will be sent to the console output or a cron log file (if configured).  
+  
+  Sample crontab configuration to run the checks in every 5 minutes;
+  
+  `*/5 * * * * cd /<path>/laphroaig/; ./pniMonitor_livenessCheck.py -c pniMonitor.conf >> cron.log 2>&1`
 
 
 __TO BE COMPLETED BEFORE THE FIRST RELEASE__
