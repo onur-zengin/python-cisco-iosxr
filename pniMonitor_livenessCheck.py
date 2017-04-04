@@ -53,7 +53,7 @@ def main(args):
                           filter(lambda line: line[0] != '#', [n.strip('\n')
                                                                for n in pf.readlines() if n != '\n'])]
     except IOError:
-        rootLogger.critical("Liveness Check Failed. %r could not be located.", config_file)
+        rootLogger.critical("Liveness Check Failed. Configuration File %r could not be located.", config_file)
         sys.exit(2)
     else:
         try:
