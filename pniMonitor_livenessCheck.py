@@ -23,8 +23,9 @@ rootLogger.addHandler(emailHandler)
 
 consoleHandler = logging.StreamHandler()
 consoleHandler.setFormatter(logFormatter)
-consoleHandler.setLevel(logging.INFO)
+#consoleHandler.setLevel(logging.INFO)
 rootLogger.addHandler(consoleHandler)
+rootLogger.setLevel(logging.INFO)
 
 
 def main(args):
