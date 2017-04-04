@@ -294,6 +294,7 @@ __8. LOGGING__
    
    - __pniMonitor_main.log:__ All events produced by the MainThread and its subThreads. Configurable severity.
    - __pniMonitor_ssh.log:__ All events that are logged by the SSH module. Has a fixed severity setting; WARNING. 
+   - __pniMonitor_cron.log:__ Generated and used by the livenessCheck script running on the crontab (_see Section-9_)
    
 In addition to local log files, high severity events are also available to be distributed as email alerts (_see
     Section-3 for configuration details_).
@@ -337,19 +338,15 @@ __9. LIVENESS CHECKS__
    
   Non-critical events (`INFO`, `WARNING` or `ERROR`) will be sent to console or a cronlog file (if one configured).  
   
-  Sample crontab configuration to run the checks in every 5 minutes;
+  Sample crontab configuration to schedule the liveness checks to be run in every 5 minutes;
   
-  `*/5 * * * * cd /<path>/laphroaig/; ./pniMonitor_livenessCheck.py -c pniMonitor.conf >> cron.log 2>&1`
+  `*/5 * * * * cd /<path>/laphroaig/; ./pniMonitor_livenessCheck.py -c pniMonitor.conf >> pniMonitor_cron.log 2>&1`
+  
+  __Note:__ Using the above log file naming convention (`pniMonitor_cron.log`) will allow the main script to handle the 
+  rotation of the cronlogs with no additional effort.
 
 
-__TO BE COMPLETED BEFORE THE FIRST RELEASE__
-
-- Test int util. of an 100G interface
-- Check mem util. after continuous run
-- SNMP failure after ssh succeeds
-
-
-__9. PLANNED FOR FUTURE RELEASES__
+__10. PLANNED FOR FUTURE RELEASES__
 
 - __P1__ Netcool integration (might outsource this)
 - __P2__ Multi-ASN support

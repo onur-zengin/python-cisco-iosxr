@@ -559,7 +559,7 @@ class Router(threading.Thread):
 
 
 def _GzipnRotate(log_retention):
-    unzipped_logfiles = filter(lambda file: re.search(r'pniMonitor_(main|ssh).log.*[^gz]$', file),
+    unzipped_logfiles = filter(lambda file: re.search(r'pniMonitor_(main|ssh|cron).log.*[^gz]$', file),
                                os.listdir(os.getcwd()))
     for file in unzipped_logfiles:
         with open(file) as ulf:

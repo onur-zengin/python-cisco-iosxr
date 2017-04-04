@@ -9,8 +9,7 @@ import os.path
 import re
 
 #Specifies a default distribution list, in case the configuration file can't be located.
-#email_distro = ['cdnsupport@sky.uk', 'dl-contentdeliveryplatform@bskyb.com']
-email_distro = ['onur.zengin@sky.uk']
+email_distro = ['cdnsupport@sky.uk', 'dl-contentdeliveryplatform@bskyb.com']
 
 logFormatter = logging.Formatter('%(asctime)-15s [%(levelname)s]: %(message)s')
 rootLogger = logging.getLogger()
