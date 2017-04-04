@@ -8,6 +8,8 @@ import os
 import os.path
 import re
 
+#Specifies a default distribution list, in case the configuration file can't be located.
+#email_distro = ['cdnsupport@sky.uk', 'dl-contentdeliveryplatform@bskyb.com']
 email_distro = ['onur.zengin@sky.uk']
 
 logFormatter = logging.Formatter('%(asctime)-15s [%(levelname)s]: %(message)s')
@@ -21,6 +23,7 @@ rootLogger.addHandler(emailHandler)
 
 consoleHandler = logging.StreamHandler()
 consoleHandler.setFormatter(logFormatter)
+consoleHandler.setLevel(logging.INFO)
 rootLogger.addHandler(consoleHandler)
 
 

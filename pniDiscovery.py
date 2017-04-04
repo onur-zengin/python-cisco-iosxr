@@ -9,6 +9,7 @@ rootLogger = logging.getLogger()
 
 consoleHandler = logging.StreamHandler()
 consoleHandler.setFormatter(logFormatter)
+consoleHandler.setLevel(logging.INFO)
 rootLogger.addHandler(consoleHandler)
 
 def main(args):
