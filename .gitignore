@@ -9,3 +9,4 @@ pniAlerts*
 ssh_pniMon*
 *.pid
 *.lck
+*.gz
