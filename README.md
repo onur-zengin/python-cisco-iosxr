@@ -335,7 +335,7 @@ __9. LIVENESS CHECKS__
     - The pniMonitor.conf file could not be located. (This results in the email alerts being sent to a default 
     distribution list)
    
-  Non-critical events (`INFO` or `WARNING`) will be sent to the console output or a cron log file (if configured).  
+  Non-critical events (`INFO`, `WARNING` or `ERROR`) will be sent to console or a cronlog file (if one configured).  
   
   Sample crontab configuration to run the checks in every 5 minutes;
   
@@ -344,9 +344,6 @@ __9. LIVENESS CHECKS__
 
 __TO BE COMPLETED BEFORE THE FIRST RELEASE__
 
-- Test discovery of a new interface during runtime (pni & cdn)
-- Test removal of an interface during runtime (pni & cdn)
-- Test removal of a node during runtime
 - Test int util. of an 100G interface
 - Check mem util. after continuous run
 - SNMP failure after ssh succeeds
@@ -355,7 +352,6 @@ __TO BE COMPLETED BEFORE THE FIRST RELEASE__
 __9. PLANNED FOR FUTURE RELEASES__
 
 - __P1__ Netcool integration (might outsource this)
-- __P1__ Dying gasp (Catch SIGTERM KILL and report in logging) & Provide a bash script for liveness checks (SIGKILL cannot be caught)
 - __P2__ Multi-ASN support
 - __P2__ IPv6 ACL for RHM Blocking
 - __P2__ Persistence (of the previously recorded interface utilization data upon a new node or interface discovery)
@@ -363,6 +359,7 @@ __9. PLANNED FOR FUTURE RELEASES__
 - __P3__ Per-region cdn_serving_cap setting (It is available as a Global parameter in the current release)
 - __P3__ Nokia 7750 support
 - __P3__ IOS-XR / SROS version check
+- __P4__ Catch SIGTERM KILL and report in logging (SIGKILL cannot be caught & there is a seperate liveness check script) 
 - __P4__ Activate node reachability checks upon SSH failures for improved logging (Currently available for SNMP failures)
 - __P4__ Graphical email updates with interface utilisation charts
 - __P4__ Ordered directory structure (/logs, /data, /conf, etc.)
