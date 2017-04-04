@@ -102,7 +102,11 @@ def main(args):
             rootLogger.critical("Liveness Check Failed. (No process found with PID#%s)", pid)
         elif os.path.exists("/proc/" + pid):
             print "Li C passed."
+            rootLogger.critical("Liveness Check passed. (PID#%s)", pid)
+            rootLogger.warning("Liveness Check passed. (PID#%s)", pid)
+            rootLogger.error("Liveness Check passed. (PID#%s)", pid)
             rootLogger.info("Liveness Check passed. (PID#%s)", pid)
+            rootLogger.debug("Liveness Check passed. (PID#%s)", pid)
 
 
 if __name__ == '__main__':
