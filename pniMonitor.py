@@ -15,8 +15,6 @@ from datetime import datetime as dt
 from logging import handlers
 import operator
 import gzip
-#import resource
-#import gc
 import fcntl
 
 ssh_logger = logging.getLogger('paramiko')
@@ -57,14 +55,13 @@ oidlist = ['.1.3.6.1.2.1.31.1.1.1.1',  #0 IF-MIB::ifName
            ".1.3.6.1.2.1.31.1.1.1.10",  #9 ifHCOutOctets
            ".1.3.6.1.4.1.9.9.187.1.2.5.1.3", #10 cbgpPeer2State 3active 6established
            ".1.3.6.1.4.1.9.9.187.1.2.8.1.1", #11 cbgpPeer2AcceptedPrefixes
-           ".1.3.6.1.4.1.9.9.808.1.1.4" #12 caAclAccessGroupCfgTable
+           #".1.3.6.1.4.1.9.9.808.1.1.4" #12 caAclAccessGroupCfgTable
            ]
 
 
 class Router(threading.Thread):
     dsc_oids = oidlist[:4]
     int_oids = oidlist[5:10]
-    bw_oids = oidlist[7:10]
     bgp_oids = oidlist[10:]
     def __init__(self, threadID, node, pw, dswitch, risk_factor, cdn_serving_cap,
                  acl_name, dryrun, int_identifiers, pfx_thresholds):
@@ -176,8 +173,15 @@ class Router(threading.Thread):
         for interface in sorted(disc):
             if disc[interface]['type'] == 'cdn':
                 disc[interface]['aclStatus'] = self.acl_check(raw_acl_status[-1], interface, self.acl_name)
-        with open('.do_not_modify_'.upper()+self.node+'.dsc', 'w') as tf:
-            tf.write(str(disc))
+        try:
+            with open('.do_not_modify_'.upper() + self.node + '.dsc', 'w') as tf:
+                tf.write(str(disc))
+        except:
+            main_logger.error('Unexpected error while writing discovery data to file (%s : %s).', sys.exc_info()[0],
+                              sys.exc_info()[1])
+            sys.exit(1)
+        else:
+            main_logger.info('Discovery data saved.')
         return disc
 
     def probe(self, ipaddr, disc):
@@ -206,7 +210,7 @@ class Router(threading.Thread):
             if ptup[1] == '':
                 prv = eval(ptup[0])
             elif "No such file or directory" in ptup[1]:
-                main_logger.info("New node detected")
+                main_logger.info("Inventory updates detected")
             else:
                 main_logger.error("Operation halted. Unexpected output in the probe() function" % (str(ptup)))
                 sys.exit(3)
@@ -238,8 +242,14 @@ class Router(threading.Thread):
                         main_logger.warning("PNI interface %s has no BGP sessions" % interface)
                 #if disc[interface]['type'] == 'cdn':
                  #   nxt[interface]['aclStatus'] = self.acl_check(raw_acl_status[-1], interface, self.acl_name)
-            with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
-                pf.write(str(nxt)+'\n')
+            try:
+                with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
+                    pf.write(str(nxt) + '\n')
+            except:
+                main_logger.error('Unexpected error while writing probe data to file (%s : %s).', sys.exc_info()[0],
+                                  sys.exc_info()[1])
+            else:
+                main_logger.info('Probe data saved.')
         return prv, nxt
 
     def _process(self, ipaddr, disc):
@@ -303,19 +313,29 @@ class Router(threading.Thread):
             if usablePniOut == 0:
                 if unblocked != []:
                     if not self.dryrun:
-                        main_logger.warning('No usable PNI egress capacity available. Disabling all CDN interfaces: '
-                                            '%s' % unblocked)
+                        main_logger.warning('No usable PNI egress capacity available. Applying RHM Block on all CDN '
+                                            'interfaces: %s' % unblocked)
                         results, output = self._acl(ipaddr, 'block', unblocked)
                         if results == ['on' for i in range(len(unblocked))]:
                             for interface in unblocked:
-                                main_logger.warning('Interface %s is now blocked' % interface)
+                                disc[interface]['aclStatus'] = 'on'
+                            try:
+                                with open('.do_not_modify_'.upper() + self.node + '.dsc', 'w') as tf:
+                                    tf.write(str(disc))
+                            except:
+                                main_logger.error('Following interfaces are now blocked, however inventory update '
+                                                  'failed (%s : %s). Data inconsistencies will occur. Run '
+                                                  './pniDiscovery.py to clear: %s', sys.exc_info()[0],
+                                                  sys.exc_info()[1], unblocked)
+                            else:
+                                main_logger.warning('Following interfaces are now blocked: %s' % unblocked)
                         else:
                             main_logger.error('Interface blocking attempt failed: %s' % unblocked)
                         for interface in blocked:
                             main_logger.info('Interface %s was already blocked' % interface)
                     elif self.dryrun:
                         main_logger.warning('No usable PNI egress capacity available. All CDN interfaces must be '
-                                            'disabled (Simulation Mode): %s' % unblocked)
+                                            'blocked (Simulation Mode): %s' % unblocked)
                 else:
                     main_logger.info('No usable PNI egress capacity available. However all CDN interfaces are '
                                      'currently down or in blocked state. No valid actions left.')
@@ -325,19 +345,29 @@ class Router(threading.Thread):
                 if unblocked != []:
                     if not self.dryrun:
                         main_logger.warning('The ratio of actual PNI egress traffic to available egress capacity is '
-                                            'equal to or greater than the pre-defined Risk Factor. Disabling %s'
-                                            % unblocked)
+                                            'equal to or greater than the pre-defined Risk Factor. Applying RHM Block'
+                                            'on all CDN interfaces: %s' % unblocked)
                         results, output = self._acl(ipaddr, 'block', unblocked)
                         if results == ['on' for i in range(len(unblocked))]:
                             for interface in unblocked:
-                                main_logger.warning('Interface %s is now blocked' % interface)
+                                disc[interface]['aclStatus'] = 'on'
+                            try:
+                                with open('.do_not_modify_'.upper() + self.node + '.dsc', 'w') as tf:
+                                    tf.write(str(disc))
+                            except:
+                                main_logger.error('Following interfaces are now blocked, however inventory update '
+                                                  'failed (%s : %s). Data inconsistencies will occur. Run '
+                                                  './pniDiscovery.py to clear: %s', sys.exc_info()[0],
+                                                  sys.exc_info()[1], unblocked)
+                            else:
+                                main_logger.warning('Following interfaces are now blocked: %s' % unblocked)
                         else:
                             main_logger.error('Interface blocking attempt failed: %s' % unblocked)
                         for interface in blocked:
                             main_logger.info('Interface %s was already blocked' % interface)
                     elif self.dryrun:
                         main_logger.warning('The ratio of actual PNI egress traffic to available egress capacity is '
-                                            'equal to or greater than the pre-defined Risk Factor. %s must be disabled'
+                                            'equal to or greater than the pre-defined Risk Factor. %s must be blocked'
                                             % unblocked)
                 else:
                     main_logger.info('Risk Factor hit. However all CDN interfaces are currently down or in blocked '
@@ -349,7 +379,17 @@ class Router(threading.Thread):
                         results, output = self._acl(ipaddr, 'unblock', blocked)
                         if results == ['off' for i in range(len(blocked))]:
                             for interface in blocked:
-                                main_logger.info('Interface %s is now unblocked' % interface)
+                                disc[interface]['aclStatus'] = 'off'
+                            try:
+                                with open('.do_not_modify_'.upper() + self.node + '.dsc', 'w') as tf:
+                                    tf.write(str(disc))
+                            except:
+                                main_logger.error('Following interfaces are now enabled, however inventory update '
+                                                  'failed (%s : %s). Data inconsistencies will occur. Run '
+                                                  './pniDiscovery.py to clear: %s', sys.exc_info()[0],
+                                                  sys.exc_info()[1], blocked)
+                            else:
+                                main_logger.info('Following interfaces are now enabled: %s' % blocked)
                         else:
                             main_logger.error('Interface unblocking attempt failed: %s' % blocked)
                         for interface in unblocked:
@@ -371,7 +411,17 @@ class Router(threading.Thread):
                                     main_logger.info('Risk mitigated. Re-enabling interface: %s' % candidate_interface)
                                 results, output = self._acl(ipaddr, 'unblock', [candidate_interface])
                                 if results == ['off']:
-                                    main_logger.info('Interface %s is now unblocked' % candidate_interface)
+                                    disc[candidate_interface]['aclStatus'] = 'off'
+                                    try:
+                                        with open('.do_not_modify_'.upper() + self.node + '.dsc', 'w') as tf:
+                                            tf.write(str(disc))
+                                    except:
+                                        main_logger.error('Following interface is now enabled, however inventory '
+                                                          'update failed (%s : %s). Data inconsistencies will occur. '
+                                                          'Run ./pniDiscovery.py to clear: %s', sys.exc_info()[0],
+                                                          sys.exc_info()[1], candidate_interface)
+                                    else:
+                                        main_logger.info('Interface %s is now enabled' % candidate_interface)
                                 else:
                                     main_logger.error('Interface unblocking attempt failed: %s' % candidate_interface)
                                 break
@@ -385,7 +435,8 @@ class Router(threading.Thread):
             else:
                 main_logger.info('_process() completed. No action taken nor was necessary.')
         elif prv == {} and len(nxt) > 0:
-            main_logger.info("New node detected. _process() function will be activated in the next polling cycle")
+            main_logger.info("Inventory updates detected. _process() function will be activated in the next polling "
+                             "cycle")
         elif prv != {} and len(prv) < len(nxt):
             main_logger.info("New interface discovered.")
             # There is no persistence in this release (*.prb files are removed when a new interface is discovered)
@@ -426,7 +477,7 @@ class Router(threading.Thread):
 
     def _ssh(self, ipaddr, commandlist):
         if len(commandlist) == 1:
-            mssg = 'Data Collection'
+            mssg = 'Data Collection / Node Discovery'
         else:
             mssg = 'Configuration Attempt'
         try:
@@ -997,8 +1048,6 @@ def main(args):
                 if type(runtime) == int:
                     runtime -= 1
             finally:
-                #n = gc.collect()
-                #print "unreachable:", n
                 if runtime == 0:
                     main_logger.info("Runtime exceeded. Exiting.")
                     break
