@@ -172,6 +172,10 @@ class Router(threading.Thread):
                                 disc[interface]['peer_ipv6'] = [(peeraddr, cbgpPeer2index)]
                             else:
                                 disc[interface]['peer_ipv6'] += [(peeraddr, cbgpPeer2index)]
+        raw_acl_status = self._ssh(ipaddr, ["sh access-lists %s usage pfilter loc all" % self.acl_name])
+        for interface in sorted(disc):
+            if disc[interface]['type'] == 'cdn':
+                disc[interface]['aclStatus'] = self.acl_check(raw_acl_status[-1], interface, self.acl_name)
         with open('.do_not_modify_'.upper()+self.node+'.dsc', 'w') as tf:
             tf.write(str(disc))
         return disc
@@ -207,7 +211,7 @@ class Router(threading.Thread):
                 main_logger.error("Operation halted. Unexpected output in the probe() function" % (str(ptup)))
                 sys.exit(3)
         finally:
-            raw_acl_status = self._ssh(ipaddr, ["sh access-lists %s usage pfilter loc all" % self.acl_name])
+            #raw_acl_status = self._ssh(ipaddr, ["sh access-lists %s usage pfilter loc all" % self.acl_name])
             for interface in sorted(disc):
                 int_status = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in
                                                 self.int_oids], cmd='snmpget')
@@ -232,8 +236,8 @@ class Router(threading.Thread):
                             nxt[interface]['peerStatus_ipv6'][n[0]] = peer_status
                     if not disc[interface].has_key('peer_ipv4') and not disc[interface].has_key('peer_ipv6'):
                         main_logger.warning("PNI interface %s has no BGP sessions" % interface)
-                if disc[interface]['type'] == 'cdn':
-                    nxt[interface]['aclStatus'] = self.acl_check(raw_acl_status[-1], interface, self.acl_name)
+                #if disc[interface]['type'] == 'cdn':
+                 #   nxt[interface]['aclStatus'] = self.acl_check(raw_acl_status[-1], interface, self.acl_name)
             with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                 pf.write(str(nxt)+'\n')
         return prv, nxt
@@ -281,10 +285,10 @@ class Router(threading.Thread):
                             int_util = (delta_ifInOctets * 8) / (delta_time * 10 ** 6)
                             disc[n]['util'] = int_util
                             actualCdnIn += int_util
-                        if nxt[n]['aclStatus'] == 'off':
+                        if disc[n]['aclStatus'] == 'off':
                             unblocked.append(n)
                             unblocked_maxCdnIn += int(nxt[n]['ifSpeed']) * self.serving_cap / 100
-                        elif nxt[n]['aclStatus'] == 'on':
+                        elif disc[n]['aclStatus'] == 'on':
                             blocked.append(n)
             for interface in disc:
                 main_logger.debug("%s(%s): %.2f%%", interface, disc[interface]['type'], disc[interface]['util_prc'])
@@ -569,7 +573,7 @@ def _GzipnRotate(log_retention):
         main_logger.info('%s compressed and saved.', file)
         os.remove(file)
     zipped_logfiles = {file: os.stat(file).st_mtime for file in
-                       filter(lambda file: re.search(r'pniMonitor_(main|ssh).log.*[gz]$', file),
+                       filter(lambda file: re.search(r'pniMonitor_(main|ssh|cron).log.*[gz]$', file),
                               os.listdir(os.getcwd()))}
     if len(zipped_logfiles) > int(log_retention):
         sortedlogfiles = sorted(zipped_logfiles.items(), key=operator.itemgetter(1))
