@@ -260,6 +260,8 @@ class Router(threading.Thread):
                 if n in self.pni_interfaces:
                     disc[n]['util'] = 0
                     disc[n]['util_prc'] = 0
+                    if nxt[n]['operStatus'] == 'up':
+                        physicalPniOut += int(nxt[n]['ifSpeed'])
                     if nxt[n]['operStatus'] == 'up' \
                             and reduce(lambda x, y: int(x) + int(y),
                                        [nxt[n]['peerStatus_ipv4'][x][1] for x in nxt[n]['peerStatus_ipv4']

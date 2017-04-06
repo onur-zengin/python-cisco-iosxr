@@ -192,6 +192,11 @@ __5. DISCOVERY__
    The program has a built-in discovery function which will be auto-triggered either during the first run or any time
     the inventory file is updated. Collected data is stored in local files on disk; `.DO_NOT_MODIFY_<nodename>.dsc`.
     
+   Discovery function uses the description tags configured on the router interfaces in order to build an inventory of 
+    all interfaces to be included in the decision-making process, as well as their IP addresses and the relevant BGP 
+    neighbors. For any BGP neighbor to be associated with a PNI, the session MUST be sourced from the IP address (IPv4 
+    or IPv6) of the local interface.
+    
    Addition or removal of an interface to / from the monitoring (once the interfaces are labeled correctly) can be 
     achieved by using the `pniDiscovery.py` script which can be found inside the same directory. The correct syntax 
     to run the script is as follows;
