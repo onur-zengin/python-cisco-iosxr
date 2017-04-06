@@ -5,14 +5,14 @@ import getopt
 import socket
 import threading
 import logging
+from logging import handlers
 import time
 import subprocess
 import re
 import os
 import paramiko
 import getpass
-from datetime import datetime as dt
-from logging import handlers
+import datetime
 import operator
 import gzip
 import fcntl
@@ -35,7 +35,7 @@ def tstamp(format):
     if format == 'hr':
         return time.asctime()
     elif format == 'mr':
-        return dt.now()
+        return datetime.datetime.now()
 
 hd = os.environ['HOME']
 un = getpass.getuser()
@@ -177,8 +177,7 @@ class Router(threading.Thread):
             with open('.do_not_modify_'.upper() + self.node + '.dsc', 'w') as tf:
                 tf.write(str(disc))
         except:
-            main_logger.error('Unexpected error while writing discovery data to file (%s : %s).', sys.exc_info()[0],
-                              sys.exc_info()[1])
+            main_logger.error('Unexpected error while writing discovery data to file: %s:%s' % sys.exc_info()[:2])
             sys.exit(1)
         else:
             main_logger.info('Discovery data saved.')
@@ -215,7 +214,6 @@ class Router(threading.Thread):
                 main_logger.error("Operation halted. Unexpected output in the probe() function" % (str(ptup)))
                 sys.exit(3)
         finally:
-            #raw_acl_status = self._ssh(ipaddr, ["sh access-lists %s usage pfilter loc all" % self.acl_name])
             for interface in sorted(disc):
                 int_status = self.snmp(ipaddr, [i + '.' + disc[interface]['ifIndex'] for i in
                                                 self.int_oids], cmd='snmpget')
@@ -240,14 +238,11 @@ class Router(threading.Thread):
                             nxt[interface]['peerStatus_ipv6'][n[0]] = peer_status
                     if not disc[interface].has_key('peer_ipv4') and not disc[interface].has_key('peer_ipv6'):
                         main_logger.warning("PNI interface %s has no BGP sessions" % interface)
-                #if disc[interface]['type'] == 'cdn':
-                 #   nxt[interface]['aclStatus'] = self.acl_check(raw_acl_status[-1], interface, self.acl_name)
             try:
                 with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                     pf.write(str(nxt) + '\n')
             except:
-                main_logger.error('Unexpected error while writing probe data to file (%s : %s).', sys.exc_info()[0],
-                                  sys.exc_info()[1])
+                main_logger.error('Unexpected error while writing probe data to file: %s:%s' % sys.exc_info()[:2])
             else:
                 main_logger.info('Probe data saved.')
         return prv, nxt
@@ -274,7 +269,8 @@ class Router(threading.Thread):
                                        if nxt[n]['peerStatus_ipv6'][x][0] == '6'], 0) > self.ipv6_minPfx:
                         usablePniOut += int(nxt[n]['ifSpeed'])
                         if prv[p]['operStatus'] == 'up':
-                            delta_time = (dt.strptime(nxt[n]['ts'], dF) - dt.strptime(prv[p]['ts'], dF)).total_seconds()
+                            delta_time = (datetime.datetime.strptime(nxt[n]['ts'], dF) -
+                                          datetime.datetime.strptime(prv[p]['ts'], dF)).total_seconds()
                             delta_ifOutOctets = int(nxt[n]['ifOutOctets']) - int(prv[p]['ifOutOctets'])
                             int_util_prc = (delta_ifOutOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
                             disc[n]['util_prc'] = int_util_prc
@@ -288,7 +284,8 @@ class Router(threading.Thread):
                         physicalCdnIn += int(nxt[n]['ifSpeed'])
                         maxCdnIn += int(nxt[n]['ifSpeed']) * self.serving_cap / 100
                         if prv[p]['operStatus'] == 'up':
-                            delta_time = (dt.strptime(nxt[n]['ts'], dF) - dt.strptime(prv[p]['ts'], dF)).total_seconds()
+                            delta_time = (datetime.datetime.strptime(nxt[n]['ts'], dF) -
+                                          datetime.datetime.strptime(prv[p]['ts'], dF)).total_seconds()
                             delta_ifInOctets = int(nxt[n]['ifInOctets']) - int(prv[p]['ifInOctets'])
                             int_util_prc = (delta_ifInOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
                             disc[n]['util_prc'] = int_util_prc
@@ -614,6 +611,16 @@ class Router(threading.Thread):
 
 
 def _GzipnRotate(log_retention):
+    unrotated_cronfiles = filter(lambda file: re.search(r'pniMonitor_cron.log$', file), os.listdir(os.getcwd()))
+    now = tstamp('mr').time()
+    if datetime.time(0, 2, 1) < now < datetime.time(0, 3, 0):
+        for cronfile in unrotated_cronfiles:
+            try:
+                os.rename(cronfile, cronfile + '.' + str(datetime.date.today()))
+            except:
+                main_logger.warning('%s could not be rotated. s% : s%', cronfile, sys.exc_info()[0], sys.exc_info()[1])
+            else:
+                main_logger.info('%s rotated.' % cronfile)
     unzipped_logfiles = filter(lambda file: re.search(r'pniMonitor_(main|ssh|cron).log.*[^gz]$', file),
                                os.listdir(os.getcwd()))
     for file in unzipped_logfiles:
@@ -695,7 +702,7 @@ def main(args):
         sys.exit(1)
     #asctime = tstamp('hr')
     inventory_file = 'inventory.txt'
-    frequency = 20
+    frequency = 30
     risk_factor = 95
     loglevel = 'INFO'
     log_retention = 7

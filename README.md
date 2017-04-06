@@ -190,35 +190,41 @@ __4. MULTI-THREADING__
 __5. DISCOVERY__
 
    The program has a built-in discovery function which will be auto-triggered either during the first run or any time
-    the inventory file is updated. Collected data is stored in a local file on disk; `.DO_NOT_MODIFY_<nodename>.dsc`.
+    the inventory file is updated. Collected data is stored in local files on disk; `.DO_NOT_MODIFY_<nodename>.dsc`.
     
    Addition or removal of an interface to / from the monitoring (once the interfaces are labeled correctly) can be 
-    achieved by running the `pniDiscovery.py` script which can be found inside the same directory.
+    achieved by using the `pniDiscovery.py` script which can be found inside the same directory. The correct syntax 
+    to run the script is as follows;
+    
+    `pniDiscovery [-c <filename>] [--config <filename>]`
+    `pniDiscovery -c pniMonitor.conf`
    
    __Note:__ The first release of the code do not have persistence enabled. Hence, at any time the discovery function is 
    triggered to run, which should not be too frequent, it will cause the previously collected data to be lost. This does
    not incur any risk other than delaying the process (decision making) functions by one (1) polling period.  
    
+   At the time of development, the original intent of the code was to make it operate over SNMP only, to keep it fast 
+    and light-touch on the network equipment. However, since Cisco IOS-XR routers do not support the ACL-MIB; the 
+    discovery function had to evolve in a hybrid mode of operation where the ACL status on the interfaces is verified 
+    via an SSH session, while the rest of the inventory details are polled via SNMP.
+    
+   Once discovery is completed; ACL configuration status per-interface is saved on disk, and not re-checked in every 
+    polling cycle. This behaviour is added in v1.1.0 to prevent overloading the management-plane on the routers with too
+    many SSH connections. In the same release the script is also updated to keep the discovery file updated with any 
+    ACL configuration change it performs on the router interface(s) and alert in the case of failure to update, 
+    in order to prevent data inconsistencies.
+   
 
 __6. PROBE (_Data Collection_)__
 
-   The probe function collects data from each node statelessly and stores it in a local hidden file on disk; 
-   `.DO_NOT_MODIFY_<nodename>.prb`, while tagging the data it collects with timestamps.   
+   The probe function collects the administrative and operational interface status, in and out octets per interface, 
+    state of the BGP sessions and the number of received and accepted routes per-neighbor from each node simultaneously
+    and stores the data in local hidden files on disk; `.DO_NOT_MODIFY_<nodename>.prb`, while also tagging the data it
+    collects with timestamps.   
    
-   At the time of development, the original intent of the code was to make it operate over SNMP only, to keep it fast 
-    and light-touch on the network equipment. However, since Cisco routers do not support the ACL-MIB; the probe 
-    function had to evolve in a hybrid mode of operation where the ACL status on the interfaces is verified via an SSH 
-    session, while Interface and BGP status are polled via SNMP.
-
-   As it can be anticipated from the description above; interface ACL status is not saved on disk or stored in memory,
-    but re-checked in every polling cycle. This is to prevent data inconsistencies in the case of manual intervention 
-    to the router configuration via CLI.
-   
-   During data collection; if an SSH connection attempt fails for any reason, then SNMP read functions won't be 
-    attempted either. This will result in the relevant `*.prb` file not being updated, which is the intentional 
-    behaviour to prevent data inconsistencies between two polling cycles. Since the process function specifically relies
-    on the timestamps of the previously collected data and is capable of measuring the timeDelta in its calculations,
-    interface utilisation can still be reliably calculated regardless of any interruptions in polling.   
+   Since the process function (_see Section-7_) specifically relies on the timestamps of the previously collected data 
+    and is capable of measuring the timeDelta in its operation, interface utilisation can always be reliably calculated 
+    regardless of any interruptions in polling.   
 
 
 __7. PROCESS (_Decision Making_)__
@@ -343,7 +349,7 @@ __9. LIVENESS CHECKS__
   `*/5 * * * * cd /<path>/laphroaig/; ./pniMonitor_livenessCheck.py -c pniMonitor.conf >> pniMonitor_cron.log 2>&1`
   
   __Note:__ Using the above log file naming convention (`pniMonitor_cron.log`) will allow the main script to handle the 
-  rotation of the cronlogs with no additional effort.
+  rotation of the cronlogs with no additional configuration effort.
 
 
 __10. PLANNED FOR FUTURE RELEASES__
