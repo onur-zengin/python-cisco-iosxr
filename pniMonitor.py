@@ -191,11 +191,7 @@ class Router(threading.Thread):
                 lines = sf.readlines()
         except IOError as ioerr:
             if "No such file or directory" in ioerr:
-                if self.switch:
-                    main_logger.info("Inventory updates detected")
-                else:
-                    main_logger.warning("probe() file could not be located. This will delay the processing by one (1) "
-                                        "polling cycle")
+                pass
             else:
                 main_logger.error("Operation halted. Unexpected error while starting probe() file rotation: %s" % ioerr)
                 sys.exit(3)
@@ -233,7 +229,7 @@ class Router(threading.Thread):
                     main_logger.warning("probe() file could not be located. This will delay the processing by one (1) "
                                         "polling cycle")
             else:
-                main_logger.error("Operation halted. Unexpected output in the probe() function" % (str(ptup)))
+                main_logger.error("Operation halted. Unexpected output in the probe() function: %s" % str(ptup))
                 sys.exit(3)
         finally:
             for interface in sorted(disc):
