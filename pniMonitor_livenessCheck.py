@@ -14,7 +14,7 @@ email_distro = ['cdnsupport@sky.uk', 'dl-contentdeliveryplatform@bskyb.com']
 logFormatter = logging.Formatter('%(asctime)-15s [%(levelname)s]: %(message)s')
 rootLogger = logging.getLogger()
 
-emailHandler = logging.handlers.SMTPHandler(('mailhost', 25), 'no-reply@automation.skycdp.com', email_distro,
+emailHandler = logging.handlers.SMTPHandler('localhost', 'no-reply@automation.skycdp.com', email_distro,
                                             'CRITICAL: PNI Monitor Liveness Check Failed')
 emailHandler.setFormatter(logFormatter)
 emailHandler.setLevel(logging.CRITICAL)
