@@ -618,7 +618,7 @@ def _GzipnRotate(log_retention):
     if datetime.time(0, 2, 1) < now < datetime.time(0, 3, 0):
         for cronfile in unrotated_cronfiles:
             try:
-                os.rename(cronfile, cronfile + '.' + str(datetime.date.today()))
+                os.rename(cronfile, cronfile + '.' + str(datetime.date.today()-datetime.timedelta(1)))
             except:
                 main_logger.warning('%s could not be rotated. s% : s%', cronfile, sys.exc_info()[0], sys.exc_info()[1])
             else:
