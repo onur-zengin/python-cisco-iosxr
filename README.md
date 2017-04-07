@@ -34,6 +34,9 @@ __3. CONFIGURATION__
     configuration lines missing or commented out, it will then apply its default configuration settings for the missing 
     parameter(s) and continue running.  
     
+   __Note__: Although the main program can operate without a configuration file, the utility scripts `pniDiscovery.py` 
+    and `pniMonitory_livenessCheck.py` do require it.
+    
 
   __3.1. STARTUP CONFIGURATION__
   
@@ -42,7 +45,7 @@ __3. CONFIGURATION__
 
    __inventory_file=[`<filename>`(_default_:`inventory.txt`)]__
 
-   The inventory details (list of node names) __must__ be provided in a text file with each node written on a separate
+   The inventory details (list of node names) __MUST__ be provided in a text file with each node written on a separate
     line. Example:
     
     ###inventory.txt
@@ -79,7 +82,7 @@ __3. CONFIGURATION__
    User-defined name of the IPv4 access-list as configured on the router(s). Missing ACL configuration on the router
     or misconfiguration of the acl_name in the pniMonitor.conf file will cause the SSH session(s) to be stalled, until 
     the protection mechanism in the MainThread kicks in terminates all threads, including itself. This will trigger a 
-    `CRITICAL` alert. _(see Section-4 'Multi-Threading' for further details)_  
+    `CRITICAL` alert. _(see Section-5 'Multi-Threading' for further details)_  
     
 
   __3.2. RUNTIME CONFIGURATION__
@@ -93,7 +96,7 @@ __3. CONFIGURATION__
    
    __risk_factor=[`<0-100>`(_default_:`95`)]__
    
-   Calculated as `actualPniOut / usablePniOut * 100`. See section-7 for further details.
+   Calculated as `actualPniOut / usablePniOut * 100`. See section-8 'Process (Decision Making)' for further details.
     
    __ipv4_min_prefixes=[`<integer>`(_default_:`0`)]__
 
@@ -148,16 +151,18 @@ __3. CONFIGURATION__
 
    If switched on; node discovery, probing and decision-making functions will continue, however __NO__ configuration 
     changes will be made to the router(s).   
- 
 
 
-  __3.3. HOW TO RUN__
+__4. USAGE__
+
+  __4.1. HOW TO RUN__
   
-  - Verify environment settings:
+  - Verify the configuration and inventory files.
+  - Verify the environment settings:
     - Python version must be 2.7.x; `python -V`
     - If the correct version not found, add the following line to the `.bash_profile` file in user `$HOME` directory;
         - `source ~nadt/nadt-aliases.include.bash`
-        - Verify the Python version again; `vrun python -V`
+        - Re-verify the Python version; `vrun python -V`
   - Browse to the script directory; `cd /scripts/laphroaig/`
   - Run the script:
     - If using the native Python installation on the system; `./pniMonitor.py`  
@@ -169,9 +174,21 @@ __3. CONFIGURATION__
     - Send it to background; `bg`
     - And finally de-attach it from your terminal session; `disown -h %1`
 
+  __4.2. HOW TO TERMINATE__
 
+  __Graceful:__
+  
+  Set the `runtime` parameter in the `pniMonitor.conf` file to `1`. The program will gracefully terminate itself once 
+   the next threading cycle is completed.
+   
+  __Forced:__
+  
+  Browse to the working directory and run the following command:
+   `kill -9 "$(<pniMonitor.pid)"`
+   This will terminate the mainThread and all subThreads immediately.
+  
 
-__4. MULTI-THREADING__
+__5. MULTI-THREADING__
 
    The program will initiate a subThread for each node (router) specified in the inventory file, so that the interface
     status on multiple routers can be managed simultaneously and independently. 
@@ -187,15 +204,15 @@ __4. MULTI-THREADING__
     constitute a greater risk to allow the program to continue while the reason of the delay / hang is unknown.  
     
     
-__5. DISCOVERY__
+__6. DISCOVERY__
 
    The program has a built-in discovery function which will be auto-triggered either during the first run or any time
     the inventory file is updated. Collected data is stored in local files on disk; `.DO_NOT_MODIFY_<nodename>.dsc`.
     
    Discovery function uses the description tags configured on the router interfaces in order to build an inventory of 
     all interfaces to be included in the decision-making process, as well as their IP addresses and the relevant BGP 
-    neighbors. For any BGP neighbor to be associated with a PNI, the session MUST be sourced from the IP address (IPv4 
-    or IPv6) of the local interface.
+    neighbors. For any BGP neighbor to be associated with a PNI, the session __MUST__ be sourced from the IP address 
+    (IPv4 or IPv6) of the local interface.
     
    Addition or removal of an interface to / from the monitoring (once the interfaces are labeled correctly) can be 
     achieved by using the `pniDiscovery.py` script which can be found inside the same directory. The correct syntax 
@@ -220,19 +237,19 @@ __5. DISCOVERY__
     in order to prevent data inconsistencies.
    
 
-__6. PROBE (_Data Collection_)__
+__7. PROBE (_Data Collection_)__
 
    The probe function collects the administrative and operational interface status, in and out octets per interface, 
     state of the BGP sessions and the number of received and accepted routes per-neighbor from each node simultaneously
     and stores the data in local hidden files on disk; `.DO_NOT_MODIFY_<nodename>.prb`, while also tagging the data it
     collects with timestamps.   
    
-   Since the process function (_see Section-7_) specifically relies on the timestamps of the previously collected data 
+   Since the process function (_see Section-8_) specifically relies on the timestamps of the previously collected data 
     and is capable of measuring the timeDelta in its operation, interface utilisation can always be reliably calculated 
     regardless of any interruptions in polling.   
 
 
-__7. PROCESS (_Decision Making_)__
+__8. PROCESS (_Decision Making_)__
 
    The entire decision making logic resides in a function called _process(). The main function constantly runs in 
     the background (as a daemon-like process) and use subThreads to re-assess the usable PNI egress capacity and 
@@ -299,13 +316,13 @@ Otherwise;
     NO ACTION WILL BE TAKEN
 
 
-__8. LOGGING__
+__9. LOGGING__
 
   The program saves its logs in two separate local files saved on the disk and rotated daily;
    
    - __pniMonitor_main.log:__ All events produced by the MainThread and its subThreads. Configurable severity.
    - __pniMonitor_ssh.log:__ All events that are logged by the SSH module. Has a fixed severity setting; WARNING. 
-   - __pniMonitor_cron.log:__ Generated and used by the livenessCheck script running on the crontab (_see Section-9_)
+   - __pniMonitor_cron.log:__ Generated and used by the livenessCheck script running on the crontab (_see Section-10_)
    
 In addition to local log files, high severity events are also available to be distributed as email alerts (_see
     Section-3 for configuration details_).
@@ -331,7 +348,7 @@ Definition of available log / alert severities are as follows:
     A serious error, indicating that the program itself will be unable to continue running (`Dying gasp`).   
 
 
-__9. LIVENESS CHECKS__
+__10. LIVENESS CHECKS__
 
   The distribution includes an audit script `pniMonitor_livenessCheck.py` which can be added into the operating 
   system's crontab configuration to verify the liveness of the main program at regular intervals. It reads the PID of 
@@ -357,7 +374,7 @@ __9. LIVENESS CHECKS__
   rotation of the cronlogs with no additional configuration effort.
 
 
-__10. PLANNED FOR FUTURE RELEASES__
+__11. PLANNED FOR FUTURE RELEASES__
 
 - __P1__ Netcool integration (might outsource this)
 - __P2__ Multi-ASN support
