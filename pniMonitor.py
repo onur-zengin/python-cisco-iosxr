@@ -190,7 +190,15 @@ class Router(threading.Thread):
             with open(args[2]) as sf:
                 lines = sf.readlines()
         except IOError as ioerr:
-            print ioerr
+            if "No such file or directory" in ioerr:
+                if self.switch:
+                    main_logger.info("Inventory updates detected")
+                else:
+                    main_logger.warning("probe() file could not be located. This will delay the processing by one (1) "
+                                        "polling cycle")
+            else:
+                main_logger.error("Operation halted. Unexpected error while starting probe() file rotation: %s" % ioerr)
+                sys.exit(3)
         except:
             main_logger.error("Operation halted. Unexpected error while starting probe() file rotation: "
                               "%s:%s" % sys.exc_info()[:2])
@@ -206,7 +214,7 @@ class Router(threading.Thread):
                                       "%s:%s" % sys.exc_info()[:2])
                     sys.exit(3)
                 else:
-                    main_logger.debug('Probe file rotation completed')
+                    main_logger.debug('probe() file rotation completed')
             #.prb data will be preserved for upto 60 reads max, which provides 30 min worth of int utilisation data
             # while running in 30 sec polling frequency. (To be able to create graphical email updates in v2)
             lines = None
@@ -219,7 +227,11 @@ class Router(threading.Thread):
             if ptup[1] == '':
                 prv = eval(ptup[0])
             elif "No such file or directory" in ptup[1]:
-                main_logger.info("Inventory updates detected")
+                if self.switch:
+                    main_logger.info("Inventory updates detected")
+                else:
+                    main_logger.warning("probe() file could not be located. This will delay the processing by one (1) "
+                                        "polling cycle")
             else:
                 main_logger.error("Operation halted. Unexpected output in the probe() function" % (str(ptup)))
                 sys.exit(3)
@@ -252,9 +264,9 @@ class Router(threading.Thread):
                 with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                     pf.write(str(nxt) + '\n')
             except:
-                main_logger.error('Unexpected error while writing probe data to file: %s:%s' % sys.exc_info()[:2])
+                main_logger.error('Unexpected error while writing probe() data to file: %s:%s' % sys.exc_info()[:2])
             else:
-                main_logger.debug('Probe data saved.')
+                main_logger.debug('probe() data saved.')
         return prv, nxt
 
     def _process(self, ipaddr, disc):
