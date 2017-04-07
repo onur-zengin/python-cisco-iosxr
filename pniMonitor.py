@@ -190,13 +190,13 @@ class Router(threading.Thread):
             with open(args[2]) as sf:
                 lines = sf.readlines()
         except IOError:
-            pass
+            raise
         else:
             if len(lines) > 60:
                 with open(args[2],'w') as pf:
                     for line in lines[1:]:
                         pf.write(line)
-                main_logger.debug('File rotation completed')
+                main_logger.debug('Probe file rotation completed')
             #.prb data will be preserved for upto 60 reads max, which provides 30 min worth of int utilisation data
             # while running in 30 sec polling frequency. (To be able to create graphical email updates in v2)
             lines = None
@@ -244,7 +244,7 @@ class Router(threading.Thread):
             except:
                 main_logger.error('Unexpected error while writing probe data to file: %s:%s' % sys.exc_info()[:2])
             else:
-                main_logger.info('Probe data saved.')
+                main_logger.debug('Probe data saved.')
         return prv, nxt
 
     def _process(self, ipaddr, disc):
@@ -702,7 +702,6 @@ def main(args):
     except IOError:
         print "Another instance is already running."
         sys.exit(1)
-    #asctime = tstamp('hr')
     inventory_file = 'inventory.txt'
     frequency = 30
     risk_factor = 95
