@@ -189,14 +189,24 @@ class Router(threading.Thread):
         try:
             with open(args[2]) as sf:
                 lines = sf.readlines()
-        except IOError:
-            raise
+        except IOError as ioerr:
+            print ioerr
+        except:
+            main_logger.error("Operation halted. Unexpected error while starting probe() file rotation: "
+                              "%s:%s" % sys.exc_info()[:2])
+            sys.exit(3)
         else:
             if len(lines) > 60:
-                with open(args[2],'w') as pf:
-                    for line in lines[1:]:
-                        pf.write(line)
-                main_logger.debug('Probe file rotation completed')
+                try:
+                    with open(args[2],'w') as pf:
+                        for line in lines[1:]:
+                            pf.write(line)
+                except:
+                    main_logger.error("Operation halted. Unexpected error while completing probe() file rotation: "
+                                      "%s:%s" % sys.exc_info()[:2])
+                    sys.exit(3)
+                else:
+                    main_logger.debug('Probe file rotation completed')
             #.prb data will be preserved for upto 60 reads max, which provides 30 min worth of int utilisation data
             # while running in 30 sec polling frequency. (To be able to create graphical email updates in v2)
             lines = None
