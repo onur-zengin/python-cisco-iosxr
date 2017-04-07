@@ -68,8 +68,8 @@ def main(args):
                         rootLogger.warning('Invalid email address found in the distribution list. Resetting to default '
                                            'configuration: %s' % email_distro)
                     else:
-                        if email_distro != split_lst:
-                            rootLogger.info('Email distribution list has been updated: %s' % split_lst)
+                        #if email_distro != split_lst:
+                         #   rootLogger.info('Email distribution list has been updated: %s' % split_lst)
                         email_distro = split_lst
                 else:
                     pass
