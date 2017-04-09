@@ -734,7 +734,7 @@ def main(args):
     cdn_serving_cap = 90
     dryrun = False
     runtime = 'infinite'
-    peak_start = datetime.time(18, 0)
+    peak_start = datetime.time(17, 30)
     peak_end = datetime.time(23, 59)
     off_peak_frequency = 180
     email_distro = ['cdnsupport@sky.uk', 'dl-contentdeliveryplatform@bskyb.com']
@@ -1103,7 +1103,7 @@ def main(args):
                 sys.exit(1)
             else:
                 now = tstamp('mr').time()
-                if peak_start < now < peak_end:
+                if not peak_start < now < peak_end:
                     frequency = off_peak_frequency
                     main_logger.info("Operating in off-peak frequency: %s" % frequency)
                 threads = []

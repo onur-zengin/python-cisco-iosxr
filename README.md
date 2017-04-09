@@ -94,6 +94,23 @@ __3. CONFIGURATION__
    __Note:__ Commenting out a configuration line or removing it while the program is running will __NOT__ revert it 
    back to its default configuration. Once the program is running, preferred settings must be configured explicitly.
    
+   __frequency=[`<30-300>`(_default_:`30`)]__
+   
+   The running frequency of the mainThread, configured in seconds, defining how frequently the subThreads should be 
+    re-initialized when the system time is __within__ the _peak hours_. Also referred to as the _polling cycle_ in the 
+    other sections of this document.
+   
+   __off_peak_frequency=[`<30-300>`(_default_:`180`)]__
+   
+   The running frequency of the mainThread, configured in seconds, defining how frequently the subThreads should be 
+    re-initialized when the system time is __outside__ the _peak hours_. Also referred to as the _polling cycle_ in the 
+    other sections of this document.
+   
+   __peak_hours=[`<start_time(hh:mm)-end_time(hh:mm)>`(_default_:`17:30-23:59`)]__
+   
+   The _peak hours_ during the day where the PNI links are expected more likely to be congested due to higher than 
+    normal utilization caused by the increased subscriber demand on the CDN caches.
+   
    __risk_factor=[`<0-100>`(_default_:`95`)]__
    
    Calculated as `actualPniOut / usablePniOut * 100`. See section-8 'Process (Decision Making)' for further details.
