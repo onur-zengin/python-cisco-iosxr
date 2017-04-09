@@ -994,7 +994,7 @@ def main(args):
                                                     'an integer')
                             else:
                                 if runtime != arg:
-                                   ogger.info('Runtime has been updated: %s' % arg)
+                                    main_logger.info('Runtime has been updated: %s' % arg)
                                 runtime = arg
                     elif opt.lower() == 'ipv4_min_prefixes':
                         try:
