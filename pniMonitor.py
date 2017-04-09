@@ -734,6 +734,9 @@ def main(args):
     cdn_serving_cap = 90
     dryrun = False
     runtime = 'infinite'
+    peak_start = datetime.time(18, 0)
+    peak_end = datetime.time(23, 59)
+    off_peak_frequency = 180
     email_distro = ['cdnsupport@sky.uk', 'dl-contentdeliveryplatform@bskyb.com']
     try:
         options, remainder = getopt.getopt(args[1:], "hm", ["help", "manual"])
@@ -896,19 +899,65 @@ def main(args):
                                 main_logger.warning('The value of the frequency argument must be an integer. Resetting '
                                                     'to last known good configuration: %s' % frequency)
                         else:
-                            if 30 <= arg <= 120:
+                            if 30 <= arg <= 300:
                                 if frequency != arg:
                                     main_logger.info('Running frequency has been updated: %s' % arg)
                                 frequency = arg
                             else:
                                 if lastChanged == "":
                                     main_logger.warning('The running frequency can not be shorter than 30 or longer '
-                                                        'than 120 seconds. Resetting to default setting: %s'
+                                                        'than 300 seconds. Resetting to default setting: %s'
                                                         % frequency)
                                 else:
                                     main_logger.warning('The running frequency can not be shorter than 30 or longer '
-                                                        'than 120 seconds. Resetting to last known good configuration: '
+                                                        'than 300 seconds. Resetting to last known good configuration: '
                                                         '%s' % frequency)
+                    elif opt == 'off_peak_frequency':
+                        try:
+                            arg = int(arg)
+                        except ValueError:
+                            if lastChanged == "":
+                                main_logger.warning('The value of the off-peak frequency must be an integer. Resetting '
+                                                    'to default setting: %s' % off_peak_frequency)
+                            else:
+                                main_logger.warning('The value of the off-peak frequency must be an integer. Resetting '
+                                                    'to last known good configuration: %s' % off_peak_frequency)
+                        else:
+                            if 30 <= arg <= 300:
+                                if off_peak_frequency != arg:
+                                    main_logger.info('Off-peak running frequency has been updated: %s' % arg)
+                                off_peak_frequency = arg
+                            else:
+                                if lastChanged == "":
+                                    main_logger.warning('The running frequency can not be shorter than 30 or longer '
+                                                        'than 300 seconds. Resetting to default setting: %s'
+                                                        % off_peak_frequency)
+                                else:
+                                    main_logger.warning('The running frequency can not be shorter than 30 or longer '
+                                                        'than 300 seconds. Resetting to last known good configuration: '
+                                                        '%s' % off_peak_frequency)
+                    elif opt == 'peak_hours':
+                        try:
+                            start, end = arg.split('-')
+                            start_h, start_m = start.split(':')
+                            end_h, end_m = end.split(':')
+                            peak_start_time = datetime.time(int(start_h), int(start_m))
+                            peak_end_time = datetime.time(int(end_h), int(end_m))
+                            assert peak_start_time < peak_end_time
+                        except AssertionError:
+                            main_logger.warning("Configured peak end time must be later than the start time. "
+                                                "Resetting to default or last known good configuration: %r-%r",
+                                                peak_start, peak_end)
+                        except:
+                            main_logger.warning("Invalid configuration detected in the peak hours argument (%s : %s). "
+                                                "Resetting to default or last known good configuration: %r-%r",
+                                                sys.exc_info()[0], sys.exc_info()[1], peak_start, peak_end)
+                        else:
+                            if peak_start != peak_start_time or peak_end != peak_end_time:
+                                main_logger.info("Peak hours configuration has been updated: %r-%r",
+                                                 peak_start, peak_end)
+                            peak_start = peak_start_time
+                            peak_end = peak_end_time
                     elif opt == 'cdn_serving_cap':
                         try:
                             arg = int(arg)
@@ -945,7 +994,7 @@ def main(args):
                                                     'an integer')
                             else:
                                 if runtime != arg:
-                                    main_logger.info('Runtime has been updated: %s' % arg)
+                                   ogger.info('Runtime has been updated: %s' % arg)
                                 runtime = arg
                     elif opt.lower() == 'ipv4_min_prefixes':
                         try:
@@ -1053,6 +1102,10 @@ def main(args):
                 main_logger.critical('%s. Exiting.' % oserr)
                 sys.exit(1)
             else:
+                now = tstamp('mr').time()
+                if peak_start < now < peak_end:
+                    frequency = off_peak_frequency
+                    main_logger.info("Operating in off-peak frequency: %s" % frequency)
                 threads = []
                 main_logger.info("Initializing subThreads")
                 for n, node in enumerate(inventory):
