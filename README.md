@@ -169,6 +169,12 @@ __3. CONFIGURATION__
    If switched on; node discovery, probing and decision-making functions will continue, however __NO__ configuration 
     changes will be made to the router(s).   
 
+   __data_retention=[`<2-60>`(_default_:`2`)]__
+
+   The number of polling cycles for the collected probe data to be kept on disk. Setting this value too high might
+    cause increased memory utilisation, which might lead to program terminations (by the self-protection mechanism) 
+    on a relatively busy or under-spec'd server.
+
 
 __4. USAGE__
 

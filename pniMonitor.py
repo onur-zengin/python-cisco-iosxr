@@ -64,7 +64,7 @@ class Router(threading.Thread):
     int_oids = oidlist[5:10]
     bgp_oids = oidlist[10:]
     def __init__(self, threadID, node, pw, dswitch, risk_factor, cdn_serving_cap,
-                 acl_name, dryrun, int_identifiers, pfx_thresholds):
+                 acl_name, dryrun, dataretention, int_identifiers, pfx_thresholds):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
         self.pw = pw
@@ -75,6 +75,7 @@ class Router(threading.Thread):
         self.serving_cap = cdn_serving_cap
         self.acl_name = acl_name
         self.dryrun = dryrun
+        self.dataretention = dataretention
 
     def run(self):
         main_logger.info("Starting")
@@ -200,7 +201,7 @@ class Router(threading.Thread):
                               "%s:%s" % sys.exc_info()[:2])
             sys.exit(3)
         else:
-            if len(lines) > 60:
+            if len(lines) > self.dataretention:
                 try:
                     with open(args[2],'w') as pf:
                         for line in lines[1:]:
@@ -211,8 +212,6 @@ class Router(threading.Thread):
                     sys.exit(3)
                 else:
                     main_logger.debug('probe() file rotation completed')
-            #.prb data will be preserved for upto 60 reads max, which provides 30 min worth of int utilisation data
-            # while running in 30 sec polling frequency. (To be able to create graphical email updates in v2)
             lines = None
         try:
             ptup = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
@@ -725,6 +724,7 @@ def main(args):
     risk_factor = 95
     loglevel = 'INFO'
     log_retention = 7
+    data_retention = 2
     email_alert_severity = 'ERROR'
     acl_name = 'CDPautomation_RhmUdpBlock'
     pni_interface_tag = 'CDPautomation_PNI'
@@ -841,7 +841,7 @@ def main(args):
                         else:
                             if 0 <= arg <= 90:
                                 if log_retention != arg:
-                                    main_logger.info('Log retention has been updated: %s' % arg)
+                                    main_logger.info('Log retention parameter has been updated: %s' % arg)
                                 log_retention = arg
                             else:
                                 if lastChanged == "":
@@ -852,6 +852,30 @@ def main(args):
                                     main_logger.warning('The value of the log_retention argument must be an integer '
                                                         'between 0 and 90. Resetting to last known good configuration: '
                                                         '%s' % log_retention)
+                    elif opt == 'data_retention':
+                        try:
+                            arg = int(arg)
+                        except ValueError:
+                            if lastChanged == "":
+                                main_logger.warning('The value of the data_retention argument must be an integer. '
+                                                    'Resetting to default setting: %s' % data_retention)
+                            else:
+                                main_logger.warning('The value of the log_retention argument must be an integer. '
+                                                    'Resetting to last known good configuration: %s' % data_retention)
+                        else:
+                            if 2 <= arg <= 60:
+                                if data_retention != arg:
+                                    main_logger.info('Data retention parameter has been updated: %s' % arg)
+                                data_retention = arg
+                            else:
+                                if lastChanged == "":
+                                    main_logger.warning('The value of the data_retention argument must be an integer '
+                                                        'between 2 and 60. Resetting to default setting: %s'
+                                                        % data_retention)
+                                else:
+                                    main_logger.warning('The value of the data_retention argument must be an integer '
+                                                        'between 2 and 60. Resetting to last known good configuration: '
+                                                        '%s' % data_retention)
                     elif opt == 'email_alert_severity':
                         if arg.lower() in ('warning', 'error', 'critical'):
                             if email_alert_severity != arg.upper():
@@ -901,7 +925,7 @@ def main(args):
                         else:
                             if 30 <= arg <= 300:
                                 if frequency != arg:
-                                    main_logger.info('Running frequency has been updated: %s' % arg)
+                                    main_logger.info('Running frequency has been updated or reset: %s' % arg)
                                 frequency = arg
                             else:
                                 if lastChanged == "":
@@ -946,15 +970,15 @@ def main(args):
                             assert peak_start_time < peak_end_time
                         except AssertionError:
                             main_logger.warning("Configured peak end time must be later than the start time. "
-                                                "Resetting to default or last known good configuration: %r-%r",
+                                                "Resetting to default or last known good configuration: %s-%s",
                                                 peak_start, peak_end)
                         except:
                             main_logger.warning("Invalid configuration detected in the peak hours argument (%s : %s). "
-                                                "Resetting to default or last known good configuration: %r-%r",
+                                                "Resetting to default or last known good configuration: %s-%s",
                                                 sys.exc_info()[0], sys.exc_info()[1], peak_start, peak_end)
                         else:
                             if peak_start != peak_start_time or peak_end != peak_end_time:
-                                main_logger.info("Peak hours configuration has been updated: %r-%r",
+                                main_logger.info("Peak hours configuration has been updated: %s-%s",
                                                  peak_start, peak_end)
                             peak_start = peak_start_time
                             peak_end = peak_end_time
@@ -1062,12 +1086,13 @@ def main(args):
                                                 "to see detailed usage instructions." % (opt, args[0], args[0]))
                         else:
                             main_logger.warning("Invalid parameter found in the configuration file: (%s). The program "
-                                                "will continue with the last known good configuration. Use '%s -m' or '%s "
-                                                "--manual' to see detailed usage instructions." % (opt, args[0], args[0]))
+                                                "will continue with the last known good configuration. Use '%s -m' or"
+                                                " '%s --manual' to see detailed usage instructions." % (opt, args[0],
+                                                                                                        args[0]))
             except ValueError:
-                main_logger.warning("Invalid configuration line detected and ignored. All configuration parameters must "
-                                    "be provided as key value pairs separated by an equal sign (=). Use '%s -m' or '%s "
-                                    "--manual' for more details." % (args[0], args[0]))
+                main_logger.warning("Invalid configuration line detected and ignored. All configuration parameters "
+                                    "must be provided as key value pairs separated by an equal sign (=). Use '%s -m' "
+                                    "or '%s --manual' for more details." % (args[0], args[0]))
         finally:
             main_logger.setLevel(logging.getLevelName(loglevel))
             try:
@@ -1079,13 +1104,24 @@ def main(args):
             main_eh.setFormatter(main_formatter)
             main_eh.setLevel(logging.getLevelName(email_alert_severity))
             main_logger.addHandler(main_eh)
-            main_logger.debug("\n\tInventory File: %s\n\tACL Name: %s\n\tPNI Interface Tag: %s\n\tCDN Interface Tag: %s"
-                              "\n\tFrequency: %s\n\tRisk Factor: %s\n\tCDN Serving Cap: %s\n\tIPv4 Min Prefixes: %s"
-                              "\n\tIPv6 Min Prefixes: %s\n\tLog Level: %s\n\tLog Retention: %s\n\tEmail Alert Sev: %s"
-                              "\n\tSimulation Mode: %s\n\tRuntime: %s\n\tEmail distribution list: %s"
-                              % (inventory_file, acl_name, pni_interface_tag, cdn_interface_tag, frequency, risk_factor,
-                                 cdn_serving_cap, ipv4_min_prefixes, ipv6_min_prefixes, loglevel, log_retention,
-                                 email_alert_severity, dryrun, runtime, email_distro))
+            main_logger.debug("Inventory File: %s", inventory_file)
+            main_logger.debug("ACL Name: %s", acl_name)
+            main_logger.debug("PNI Interface Tag: %s", pni_interface_tag)
+            main_logger.debug("CDN Interface Tag: %s", cdn_interface_tag)
+            main_logger.debug("Frequency: %s", frequency)
+            main_logger.debug("Off Peak Frequency: %s", off_peak_frequency)
+            main_logger.debug("Peak Hours: %s-%s", peak_start, peak_end)
+            main_logger.debug("Risk Factor: %s", risk_factor)
+            main_logger.debug("CDN Serving Cap: %s", cdn_serving_cap)
+            main_logger.debug("IPv4 Min Prefixes: %s", ipv4_min_prefixes)
+            main_logger.debug("IPv6 Min Prefixes: %s", ipv6_min_prefixes)
+            main_logger.debug("Log Level: %s", loglevel)
+            main_logger.debug("Log Retention (days): %s", log_retention)
+            main_logger.debug("Email Alert Severity: %s", email_alert_severity)
+            main_logger.debug("Email Distribution List: %s", email_distro)
+            main_logger.debug("Simulation Mode: %s", dryrun)
+            main_logger.debug("Runtime: %s", runtime)
+            main_logger.debug("Data Retention (polling cycles): %s", data_retention)
             _GzipnRotate(log_retention)
             try:
                 with open(inventory_file) as sf:
@@ -1109,7 +1145,7 @@ def main(args):
                 threads = []
                 main_logger.info("Initializing subThreads")
                 for n, node in enumerate(inventory):
-                    t = Router(n + 1, node, pw, dswitch, risk_factor, cdn_serving_cap, acl_name, dryrun,
+                    t = Router(n + 1, node, pw, dswitch, risk_factor, cdn_serving_cap, acl_name, dryrun, data_retention,
                                (pni_interface_tag, cdn_interface_tag), (ipv4_min_prefixes, ipv6_min_prefixes))
                     threads.append(t)
                     t.start()
