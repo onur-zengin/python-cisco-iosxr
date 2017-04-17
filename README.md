@@ -219,12 +219,13 @@ __5. MULTI-THREADING__
    For convenience in operations and diagnostics, a subThread's name will be comprised of the hostname of the router 
     that it is relevant to. And the thread names will be included in every log line and alert produced by the program.
    
-   If for any reason (such as a stalled SSH session) one or more of the subThreads take too long (i.e. longer than the 
-    pre-defined running frequency of the mainThread) to complete, then the program will send out a dying gasp and 
-    terminate itself along with all active subThreads. The dying gasp will be issued by the MainThread as a `CRITICAL` 
-    severity alert including the name of all subThread(s) that were detected to be in _hung state_. This behaviour is 
-    designed intentionally. Although this may incur unintended interruptions to monitoring, it would otherwise 
-    constitute a greater risk to allow the program to continue while the reason of the delay / hang is unknown.  
+   If for any reason (such as a stalled SSH session or high CPU / Memory utilisation on the host system) one or more 
+    of the subThreads take too long (i.e. longer than the pre-defined running frequency of the mainThread) to complete, 
+    then the program will no longer terminate (_new in release 1.4_), but hibernate itself along with all inactive 
+    subThreads that are waiting in the queue. The hibernation will be preceded by a `WARNING` severity alert, issued by 
+    the MainThread, including the name of all subThread(s) that were detected to be in _hung state_. This behaviour is 
+    designed intentionally. Although this may incur unintended delays to monitoring, it would otherwise constitute a 
+    greater risk to allow the program to continue while the reason of the hang is unknown.  
     
     
 __6. DISCOVERY__
