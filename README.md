@@ -222,10 +222,11 @@ __5. MULTI-THREADING__
    If for any reason (such as a stalled SSH session or high CPU / Memory utilisation on the host system) one or more 
     of the subThreads take too long (i.e. longer than the pre-defined running frequency of the mainThread) to complete, 
     then the program will no longer terminate (_new in release 1.4_), but hibernate itself along with all inactive 
-    subThreads that are waiting in the queue. The hibernation will be preceded by a `WARNING` severity alert, issued by 
-    the MainThread, including the name of all subThread(s) that were detected to be in _hung state_. This behaviour is 
-    designed intentionally. Although this may incur unintended delays to monitoring, it would otherwise constitute a 
-    greater risk to allow the program to continue while the reason of the hang is unknown.  
+    subThreads that are waiting in the queue. The hibernation will be preceded and followed by `WARNING` severity 
+    alerts, issued by the MainThread; the former including the name of all subThread(s) that were detected to be in 
+    _hung state_, and the latter indicating successful resume of operation. This behaviour is designed intentionally. 
+    Although this may incur unintended delays to monitoring, it would otherwise constitute a greater risk to allow the 
+    program to continue while the reason of the hang is unknown.  
     
     
 __6. DISCOVERY__
