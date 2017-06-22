@@ -401,7 +401,10 @@ __10. LIVENESS CHECKS__
 
 __11. PLANNED FOR FUTURE RELEASES__
 
-- __P1__ Netcool integration (might outsource this)
+- __P1__ STDOUT handling
+- __P1__ Requirements.txt
+- __P1__ Kill the reliance on local SMTP listener for better portability
+- __P2__ Netcool integration (might outsource this)
 - __P2__ Multi-ASN support
 - __P2__ IPv6 ACL for RHM Blocking
 - __P2__ Persistence (of the previously recorded interface utilization data upon a new node or interface discovery)

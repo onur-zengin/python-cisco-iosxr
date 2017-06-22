@@ -1155,11 +1155,11 @@ def main(args):
                     if t.isAlive():
                         hungThreads.append(t)
                 if hungThreads != []:
-                    rootLogger.warning("Threads detected in hung state: %r. Hibernating inactive threads until status "
-                                       "cleared." % [t.name for t in hungThreads])
+                    main_logger.warning("Threads detected in hung state: %r. Hibernating inactive threads until status "
+                                        "cleared." % [t.name for t in hungThreads])
                     for t in hungThreads:
                         t.join()
-                    rootLogger.warning("Hung threads status cleared. Resuming normal operation")
+                    main_logger.warning("Hung threads status cleared. Resuming normal operation")
                     #subprocess.Popen(['kill', '-9', pid], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
                 main_logger.info("All subThreads completed")
                 lastChanged = os.stat(inventory_file).st_mtime
