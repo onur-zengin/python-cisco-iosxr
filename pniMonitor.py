@@ -559,7 +559,7 @@ class Router(threading.Thread):
         return output[1:]
 
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
-        args = [cmd, '-v2c', '-c', 'kN8qpTxH', '-t', self.snmptimeout, '-r', self.snmpretries, ipaddr]
+        args = [cmd, '-v2c', '-c', 'kN8qpTxH', '-t', str(self.snmptimeout), '-r', str(self.snmpretries), ipaddr]
         if quiet is 'on':
             args.insert(1, '-Oqv')
         args += oids
