@@ -64,7 +64,7 @@ class Router(threading.Thread):
     int_oids = oidlist[5:10]
     bgp_oids = oidlist[10:]
     def __init__(self, threadID, node, pw, dswitch, risk_factor, cdn_serving_cap,
-                 acl_name, dryrun, dataretention, int_identifiers, pfx_thresholds):
+                 acl_name, dryrun, dataretention, int_identifiers, pfx_thresholds, snmptimeout, snmpretries):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
         self.pw = pw
@@ -76,6 +76,8 @@ class Router(threading.Thread):
         self.acl_name = acl_name
         self.dryrun = dryrun
         self.dataretention = dataretention
+        self.snmptimeout = snmptimeout
+        self.snmpretries = snmpretries
 
     def run(self):
         main_logger.info("Starting")
@@ -557,7 +559,7 @@ class Router(threading.Thread):
         return output[1:]
 
     def snmp(self, ipaddr, oids, cmd='snmpwalk', quiet='on'):
-        args = [cmd, '-v2c', '-c', 'kN8qpTxH', ipaddr]
+        args = [cmd, '-v2c', '-c', 'kN8qpTxH', '-t', self.snmptimeout, '-r', self.snmpretries, ipaddr]
         if quiet is 'on':
             args.insert(1, '-Oqv')
         args += oids
@@ -580,7 +582,7 @@ class Router(threading.Thread):
                     if pingresult == 0:
                         main_logger.error("Unexpected error during %s operation [_snmp() Err no.3]: %s\n"
                                           "(Troubleshooting note: Node responds to ICMP ping. Verify SNMP configuration"
-                                          "and the management ACLs on the node)" % (cmd, stup[1]))
+                                          " and the management ACLs on the node)" % (cmd, stup[1]))
                         sys.exit(3)
                     elif pingresult == 1:
                         main_logger.error("Unexpected error during %s operation [_snmp() Err no.4]: %s\n"
@@ -738,6 +740,8 @@ def main(args):
     peak_end = datetime.time(23, 59)
     off_peak_frequency = 180
     email_distro = ['cdnsupport@sky.uk', 'dl-contentdeliveryplatform@bskyb.com']
+    snmp_timeout = 3
+    snmp_retries = 2
     try:
         options, remainder = getopt.getopt(args[1:], "hm", ["help", "manual"])
     except getopt.GetoptError as getopterr:
@@ -1048,6 +1052,34 @@ def main(args):
                             if ipv6_min_prefixes != arg:
                                 main_logger.info('ipv6_min_prefix count has been updated: %s' % arg)
                             ipv6_min_prefixes = arg
+                    elif opt.lower() == 'snmp_timeout':
+                        try:
+                            arg = int(arg)
+                        except ValueError:
+                            if lastChanged == "":
+                                main_logger.warning('The value of the snmp_timeout parameter must be an integer. '
+                                                    'Resetting to default setting: %s' % snmp_timeout)
+                            else:
+                                main_logger.warning('The value of the snmp_timeout parameter must be an integer. '
+                                                    'Resetting to last known good configuration: %s' % snmp_timeout)
+                        else:
+                            if snmp_timeout != arg:
+                                main_logger.info('snmp_timeout parameter has been updated: %s' % arg)
+                            snmp_timeout = arg
+                    elif opt.lower() == 'snmp_retries':
+                        try:
+                            arg = int(arg)
+                        except ValueError:
+                            if lastChanged == "":
+                                main_logger.warning('The value of the snmp_retries parameter must be an integer. '
+                                                    'Resetting to default setting: %s' % snmp_retries)
+                            else:
+                                main_logger.warning('The value of the snmp_retries parameter must be an integer. '
+                                                    'Resetting to last known good configuration: %s' % snmp_retries)
+                        else:
+                            if snmp_retries != arg:
+                                main_logger.info('snmp_retries parameter has been updated: %s' % arg)
+                            snmp_retries = arg
                     elif opt == 'email_distribution_list':
                         split_lst = arg.split(',')
                         try:
@@ -1122,6 +1154,8 @@ def main(args):
             main_logger.debug("Simulation Mode: %s", dryrun)
             main_logger.debug("Runtime: %s", runtime)
             main_logger.debug("Data Retention (polling cycles): %s", data_retention)
+            main_logger.debug("SNMP Timeout (seconds): %s", snmp_timeout)
+            main_logger.debug("SNMP Retries: %s", snmp_retries)
             _GzipnRotate(log_retention)
             try:
                 with open(inventory_file) as sf:
@@ -1146,7 +1180,8 @@ def main(args):
                 main_logger.info("Initializing subThreads")
                 for n, node in enumerate(inventory):
                     t = Router(n + 1, node, pw, dswitch, risk_factor, cdn_serving_cap, acl_name, dryrun, data_retention,
-                               (pni_interface_tag, cdn_interface_tag), (ipv4_min_prefixes, ipv6_min_prefixes))
+                               (pni_interface_tag, cdn_interface_tag), (ipv4_min_prefixes, ipv6_min_prefixes),
+                               snmp_timeout, snmp_retries)
                     threads.append(t)
                     t.start()
                 hungThreads = []

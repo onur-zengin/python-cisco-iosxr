@@ -174,6 +174,14 @@ __3. CONFIGURATION__
    The number of polling cycles for the collected probe data to be kept on disk. Setting this value too high might
     cause increased memory utilisation, which might lead to program terminations (by the self-protection mechanism) 
     on a relatively busy or under-spec'd server.
+    
+   __snmp_retries=[`<integer>`(_default_:`2`)]__
+
+   The number of retries to be used in the SNMP requests. The default value is '2'.
+   
+   __snmp_timeout=[`<integer>`(_default_:`3`)]__
+
+   The timeout in seconds between SNMP retries. The default value is '3'.
 
 
 __4. USAGE__
@@ -404,12 +412,12 @@ __11. PLANNED FOR FUTURE RELEASES__
 - __P1__ STDOUT handling
 - __P1__ Requirements.txt
 - __P1__ Kill the reliance on local SMTP listener for better portability
+- __P2__ Per-region cdn_serving_cap setting (It is available as a Global parameter in the current release)
 - __P2__ Netcool integration (might outsource this)
 - __P2__ Multi-ASN support
 - __P2__ IPv6 ACL for RHM Blocking
 - __P2__ Persistence (of the previously recorded interface utilization data upon a new node or interface discovery)
 - __P2__ Automated discovery of new interfaces (In the current release it is manually triggered)
-- __P3__ Per-region cdn_serving_cap setting (It is available as a Global parameter in the current release)
 - __P3__ Nokia 7750 support
 - __P3__ IOS-XR / SROS version check
 - __P4__ Catch SIGTERM KILL and report in logging (SIGKILL cannot be caught & there is a seperate liveness check script) 
