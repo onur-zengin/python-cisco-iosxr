@@ -63,13 +63,14 @@ class Router(threading.Thread):
     dsc_oids = oidlist[:4]
     int_oids = oidlist[5:10]
     bgp_oids = oidlist[10:]
-    def __init__(self, threadID, node, pw, dswitch, risk_factor, cdn_serving_cap,
+    def __init__(self, threadID, node, pw, dswitch, rising_threshold, falling_threshold, cdn_serving_cap,
                  acl_name, dryrun, dataretention, int_identifiers, pfx_thresholds, snmptimeout, snmpretries):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
         self.node = node
         self.pw = pw
         self.switch = dswitch
-        self.risk_factor = risk_factor
+        self.rising_threshold = rising_threshold
+        self.falling_threshold = falling_threshold
         self.pni_identifier, self.cdn_identifier = int_identifiers
         self.ipv4_minPfx, self.ipv6_minPfx = pfx_thresholds
         self.serving_cap = cdn_serving_cap
@@ -357,13 +358,13 @@ class Router(threading.Thread):
                 else:
                     main_logger.info('No usable PNI egress capacity available. However all CDN interfaces are '
                                      'currently down or in blocked state. No valid actions left.')
-            # We can't use actualCDNIn while calculating the risk_factor because it won't include P2P traffic
+            # We can't use actualCDNIn while calculating the rising_threshold because it won't include P2P traffic
             # and / or the CDN overflow from the other site(s). It is worth revisiting for Sky Germany though.
-            elif actualPniOut / usablePniOut * 100 >= self.risk_factor:
+            elif actualPniOut / usablePniOut * 100 >= self.rising_threshold:
                 if unblocked != []:
                     if not self.dryrun:
                         main_logger.warning('The ratio of actual PNI egress traffic to available egress capacity is '
-                                            'equal to or greater than the pre-defined Risk Factor. Applying RHM Block'
+                                            'equal to or greater than the pre-defined Rising Threshold. Applying RHM Block'
                                             'on all CDN interfaces: %s' % unblocked)
                         results, output = self._acl(ipaddr, 'block', unblocked)
                         if results == ['on' for i in range(len(unblocked))]:
@@ -385,12 +386,12 @@ class Router(threading.Thread):
                             main_logger.info('Interface %s was already blocked' % interface)
                     elif self.dryrun:
                         main_logger.warning('The ratio of actual PNI egress traffic to available egress capacity is '
-                                            'equal to or greater than the pre-defined Risk Factor. %s must be blocked'
+                                            'equal to or greater than the pre-defined Rising Threshold. %s must be blocked'
                                             % unblocked)
                 else:
-                    main_logger.info('Risk Factor hit. However all CDN interfaces are currently down or in blocked '
+                    main_logger.info('Rising Threshold hit. However all CDN interfaces are currently down or in blocked '
                                      'state. No valid actions left.')
-            elif blocked != [] and actualPniOut / usablePniOut * 100 < self.risk_factor:
+            elif blocked != [] and actualPniOut / usablePniOut * 100 < self.falling_threshold:
                 if maxCdnIn + actualPniOut < usablePniOut:
                     if not self.dryrun:
                         main_logger.info('Risk mitigated. Re-enabling all CDN interfaces: %s' % blocked)
@@ -723,7 +724,8 @@ def main(args):
         sys.exit(1)
     inventory_file = 'inventory.txt'
     frequency = 30
-    risk_factor = 95
+    rising_threshold = 95
+    falling_threshold = 90
     loglevel = 'INFO'
     log_retention = 7
     data_retention = 2
@@ -892,30 +894,74 @@ def main(args):
                             else:
                                 main_logger.warning('Invalid severity specified for email alerts. Resetting to last '
                                                     'known good configuration: %s' % email_alert_severity)
-                    elif opt == 'risk_factor':
+                    elif opt == 'rising_threshold':
                         try:
                             arg = int(arg)
                         except ValueError:
                             if lastChanged == "":
-                                main_logger.warning('The value of the risk_factor argument must be an integer. '
-                                                    'Resetting to default setting: %s' % risk_factor)
+                                main_logger.warning('The value of the rising_threshold argument must be an integer. '
+                                                    'Resetting to default setting: %s' % rising_threshold)
                             else:
-                                main_logger.warning('The value of the risk_factor argument must be an integer. '
-                                                    'Resetting to last known good configuration: %s' % risk_factor)
+                                main_logger.warning('The value of the rising_threshold argument must be an integer. '
+                                                    'Resetting to last known good configuration: %s' % rising_threshold)
                         else:
                             if 0 <= arg <= 100:
-                                if risk_factor != arg:
-                                    main_logger.info('Risk Factor has been updated: %s' % arg)
-                                risk_factor = arg
+                                if arg > falling_threshold:
+                                    if rising_threshold != arg:
+                                        main_logger.info('Rising Threshold has been updated: %s' % arg)
+                                    rising_threshold = arg
+                                else:
+                                    if lastChanged == "":
+                                        main_logger.warning('The value of the rising_threshold must be larger than the '
+                                                            'falling_threshold (%s). Resetting to default setting: %s' 
+                                                            % falling_threshold, rising_threshold)
+                                    else:
+                                        main_logger.warning('The value of the rising_threshold must be larger than the '
+                                                            'falling_threshold (%s). Resetting to last known good '
+                                                            'configuration: %s' % falling_threshold, rising_threshold)
                             else:
                                 if lastChanged == "":
-                                    main_logger.warning('The value of the risk_factor argument must be an integer '
+                                    main_logger.warning('The value of the rising_threshold argument must be an integer '
                                                         'between 0 and 100. Resetting to default setting: %s'
-                                                        % risk_factor)
+                                                        % rising_threshold)
                                 else:
-                                    main_logger.warning('The value of the risk_factor argument must be an integer '
+                                    main_logger.warning('The value of the rising_threshold argument must be an integer '
                                                         'between 0 and 100. Resetting to last known good configuration: '
-                                                        '%s' % risk_factor)
+                                                        '%s' % rising_threshold)
+                    elif opt == 'falling_threshold':
+                        try:
+                            arg = int(arg)
+                        except ValueError:
+                            if lastChanged == "":
+                                main_logger.warning('The value of the falling_threshold argument must be an integer. '
+                                                    'Resetting to default setting: %s' % falling_threshold)
+                            else:
+                                main_logger.warning('The value of the falling_threshold argument must be an integer. '
+                                                    'Resetting to last known good configuration: %s' % falling_threshold)
+                        else:
+                            if 0 <= arg <= 100:
+                                if arg < rising_threshold:
+                                    if falling_threshold != arg:
+                                        main_logger.info('Falling Threshold has been updated: %s' % arg)
+                                    falling_threshold = arg
+                                else:
+                                    if lastChanged == "":
+                                        main_logger.warning('The value of the falling_threshold must be smaller than '
+                                                            'the rising_threshold (%s). Resetting to default setting: '
+                                                            '%s' % rising_threshold, falling_threshold)
+                                    else:
+                                        main_logger.warning('The value of the falling_threshold must be smaller than '
+                                                            'the rising_threshold (%s). Resetting to last known good '
+                                                            'configuration: %s' % rising_threshold, falling_threshold)
+                            else:
+                                if lastChanged == "":
+                                    main_logger.warning('The value of the falling_threshold argument must be an '
+                                                        'integer between 0 and 100. Resetting to default setting: %s'
+                                                        % falling_threshold)
+                                else:
+                                    main_logger.warning('The value of the falling_threshold argument must be an '
+                                                        'integer between 0 and 100. Resetting to last known good '
+                                                        'configuration: %s' % falling_threshold)
                     elif opt == 'frequency':
                         try:
                             arg = int(arg)
@@ -1143,7 +1189,8 @@ def main(args):
             main_logger.debug("Frequency: %s", frequency)
             main_logger.debug("Off Peak Frequency: %s", off_peak_frequency)
             main_logger.debug("Peak Hours: %s-%s", peak_start, peak_end)
-            main_logger.debug("Risk Factor: %s", risk_factor)
+            main_logger.debug("Rising Threshold: %s", rising_threshold)
+            main_logger.debug("Falling Threshold: %s", falling_threshold)
             main_logger.debug("CDN Serving Cap: %s", cdn_serving_cap)
             main_logger.debug("IPv4 Min Prefixes: %s", ipv4_min_prefixes)
             main_logger.debug("IPv6 Min Prefixes: %s", ipv6_min_prefixes)
@@ -1179,7 +1226,8 @@ def main(args):
                 threads = []
                 main_logger.info("Initializing subThreads")
                 for n, node in enumerate(inventory):
-                    t = Router(n + 1, node, pw, dswitch, risk_factor, cdn_serving_cap, acl_name, dryrun, data_retention,
+                    t = Router(n + 1, node, pw, dswitch, rising_threshold, falling_threshold,
+                               cdn_serving_cap, acl_name, dryrun, data_retention,
                                (pni_interface_tag, cdn_interface_tag), (ipv4_min_prefixes, ipv6_min_prefixes),
                                snmp_timeout, snmp_retries)
                     threads.append(t)

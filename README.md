@@ -111,9 +111,21 @@ __3. CONFIGURATION__
    The _peak hours_ during the day where the PNI links are expected more likely to be congested due to higher than 
     normal utilization caused by the increased subscriber demand on the CDN caches.
    
-   __risk_factor=[`<0-100>`(_default_:`95`)]__
+   __rising_threshold=[`<0-100>`(_default_:`95`)]__
    
-   Calculated as `actualPniOut / usablePniOut * 100`. See section-8 'Process (Decision Making)' for further details.
+   The PNI utilisation threshold value, which will trigger the RHM blocking algorithm, when reached or exceeded. See 
+    section-8 'Process (Decision Making)' for further details.
+    
+   Must always be set to a value that is higher than the configured falling_threshold paramater, which will otherwise 
+    be ignored by the program and reset to the default / last known good configuration, followed by a warning message.
+   
+   __falling_threshold=[`<0-100>`(_default_:`90`)]__
+   
+   The PNI utilisation threshold value, which will trigger the RHM unblocking algorithm, when reached or deceeded. See 
+    section-8 'Process (Decision Making)' for further details.
+    
+   Must always be set to a value that is smaller than the configured rising_threshold paramater, which will otherwise 
+    be ignored by the program and reset to the default / last known good configuration, followed by a warning message.
     
    __ipv4_min_prefixes=[`<integer>`(_default_:`0`)]__
 
@@ -285,8 +297,9 @@ __7. PROBE (_Data Collection_)__
 __8. PROCESS (_Decision Making_)__
 
    The entire decision making logic resides in a function called _process(). The main function constantly runs in 
-    the background (as a daemon-like process) and use subThreads to re-assess the usable PNI egress capacity and 
-    recalculate the actual `risk_factor` in the preferred polling frequency, using the data collected by probe.
+    the background (as a daemon-like process) and uses subThreads to re-assess the usable PNI egress capacity and 
+    recalculate the actual `risk factor` as `actualPniOut / usablePniOut * 100` in the preferred polling frequency, 
+    using the data collected by probe.
     
    For any PNI interface and its available physical egress capacity to be considered 'usable', it must satisfy the 
     following requirements;
@@ -316,8 +329,8 @@ If at any time;
     OR
    
     - There is a partial PNI failure scenario on the local router / traffic overflow from another site, which 
-      causes the ratio of the actual PNI egress to usable PNI egress capacity to be equal or greater than the risk 
-      factor:
+      causes the risk factor (ratio of the actual PNI egress to usable PNI egress capacity) to be equal or greater 
+      than the configured rising_threshold:
      
     ALL DIRECTLY-ATTACHED CDN INTERFACES WILL BE BLOCKED
    
@@ -333,7 +346,8 @@ Else, if at any time;
     AND
     
 
-    - The ratio of the actual PNI egress to usable PNI egress capacity is smaller than the risk factor,
+    - The risk factor (ratio of the actual PNI egress to usable PNI egress capacity) is smaller than the configured 
+      falling_threshold,
      
     AND
 
