@@ -63,6 +63,7 @@ class Router(threading.Thread):
     dsc_oids = oidlist[:4]
     int_oids = oidlist[5:10]
     bgp_oids = oidlist[10:]
+
     def __init__(self, threadID, node, pw, dswitch, rising_threshold, falling_threshold, cdn_serving_cap,
                  acl_name, dryrun, dataretention, int_identifiers, pfx_thresholds, snmptimeout, snmpretries):
         threading.Thread.__init__(self, name='thread-%d_%s' % (threadID, node))
@@ -188,7 +189,7 @@ class Router(threading.Thread):
         return disc
 
     def probe(self, ipaddr, disc):
-        prv, nxt = {}, {}
+        prv, nxt, rct = {}, {}, {}
         args = ['tail', '-1', '.do_not_modify_'.upper() + self.node + '.prb']
         try:
             with open(args[2]) as sf:
@@ -267,60 +268,75 @@ class Router(threading.Thread):
                 main_logger.debug('probe() data saved.')
         return prv, nxt
 
-    def _process(self, ipaddr, disc):
-        prv, nxt = self.probe(ipaddr, disc)
-        main_logger.debug("prev: %s" % prv)
-        main_logger.debug("next: %s" % nxt)
+    def _utlCalculator(self, prv, nxt, disc):
+        utl_dict = {}
         actualCdnIn, physicalCdnIn, maxCdnIn, unblocked_maxCdnIn, actualPniOut, physicalPniOut, usablePniOut \
             = 0, 0, 0, 0, 0, 0, 0
         unblocked, blocked = [], []
         dF = "%Y-%m-%d %H:%M:%S.%f"
+        for p, n in zip(sorted(prv), sorted(nxt)):
+            utl_dict[p]['util'] = utl_dict[n]['util']
+            utl_dict[p]['util_prc'] = utl_dict[n]['util_prc']
+            utl_dict[n]['util'] = 0
+            utl_dict[n]['util_prc'] = 0
+            if n in self.pni_interfaces:
+                if nxt[n]['operStatus'] == 'up':
+                    physicalPniOut += int(nxt[n]['ifSpeed'])
+                if nxt[n]['operStatus'] == 'up' \
+                        and reduce(lambda x, y: int(x) + int(y),
+                                   [nxt[n]['peerStatus_ipv4'][x][1] for x in nxt[n]['peerStatus_ipv4']
+                                    if nxt[n]['peerStatus_ipv4'][x][0] == '6'], 0) > self.ipv4_minPfx \
+                        or reduce(lambda x, y: int(x) + int(y),
+                                  [nxt[n]['peerStatus_ipv6'][x][1] for x in nxt[n]['peerStatus_ipv6']
+                                   if nxt[n]['peerStatus_ipv6'][x][0] == '6'], 0) > self.ipv6_minPfx:
+                    usablePniOut += int(nxt[n]['ifSpeed'])
+                    if prv[p]['operStatus'] == 'up':
+                        delta_time = (datetime.datetime.strptime(nxt[n]['ts'], dF) -
+                                      datetime.datetime.strptime(prv[p]['ts'], dF)).total_seconds()
+                        delta_ifOutOctets = int(nxt[n]['ifOutOctets']) - int(prv[p]['ifOutOctets'])
+                        int_util_prc = (delta_ifOutOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10 ** 6)
+                        utl_dict[n]['util_prc'] = int_util_prc
+                        int_util = (delta_ifOutOctets * 8) / (delta_time * 10 ** 6)
+                        utl_dict[n]['util'] = int_util
+                        actualPniOut += int_util
+            elif n in self.cdn_interfaces:
+                if nxt[n]['operStatus'] == 'up':
+                    physicalCdnIn += int(nxt[n]['ifSpeed'])
+                    maxCdnIn += int(nxt[n]['ifSpeed']) * self.serving_cap / 100
+                    if prv[p]['operStatus'] == 'up':
+                        delta_time = (datetime.datetime.strptime(nxt[n]['ts'], dF) -
+                                      datetime.datetime.strptime(prv[p]['ts'], dF)).total_seconds()
+                        delta_ifInOctets = int(nxt[n]['ifInOctets']) - int(prv[p]['ifInOctets'])
+                        int_util_prc = (delta_ifInOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10 ** 6)
+                        utl_dict[n]['util_prc'] = int_util_prc
+                        int_util = (delta_ifInOctets * 8) / (delta_time * 10 ** 6)
+                        utl_dict[n]['util'] = int_util
+                        actualCdnIn += int_util
+                    if disc[n]['aclStatus'] == 'off':
+                        unblocked.append(n)
+                        unblocked_maxCdnIn += int(nxt[n]['ifSpeed']) * self.serving_cap / 100
+                    elif disc[n]['aclStatus'] == 'on':
+                        blocked.append(n)
+        try:
+            with open('.do_not_modify_'.upper() + self.node + '.dsc', 'w') as tf:
+                tf.write(str(utl_dict))
+        except:
+            main_logger.error('Unexpected error while writing utl() data to file: %s:%s' % sys.exc_info()[:2])
+        else:
+            main_logger.debug('utl() data saved.')
+        return actualCdnIn, physicalCdnIn, maxCdnIn, unblocked_maxCdnIn, \
+               actualPniOut, physicalPniOut, usablePniOut, \
+               blocked, unblocked, utl_dict
+
+    def _process(self, ipaddr, disc):
+        prv, nxt = self.probe(ipaddr, disc)
+        main_logger.debug("prev: %s" % prv)
+        main_logger.debug("next: %s" % nxt)
         if prv != {} and len(prv) == len(nxt):
-            for p , n in zip(sorted(prv), sorted(nxt)):
-                if n in self.pni_interfaces:
-                    disc[n]['util'] = 0
-                    disc[n]['util_prc'] = 0
-                    if nxt[n]['operStatus'] == 'up':
-                        physicalPniOut += int(nxt[n]['ifSpeed'])
-                    if nxt[n]['operStatus'] == 'up' \
-                            and reduce(lambda x, y: int(x) + int(y),
-                                       [nxt[n]['peerStatus_ipv4'][x][1] for x in nxt[n]['peerStatus_ipv4']
-                                        if nxt[n]['peerStatus_ipv4'][x][0] == '6'], 0) > self.ipv4_minPfx \
-                            or reduce(lambda x, y: int(x) + int(y),
-                                      [nxt[n]['peerStatus_ipv6'][x][1] for x in nxt[n]['peerStatus_ipv6']
-                                       if nxt[n]['peerStatus_ipv6'][x][0] == '6'], 0) > self.ipv6_minPfx:
-                        usablePniOut += int(nxt[n]['ifSpeed'])
-                        if prv[p]['operStatus'] == 'up':
-                            delta_time = (datetime.datetime.strptime(nxt[n]['ts'], dF) -
-                                          datetime.datetime.strptime(prv[p]['ts'], dF)).total_seconds()
-                            delta_ifOutOctets = int(nxt[n]['ifOutOctets']) - int(prv[p]['ifOutOctets'])
-                            int_util_prc = (delta_ifOutOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
-                            disc[n]['util_prc'] = int_util_prc
-                            int_util = (delta_ifOutOctets * 8) / (delta_time * 10 ** 6)
-                            disc[n]['util'] = int_util
-                            actualPniOut += int_util
-                elif n in self.cdn_interfaces:
-                    disc[n]['util'] = 0
-                    disc[n]['util_prc'] = 0
-                    if nxt[n]['operStatus'] == 'up':
-                        physicalCdnIn += int(nxt[n]['ifSpeed'])
-                        maxCdnIn += int(nxt[n]['ifSpeed']) * self.serving_cap / 100
-                        if prv[p]['operStatus'] == 'up':
-                            delta_time = (datetime.datetime.strptime(nxt[n]['ts'], dF) -
-                                          datetime.datetime.strptime(prv[p]['ts'], dF)).total_seconds()
-                            delta_ifInOctets = int(nxt[n]['ifInOctets']) - int(prv[p]['ifInOctets'])
-                            int_util_prc = (delta_ifInOctets * 800) / (delta_time * int(nxt[n]['ifSpeed']) * 10**6)
-                            disc[n]['util_prc'] = int_util_prc
-                            int_util = (delta_ifInOctets * 8) / (delta_time * 10 ** 6)
-                            disc[n]['util'] = int_util
-                            actualCdnIn += int_util
-                        if disc[n]['aclStatus'] == 'off':
-                            unblocked.append(n)
-                            unblocked_maxCdnIn += int(nxt[n]['ifSpeed']) * self.serving_cap / 100
-                        elif disc[n]['aclStatus'] == 'on':
-                            blocked.append(n)
+            actualCdnIn, physicalCdnIn, maxCdnIn, unblocked_maxCdnIn, actualPniOut, physicalPniOut, usablePniOut, \
+            unblocked, blocked, utl_dict = self._utlCalculator(prv, nxt, disc)
             for interface in disc:
-                main_logger.debug("%s(%s): %.2f%%", interface, disc[interface]['type'], disc[interface]['util_prc'])
+                main_logger.debug("%s(%s): %.2f%%", interface, disc[interface]['type'], utl_dict[interface]['util_prc'])
             main_logger.debug("Physical CDN Capacity: %.2f Mbps" % physicalCdnIn)
             main_logger.debug("Max CDN Capacity (total): %.2f Mbps" % maxCdnIn)
             main_logger.debug("Max CDN Capacity (unblocked): %.2f Mbps" % unblocked_maxCdnIn)
@@ -417,9 +433,10 @@ class Router(threading.Thread):
                         main_logger.info('Risk mitigated. All CDN interfaces should be enabled (Simulation Mode): %s'
                                          % blocked)
                 else:
-                    for value in sorted([util for util in [disc[interface]['util'] for interface in
+                    for value in sorted([util for util in [utl_dict[interface]['util'] for interface in
                                                            self.cdn_interfaces]], reverse=True):
-                        candidate_interface = filter(lambda interface: disc[interface]['util'] == value, disc)[0]
+                        candidate_interface = filter(lambda interface:
+                                                     utl_dict[interface]['util'] == value, utl_dict)[0]
                         self_maxCdnIn = int(nxt[candidate_interface]['ifSpeed']) * self.serving_cap / 100
                         if actualPniOut - actualCdnIn + unblocked_maxCdnIn + self_maxCdnIn < usablePniOut:
                             if not self.dryrun:
@@ -728,7 +745,7 @@ def main(args):
     falling_threshold = 90
     loglevel = 'INFO'
     log_retention = 7
-    data_retention = 2
+    data_retention = 3
     email_alert_severity = 'ERROR'
     acl_name = 'CDPautomation_RhmUdpBlock'
     pni_interface_tag = 'CDPautomation_PNI'
@@ -869,18 +886,18 @@ def main(args):
                                 main_logger.warning('The value of the log_retention argument must be an integer. '
                                                     'Resetting to last known good configuration: %s' % data_retention)
                         else:
-                            if 2 <= arg <= 60:
+                            if 3 <= arg <= 60:
                                 if data_retention != arg:
                                     main_logger.info('Data retention parameter has been updated: %s' % arg)
                                 data_retention = arg
                             else:
                                 if lastChanged == "":
                                     main_logger.warning('The value of the data_retention argument must be an integer '
-                                                        'between 2 and 60. Resetting to default setting: %s'
+                                                        'between 3 and 60. Resetting to default setting: %s'
                                                         % data_retention)
                                 else:
                                     main_logger.warning('The value of the data_retention argument must be an integer '
-                                                        'between 2 and 60. Resetting to last known good configuration: '
+                                                        'between 3 and 60. Resetting to last known good configuration: '
                                                         '%s' % data_retention)
                     elif opt == 'email_alert_severity':
                         if arg.lower() in ('warning', 'error', 'critical'):
