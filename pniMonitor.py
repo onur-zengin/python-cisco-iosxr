@@ -277,8 +277,8 @@ class Router(threading.Thread):
         for p, n in zip(sorted(prv), sorted(nxt)):
             #utl_dict[p]['util'] = utl_dict[n]['util']
             #utl_dict[p]['util_prc'] = utl_dict[n]['util_prc']
-            utl_dict[n]['util'] = 0
-            utl_dict[n]['util_prc'] = 0
+            utl_dict[n] = {'util': 0}
+            utl_dict[n] = {'util_prc': 0}
             if n in self.pni_interfaces:
                 if nxt[n]['operStatus'] == 'up':
                     physicalPniOut += int(nxt[n]['ifSpeed'])
