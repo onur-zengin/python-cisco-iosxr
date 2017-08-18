@@ -318,7 +318,7 @@ class Router(threading.Thread):
                     elif disc[n]['aclStatus'] == 'on':
                         blocked.append(n)
         try:
-            with open('.do_not_modify_'.upper() + self.node + '.dsc', 'w') as tf:
+            with open('.do_not_modify_'.upper() + self.node + '.utl', 'w') as tf:
                 tf.write(str(utl_dict))
         except:
             main_logger.error('Unexpected error while writing utl() data to file: %s:%s' % sys.exc_info()[:2])
