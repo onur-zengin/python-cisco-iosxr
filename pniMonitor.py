@@ -259,6 +259,8 @@ class Router(threading.Thread):
                             nxt[interface]['peerStatus_ipv6'][n[0]] = peer_status
                     if not disc[interface].has_key('peer_ipv4') and not disc[interface].has_key('peer_ipv6'):
                         main_logger.warning("PNI interface %s has no BGP sessions" % interface)
+            main_logger.debug("this is from probe - prev: %s" % prv)
+            main_logger.debug("this is from probe - next: %s" % nxt)
             try:
                 with open('.do_not_modify_'.upper() + self.node + '.prb', 'a') as pf:
                     pf.write(str(nxt) + '\n')
@@ -330,8 +332,8 @@ class Router(threading.Thread):
 
     def _process(self, ipaddr, disc):
         prv, nxt = self.probe(ipaddr, disc)
-        main_logger.debug("prev: %s" % prv)
-        main_logger.debug("next: %s" % nxt)
+        #main_logger.debug("prev: %s" % prv)
+        #main_logger.debug("next: %s" % nxt)
         if prv != {} and len(prv) == len(nxt):
             actualCdnIn, physicalCdnIn, maxCdnIn, unblocked_maxCdnIn, actualPniOut, physicalPniOut, usablePniOut, \
             unblocked, blocked, utl_dict = self._utlCalculator(prv, nxt, disc)
@@ -745,7 +747,7 @@ def main(args):
     falling_threshold = 90
     loglevel = 'INFO'
     log_retention = 7
-    data_retention = 3
+    data_retention = 2
     email_alert_severity = 'ERROR'
     acl_name = 'CDPautomation_RhmUdpBlock'
     pni_interface_tag = 'CDPautomation_PNI'
@@ -886,7 +888,7 @@ def main(args):
                                 main_logger.warning('The value of the log_retention argument must be an integer. '
                                                     'Resetting to last known good configuration: %s' % data_retention)
                         else:
-                            if 3 <= arg <= 60:
+                            if 2 <= arg <= 60:
                                 if data_retention != arg:
                                     main_logger.info('Data retention parameter has been updated: %s' % arg)
                                 data_retention = arg
