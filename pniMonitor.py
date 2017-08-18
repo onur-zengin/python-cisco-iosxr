@@ -88,7 +88,7 @@ class Router(threading.Thread):
         if self.switch:
             main_logger.info("Inventory updated. Initializing node discovery")
             for f in os.listdir('.'):
-                if self.node+'.dsc' in f or self.node+'.prb' in f:
+                if self.node+'.dsc' in f or self.node+'.prb' in f or self.node+'.utl' in f:
                     os.remove(f)
             disc = self.discovery(self.ipaddr)
         else:
