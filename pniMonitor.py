@@ -275,8 +275,8 @@ class Router(threading.Thread):
         unblocked, blocked = [], []
         dF = "%Y-%m-%d %H:%M:%S.%f"
         for p, n in zip(sorted(prv), sorted(nxt)):
-            utl_dict[p]['util'] = utl_dict[n]['util']
-            utl_dict[p]['util_prc'] = utl_dict[n]['util_prc']
+            #utl_dict[p]['util'] = utl_dict[n]['util']
+            #utl_dict[p]['util_prc'] = utl_dict[n]['util_prc']
             utl_dict[n]['util'] = 0
             utl_dict[n]['util_prc'] = 0
             if n in self.pni_interfaces:
