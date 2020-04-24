@@ -9,12 +9,12 @@ import os.path
 import re
 
 #Specifies a default distribution list, in case the configuration file can't be located.
-email_distro = ['cdnsupport@sky.uk', 'dl-contentdeliveryplatform@bskyb.com']
+email_distro = ['support@domain1.com', 'dl@domain2.com']
 
 logFormatter = logging.Formatter('%(asctime)-15s [%(levelname)s]: %(message)s')
 rootLogger = logging.getLogger()
 
-emailHandler = logging.handlers.SMTPHandler('localhost', 'no-reply@automation.skycdp.com', email_distro,
+emailHandler = logging.handlers.SMTPHandler('localhost', 'no-reply@automation.domain1.com', email_distro,
                                             'CRITICAL: PNI Monitor Liveness Check Failed')
 emailHandler.setFormatter(logFormatter)
 emailHandler.setLevel(logging.CRITICAL)
@@ -62,7 +62,7 @@ def main(args):
                     split_lst = arg.split(',')
                     try:
                         for email in split_lst:
-                            match = re.search(r"[\w.-]+@(sky.uk|bskyb.com)", email)
+                            match = re.search(r"[\w.-]+@(domain1.com|domain2.com)", email)
                             match.group()
                     except AttributeError:
                         rootLogger.warning('Invalid email address found in the distribution list. Resetting to default '
@@ -80,7 +80,7 @@ def main(args):
             rootLogger.removeHandler(emailHandler)
         except NameError:
             pass
-        emailHandler = logging.handlers.SMTPHandler('localhost', 'no-reply@automation.skycdp.com', email_distro,
+        emailHandler = logging.handlers.SMTPHandler('localhost', 'no-reply@automation.domain1.com', email_distro,
                                                     'CRITICAL: PNI Monitor Liveness Check Failed')
         emailHandler.setFormatter(logFormatter)
         emailHandler.setLevel(logging.CRITICAL)
