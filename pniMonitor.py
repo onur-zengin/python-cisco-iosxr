@@ -359,7 +359,7 @@ class Router(threading.Thread):
                     main_logger.info('No usable PNI egress capacity available. However all CDN interfaces are '
                                      'currently down or in blocked state. No valid actions left.')
             # We can't use actualCDNIn while calculating the rising_threshold because it won't include P2P traffic
-            # and / or the CDN overflow from the other site(s). It is worth revisiting for Sky Germany though.
+            # and / or the CDN overflow from the other site(s). It is worth revisiting later for DE though.
             elif actualPniOut / usablePniOut * 100 >= self.rising_threshold:
                 if unblocked != []:
                     if not self.dryrun:
@@ -741,7 +741,7 @@ def main(args):
     peak_start = datetime.time(17, 30)
     peak_end = datetime.time(23, 59)
     off_peak_frequency = 180
-    email_distro = ['cdnsupport@sky.uk', 'dl-contentdeliveryplatform@bskyb.com']
+    email_distro = ['support@domain1.com', 'dl@domain2.com']
     snmp_timeout = 3
     snmp_retries = 2
     try:
@@ -1130,7 +1130,7 @@ def main(args):
                         split_lst = arg.split(',')
                         try:
                             for email in split_lst:
-                                match = re.search(r"[\w.-]+@(sky.uk|bskyb.com)", email)
+                                match = re.search(r"[\w.-]+@(domain1.com|domain2.com)", email)
                                 match.group()
                         except AttributeError:
                             if lastChanged == "":
@@ -1177,7 +1177,7 @@ def main(args):
                 main_logger.removeHandler(main_eh)
             except NameError:
                 pass
-            main_eh = handlers.SMTPHandler('localhost', 'no-reply@automation.skycdp.com', email_distro,
+            main_eh = handlers.SMTPHandler('localhost', 'no-reply@automation.domain1.com', email_distro,
                                            'Virgin Media PNI Monitor')
             main_eh.setFormatter(main_formatter)
             main_eh.setLevel(logging.getLevelName(email_alert_severity))
