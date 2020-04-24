@@ -142,8 +142,8 @@ __3. CONFIGURATION__
 
    Maximum serving capacity of a CDN node relative to its wire rate. Default value is '90'.
 
-   While working with Akamai MCDN regions, this parameter must be configured to the lowest of the _bit-cap_ or _flit-
-    limit_ values. For instance; if the maximum expected throughput from a CDN region with 200 Gbps physical capacity
+   Where applicable, this parameter must be configured to the lowest of the _bit-cap_ or _flit-limit_ values. 
+    For instance; if the maximum expected throughput from a CDN region with 200 Gbps physical capacity
     is 160 Gbps due to its manually overridden bit-limit, then the cdn_serving_cap must be set to '80'. When the bit-
     limit is removed, it should be reset to a value (typically >90) that is indicative of the highest achievable
     throughput without the region being flit-limited.
@@ -159,10 +159,10 @@ __3. CONFIGURATION__
 
    The number of days for the rotated log files to be kept on disk.
 
-   __email_distribution_list=[`name.surname@sky.uk,group_name@bskyb.com`(_default_:`cdnsupport@sky.uk`)]__
+   __email_distribution_list=[`name.surname@domain1.com,group_name@domain2.com`(_default_:`support@domain1.com`)]__
 
-   The list of email addresses to be notified when an event occurs. Email addresses that are outside the `@sky.uk` or 
-   `@bskyb.com` domains will __NOT__ be accepted. Multiple entries must be separated by a comma (`,`).
+   The list of email addresses to be notified when an event occurs. Email addresses that are outside the `@domain1.com` or 
+   `@domain2.com` domains will __NOT__ be accepted. Multiple entries must be separated by a comma (`,`).
    
    Emails alerts will be sent stateless and will not be retried or repeated.
    
