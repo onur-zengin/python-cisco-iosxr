@@ -6,6 +6,8 @@ __1. DESCRIPTION__
     eBGP sessions on a Cisco IOS-XR router acting as an ASBR, and make selective decisions to block / unblock the 
     ingress traffic at its source if it is on a local interface (typically a CDN cache directly-connected to the router)
 
+![laphroaig](https://github.com/onur-zengin/laphroaig/assets/10590811/f5b89b76-4367-40a3-a675-26bc3174571e)
+
 
 __2. DEPENDENCIES__
 
@@ -49,9 +51,9 @@ __3. CONFIGURATION__
     line. Example:
     
     ###inventory.txt
-    er12.enslo
-    er12.thlon
-    #er13.thlon
+    asbr-1
+    asbr-2
+    #asbr-3
 
    As shown above, the pound sign (`#`) can be used to create comment lines or comment out a selected node.
 
